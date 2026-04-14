@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yidan's Code Reading Notes</title>
+<title>Yidan He — Code Reading & Technical Sharing</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -21,22 +21,28 @@ body {
   min-height: 100vh;
 }
 .container {
-  max-width: 800px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 80px 24px 60px;
 }
-header {
-  margin-bottom: 48px;
+/* Two-column layout */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 40px;
+  align-items: start;
 }
-header h1 {
-  font-size: 28px;
+/* Left: posts */
+.main-col h1 {
+  font-size: 26px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
-header p {
+.main-col .subtitle {
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.6;
+  margin-bottom: 32px;
 }
 .posts {
   display: flex;
@@ -48,7 +54,7 @@ header p {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 24px;
+  padding: 20px 24px;
   text-decoration: none;
   color: var(--text);
   transition: border-color 0.2s, transform 0.1s;
@@ -58,20 +64,18 @@ header p {
   transform: translateY(-1px);
 }
 .post-card h2 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .post-card .meta {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.post-card .meta span {
-  margin-right: 16px;
-}
+.post-card .meta span { margin-right: 12px; }
 .post-card .desc {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -82,8 +86,55 @@ header p {
   border-radius: 12px;
   background: rgba(88,166,255,0.1);
   color: var(--accent);
-  margin-right: 6px;
+  margin-right: 4px;
 }
+/* Right: about */
+.side-col {
+  position: sticky;
+  top: 80px;
+}
+.about-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.about-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.about-card p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.about-card a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.about-card a:hover { text-decoration: underline; }
+.about-links {
+  list-style: none;
+  padding: 0;
+}
+.about-links li {
+  margin-bottom: 8px;
+}
+.about-links a {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.about-links a:hover { color: var(--accent); }
+/* Footer */
 footer {
   margin-top: 60px;
   padding-top: 20px;
@@ -92,39 +143,58 @@ footer {
   color: var(--text-secondary);
 }
 footer a { color: var(--accent); text-decoration: none; }
-@media (max-width: 600px) {
-  .container { padding: 40px 16px 40px; }
-  header h1 { font-size: 22px; }
+/* Mobile */
+@media (max-width: 768px) {
+  .columns { grid-template-columns: 1fr; }
+  .side-col { position: static; }
+  .container { padding: 40px 16px; }
 }
 </style>
 </head>
 <body>
 <div class="container">
 
-<header>
-  <h1>Code Reading Notes</h1>
-  <p>源码阅读笔记 — 从实际使用中的体感差异出发，通过源码分析理解 AI Agent 的设计分歧。</p>
-</header>
+<div class="columns">
 
-<div class="posts">
+<div class="main-col">
+  <h1>Code Reading & Sharing</h1>
+  <p class="subtitle">从实际使用中的体感差异出发，通过源码分析理解 AI Agent 的设计分歧。</p>
 
-  <a class="post-card" href="coding-agent-endurance/">
-    <h2>Coding Agent 的续航力差异</h2>
-    <div class="meta">
-      <span>2026-04-14</span>
-      <span class="tag">Claude Code</span>
-      <span class="tag">Codex</span>
-      <span class="tag">源码分析</span>
-    </div>
-    <p class="desc">基于 Claude Code 与 Codex CLI 的源码阅读，分析同类 Coding Agent 在上下文管理、执行续航和用户交互模型上的设计分歧。包含四种 Loop 架构对比、Context 拼接机制、三种长程运行模式，以及对"在场价值"的开放讨论。</p>
-  </a>
+  <div class="posts">
 
-  <!-- 下一篇文章在这里添加 -->
+    <a class="post-card" href="coding-agent-endurance/">
+      <h2>Coding Agent 的续航力差异</h2>
+      <div class="meta">
+        <span>2026-04-14</span>
+        <span class="tag">Claude Code</span>
+        <span class="tag">Codex</span>
+        <span class="tag">源码分析</span>
+      </div>
+      <p class="desc">基于 Claude Code 与 Codex CLI 的源码阅读，分析同类 Coding Agent 在上下文管理、执行续航和用户交互模型上的设计分歧。</p>
+    </a>
+
+    <!-- 下一篇文章在这里添加 -->
+
+  </div>
+</div>
+
+<div class="side-col">
+  <div class="about-card">
+    <h3>About</h3>
+    <p>Yidan He (imathg). 关注 AI Agent 架构、Coding Assistant 和 LLM 应用工程。目前在探索如何让 Agent 跑得更久、更好、更可控。</p>
+  </div>
+  <div class="about-card">
+    <h3>Links</h3>
+    <ul class="about-links">
+      <li><a href="https://github.com/imathg">GitHub</a></li>
+    </ul>
+  </div>
+</div>
 
 </div>
 
 <footer>
-  <p>Built with raw HTML. Source at <a href="https://github.com/imathg/heyidan-sharing">knowledge-base</a>.</p>
+  <p>Source at <a href="https://github.com/imathg/heyidan-sharing">heyidan-sharing</a></p>
 </footer>
 
 </div>
