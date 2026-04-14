@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yidan's Code Reading Notes</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-secondary: #8b949e;
+  --accent: #58a6ff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+}
+header {
+  margin-bottom: 48px;
+}
+header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+header p {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.posts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.post-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.2s, transform 0.1s;
+}
+.post-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.post-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.post-card .meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.post-card .meta span {
+  margin-right: 16px;
+}
+.post-card .desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(88,166,255,0.1);
+  color: var(--accent);
+  margin-right: 6px;
+}
+footer {
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+footer a { color: var(--accent); text-decoration: none; }
+@media (max-width: 600px) {
+  .container { padding: 40px 16px 40px; }
+  header h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Code Reading Notes</h1>
+  <p>源码阅读笔记 — 从实际使用中的体感差异出发，通过源码分析理解 AI Agent 的设计分歧。</p>
+</header>
+
+<div class="posts">
+
+  <a class="post-card" href="coding-agent-endurance/">
+    <h2>Coding Agent 的续航力差异</h2>
+    <div class="meta">
+      <span>2026-04-14</span>
+      <span class="tag">Claude Code</span>
+      <span class="tag">Codex</span>
+      <span class="tag">源码分析</span>
+    </div>
+    <p class="desc">基于 Claude Code 与 Codex CLI 的源码阅读，分析同类 Coding Agent 在上下文管理、执行续航和用户交互模型上的设计分歧。包含四种 Loop 架构对比、Context 拼接机制、三种长程运行模式，以及对"在场价值"的开放讨论。</p>
+  </a>
+
+  <!-- 下一篇文章在这里添加 -->
+
+</div>
+
+<footer>
+  <p>Built with raw HTML. Source at <a href="https://github.com/imathg/heyidan-sharing">knowledge-base</a>.</p>
+</footer>
+
+</div>
+</body>
+</html>
