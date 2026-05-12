@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Hypothesis-Driven Experiment Management — 算法方案迭代中的 AI 工具实践</title>
-<meta name="description" content="把算法实验环境做成一个有边界、有索引、有证据链的工作台，让大模型稳定参与方案讨论、繁杂执行、方案搜索、线上归因和认知沉淀。" />
+<meta name="description" content="把算法实验环境做成一个有边界、有索引、有证据链的工作台，让大模型稳定参与方案讨论、繁杂执行、方案搜索 / 消融验证、线上归因和认知沉淀。" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300..700;1,300..700&family=Noto+Serif+SC:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -33,11 +33,11 @@
       <li><a href="#sec-0">开场：AI 工具进入算法实验闭环</a></li>
       <li><a href="#sec-1">反面教材：普通 AI 协作为什么会失控</a></li>
       <li><a href="#sec-2">框架核心：Hypothesis-Driven，而不是 Process-Driven</a></li>
-      <li><a href="#sec-3">新框架：先定版工作台，再让 AI 参与迭代</a></li>
-      <li><a href="#sec-4">能力一：把繁杂执行委派出去</a></li>
-      <li><a href="#sec-5">能力二：用搜索迭代推进方案收敛</a></li>
-      <li><a href="#sec-6">能力三：做线上归因，但不越界判定</a></li>
-      <li><a href="#sec-7">能力四：把证据沉淀成可复用认知</a></li>
+      <li><a href="#sec-3">工作台框架：先定版环境，再让 AI 参与迭代</a></li>
+      <li><a href="#sec-4">AI 协作能力一：执行委派</a></li>
+      <li><a href="#sec-5">AI 协作能力二：搜索迭代</a></li>
+      <li><a href="#sec-6">AI 协作能力三：线上归因</a></li>
+      <li><a href="#sec-7">AI 协作能力四：认知沉淀</a></li>
       <li><a href="#sec-8">方法边界</a></li>
     </ol>
   </nav>
@@ -69,28 +69,21 @@
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">AI 在算法实验里的真正机会，不是省下写作时间，而是稳定地参与一个"假设→证据→判断→下一轮假设"的闭环。</div></div>
       <div class="prose">
-        <p>很多人第一次把 AI 放进算法实验时，都会遇到同一个问题：它很会跑数、写分析、补报告，但跑着跑着路径猜错了、数据口径漂了、结论边界也变模糊了。最后看起来省了执行时间，实际上把校验成本推迟到了负责人身上。</p>
-        <p>这场分享想回答的不是"怎么让 AI 多写文档"，而是一个更具体的问题：</p>
+        <p>很多人第一次把 AI 放进算法实验时，都会遇到同一个问题：它很会跑数、写分析、补报告，但跑着跑着路径猜错了、数据口径漂了、结论边界也变模糊了。表面上省了执行时间，实际上把校验成本推迟到了负责人身上。</p>
+        <p>这场分享聚焦一个更具体的问题：</p>
         <blockquote>怎样让 AI 参与算法实验迭代，同时不让假设、证据和决策边界漂移？</blockquote>
-        <p>过去一段时间，我一直在用大模型辅助做对话式 AI 产品里的算法实验，比如回复质量、候选排序和奖励设计。AI 的价值不是一次性给出一个神奇方案，而是稳定参与一个实验闭环：</p>
-        <pre class="codeblock">实验假设 → 方案设计 → AI 执行委派 → 证据回填 → 归因判断 → 下一轮假设</pre>
-        <p>这条链里，AI 主要承担四类工作：</p>
+        <p>过去一段时间，我一直在用大模型辅助做对话式 AI 产品里的算法实验，比如回复质量、候选排序和奖励设计。这类工作和调参分析、badcase 归因、需求拆解、离线评测、线上实验复盘有一个共同点：AI 的价值不是一次性给出一个神奇方案，而是稳定参与一条可复查的实验闭环。</p>
+        <p>这个闭环可以写成：<strong>实验假设 → 方案设计 → AI 执行委派 → 证据回填 → 归因判断 → 下一轮假设</strong>。</p>
+        <p>这条链里，AI 的参与主要体现为四类协作能力：</p>
         <ul>
-          <li>帮我恢复跨月实验上下文，并接上上一轮未完成状态。</li>
-          <li>帮我拉数据、跑脚本、看远端日志、检查中间产物。</li>
-          <li>帮我把复杂算法改动拆成多轮方案搜索和消融验证。</li>
-          <li>帮我在结果不符合预期时回头查证据、修正归因，并把线上反馈整理成下一轮可证伪假设。</li>
+          <li><strong>执行委派</strong>：拉数据、跑脚本、看远端日志、检查中间产物。</li>
+          <li><strong>搜索迭代</strong>：把复杂算法改动拆成多轮方案搜索和消融验证。</li>
+          <li><strong>线上归因</strong>：在结果不符合预期时回头查证据、修正归因，并把线上反馈整理成下一轮可证伪假设。</li>
+          <li><strong>认知沉淀</strong>：恢复跨月实验上下文，维护交接文档、registry 和可复用判断。</li>
         </ul>
         <p>后文里的"执行单元"，指被委派去跑数、查证据、产出原始材料的 AI 子会话或工具流程；"主会话"负责问题定义、事实复核和最终判断。</p>
-        <p>这场分享按四块展开：先讲一次失败的自动化尝试，再讲新的核心思想和工作台设计，然后展开三个 AI 真实参与的场景，最后讲长期认知怎么沉淀。</p>
-
-        <figure>
-          <img src="assets/01_overview.png" alt="Hypothesis-Driven Experiment Management 总览" />
-          <figcaption><span class="fnum">FIG 01 · OVERVIEW</span><span>实验闭环 + 定版工作台 + 边界原则。AI 在闭环内承担执行与整理，由稳定底座兜住判断责任。</span></figcaption>
-        </figure>
-
-        <p>这套框架的关键不在于增加流程，而在于明确 AI 参与的是实验闭环，不是单点写作。如果没有底部的定版工作台，AI 会把上下文恢复、路径猜测、方案判断、报告写作混在一起；如果底座稳定，AI 就可以在明确边界内承担更复杂的执行和分析任务。</p>
-        <p>这套工作台不是一开始就存在，它是从一次失败的自动化尝试里长出来的。</p>
+        <p>这场分享按四块展开：先看一次失控的自动化尝试，再定义 Hypothesis-Driven 框架和定版工作台，然后展开四类 AI 协作能力，最后收束方法边界。</p>
+        <p>我先从失败案例讲起。普通 AI 协作失控时，核心问题通常是实验环境没有边界：上下文恢复、路径猜测、方案判断、报告写作被混在一起。看清这个失败模式之后，再讲为什么需要 Hypothesis-Driven 和定版工作台。</p>
       </div>
     </section>
 
@@ -103,9 +96,9 @@
       <div class="tldr"><div class="label">TL;DR</div><div class="body">AI 不是不够强，是环境没有边界——把抽象判断也交给它，错误就被包装成了正式产物。</div></div>
       <div class="prose">
 
-        <h3><span class="num">1.1</span><span>旧模式：大一统实验管理助手</span></h3>
-        <p>一开始我也试过更"自动化"的方向。那时的想法是：既然实验文档很复杂，就做一个实验管理助手，把文档、索引、报告、交接和检查都自动化掉。</p>
-        <p>这个助手一路变得越来越大：</p>
+        <h3><span class="num">1.1</span><span>反例：大一统实验管理助手</span></h3>
+        <p>一种很自然但危险的设计，是把实验文档、索引、报告、交接和检查都交给同一个实验管理助手。出发点很合理：实验材料复杂，AI 看起来也适合做整理、检查和同步。</p>
+        <p>这类助手很容易一路变大：</p>
         <ul>
           <li>先补目录规则：实验放哪里、脚本放哪里、过程材料放哪里。</li>
           <li>再补检查规则：格式检查、强校验、索引同步、收尾检查。</li>
@@ -114,21 +107,21 @@
         <p>它看起来越来越完整，但问题没有变少，反而变得更隐蔽：AI 生成的东西更像正式产物，判断责任却被模糊了。</p>
 
         <h3><span class="num">1.2</span><span>失效原因：AI 被迫替负责人做抽象判断</span></h3>
-        <p>后来我把这套设计回滚掉。原因不是"规则写得不够细"，而是职责边界错了。</p>
-        <p>问题不只是"功能太多压在一个工具里"。即使拆成多个 AI 工具，只要它们仍然自动决定文档层级、结论边界和认知沉淀，判断责任还是会被下沉给 AI。当时的设计把全生命周期管理、文档路由、格式检查、收尾检查、认知抽象和索引同步都自动化了，AI 就会被迫替人判断：</p>
+        <p>这类设计最终会撞到职责边界问题。</p>
+        <p>核心风险不只来自功能数量。即使拆成多个 AI 工具，只要它们仍然自动决定文档层级、结论边界和认知沉淀，判断责任还是会被下沉给 AI。如果把全生命周期管理、文档路由、格式检查、收尾检查、认知抽象和索引同步都自动化，AI 就会被迫替人判断：</p>
         <ul>
           <li>这份材料应该是原始证据、阶段主文档，还是汇报报告？</li>
           <li>哪些事实可以上升成结论，哪些只能留在过程记录里？</li>
           <li>哪个问题已经关闭，哪个问题还只是暂时没继续查？</li>
           <li>哪些结论可以复用，哪些只是这一轮实验的局部现象？</li>
         </ul>
-        <p>这些判断一旦自动化，错误就会被包装成正式产物。旧模式的问题可以归纳成五类：</p>
+        <p>这些判断一旦自动化，错误就会被包装成正式产物。这类大一统设计的问题可以归纳成五类：</p>
 
-        <details class="fold" open><summary><span class="tag">F1</span><span class="ttl">职责过载</span></summary><div class="fold-body">同一套自动化流程同时管全生命周期、文档规范、报告、认知沉淀、索引和收尾检查。压力堆在一个入口，错误传染到所有产物。</div></details>
-        <details class="fold"><summary><span class="tag">F2</span><span class="ttl">判断下沉</span></summary><div class="fold-body">执行单元本来最适合写原始证据，却被要求判断文档落点、抽象结论和沉淀层级——它没有问题定义的上下文。</div></details>
-        <details class="fold"><summary><span class="tag">F3</span><span class="ttl">受众混杂</span></summary><div class="fold-body">一份报告想同时服务业务汇报、个人复盘和未来复现，信息密度冲突，每个读者都看不到自己要的那一层。</div></details>
+        <details class="fold" open><summary><span class="tag">F1</span><span class="ttl">职责过载</span></summary><div class="fold-body">同一套自动化流程同时管全生命周期、文档规范、报告、认知沉淀、索引和收尾检查。</div></details>
+        <details class="fold"><summary><span class="tag">F2</span><span class="ttl">判断下沉</span></summary><div class="fold-body">执行单元本来最适合写原始证据，却被要求判断文档落点、抽象结论和沉淀层级。</div></details>
+        <details class="fold"><summary><span class="tag">F3</span><span class="ttl">受众混杂</span></summary><div class="fold-body">一份报告想同时服务业务汇报、个人复盘和未来复现，信息密度冲突。</div></details>
         <details class="fold"><summary><span class="tag">F4</span><span class="ttl">产物漂移</span></summary><div class="fold-body">自动生成倾向太强，容易制造占位文档、重复摘要、错误索引；同一个事实在多层重复维护，也会随更新漂移。</div></details>
-        <details class="fold"><summary><span class="tag">F5</span><span class="ttl">交接失真</span></summary><div class="fold-body">交接文档变成伪报告，既不适合接力，也不适合阅读。下一任执行单元从聊天记录里考古。</div></details>
+        <details class="fold"><summary><span class="tag">F5</span><span class="ttl">交接失真</span></summary><div class="fold-body">交接文档变成伪报告，既不适合接力，也不适合阅读。</div></details>
 
         <figure>
           <img src="assets/02_failure_modes.png" alt="失败模式：普通 AI 协作为什么会失控" />
@@ -156,8 +149,8 @@
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">实验始终围绕<em>可证伪假设</em>推进，不是围绕流程动作堆叠；三层文档是这条假设链的载体。</div></div>
       <div class="prose">
-        <p><code>Hypothesis-Driven</code> 指的是：实验始终围绕可证伪假设（falsifiable hypothesis）推进，而不是围绕流程动作堆叠。每轮实验都应该回到这条链：</p>
-        <pre class="codeblock">假设 → 实验动作 → 证据 → 判断 → 下一轮假设</pre>
+        <p><code>Hypothesis-Driven</code> 指的是：实验始终围绕可证伪假设（falsifiable hypothesis）推进，而不是围绕流程动作堆叠。</p>
+        <p>每轮实验都应该回到这条链：<strong>假设 → 实验动作 → 证据 → 判断 → 下一轮假设</strong>。</p>
         <p>这条链解决的是几个实际问题：</p>
         <ul>
           <li>方案讨论不会停留在"我觉得可以试试"，而是变成"我们要验证哪个假设"。</li>
@@ -165,20 +158,33 @@
           <li>线上归因不会直接越界成效果判定，而是先形成可证伪机制。</li>
           <li>文档沉淀不会变成流水账，而是回到"本轮学到了什么，下一轮继承什么"。</li>
         </ul>
-        <p>这条链的最短版本可以用一个离线奖励方案搜索说明：</p>
+        <p>Jiayi Weng 在 <a href="https://trinkle23897.github.io/learning-beyond-gradients/#zh">Learning Beyond Gradients</a> 里把这类过程称为 Heuristic Learning (HL)：coding agent 读取反馈，直接修改代码、测试、配置和记忆，让软件系统持续吸收经验；更新对象从模型参数转向可维护的软件结构。对算法实验来说，类似的更新对象是实验工作台本身：通过文档分层、结构化登记表和交接文档，把假设、数据契约、评测协议、线上实验口径、交接状态和可复用认知显式保存下来。</p>
+        <p>以一类对话模型优化为例，问题一开始看起来像"调一个全局 reward 权重"。内容能力要更强，轻量闲聊要更自然，边界能力要更稳，安全不能掉。连续几轮以后会发现，继续在同一套全局目标里折中，很容易修好一个场景、带坏另一个场景。</p>
+        <p>Hypothesis-Driven 的改法是先改问题定义：</p>
         <div class="matrix">
-          <div><h4>假设</h4><p>在奖励里引入长度惩罚，可能比简单按长度归一化更强地压短回复。</p></div>
-          <div><h4>证据</h4><p>模型平均长度下降，但问句率、模板化短追问上升；离线消融也没有覆盖完整奖励公式。</p></div>
-          <div><h4>判断</h4><p>长度惩罚确实有压力，但它和偏好分权重、样本结构叠加后，打开了 reward hacking 空间。</p></div>
-          <div><h4>下一轮假设</h4><p>同时下调偏好分权重、补充问句惩罚、混合不同类型的长度约束。</p></div>
+          <div><h4>假设</h4><p>不同状态下应该使用不同训练信号和不同验收指标，而不是用一个全局 reward 统一解释。</p></div>
+          <div><h4>实验动作</h4><p>把状态拆成内容承接、轻量交互、边界能力和安全准入几类，并给每类固定目标与验收口径。</p></div>
+          <div><h4>证据</h4><p>用同一套评测协议横向比较候选路线，看各能力块是否互相拖累。</p></div>
+          <div><h4>判断</h4><p>离线只决定候选是否值得进线上，不提前替代线上 AB。</p></div>
+          <div><h4>下一轮假设</h4><p>如果某一块能力掉了，回到对应状态、数据、reward 或教师模型，而不是继续全局调参。</p></div>
         </div>
-        <p>这条假设链需要文档载体才能跨搜索迭代、跨实验阶段接力。三层文档分层就是这个载体：</p>
+        <p>这套体系可以拆成三层：</p>
+        <ul>
+          <li><strong>Hypothesis-Driven 框架</strong>：定义实验推进方式，所有动作都回到"假设 → 实验动作 → 证据 → 判断 → 下一轮假设"。</li>
+          <li><strong>定版实验工作台</strong>：固定路径、数据、证据、文档、交接和工具边界，让 AI 能在稳定环境里接手复杂任务。</li>
+          <li><strong>AI 协作能力</strong>：在工作台约束下稳定承担执行委派、搜索迭代、线上归因和认知沉淀。</li>
+        </ul>
+        <p>其中，文档分层是实验工作台的核心载体：</p>
         <ul>
           <li><strong>L3 原始证据层</strong>：存事实、指标、样本和过程。</li>
           <li><strong>L2 阶段主文档层</strong>：串起"假设 → 证据 → 判断"链。</li>
           <li><strong>L1 可复用认知层</strong>：沉淀跨实验阶段可复用判据。</li>
         </ul>
-        <p>所以 Hypothesis-Driven 是框架，三层文档分层是载体。两者不是两套系统。这个框架在实验协作里主要表现为四类能力：繁杂执行委派、方案搜索 / 消融验证、线上归因控制、认知沉淀。</p>
+
+        <figure>
+          <img src="assets/01_overview.png" alt="Hypothesis-Driven Experiment Management 总览" />
+          <figcaption><span class="fnum">FIG 01 · OVERVIEW</span><span>三层体系：Hypothesis-Driven 框架 + 定版工作台 + AI 协作能力。</span></figcaption>
+        </figure>
       </div>
     </section>
 
@@ -186,47 +192,56 @@
     <section class="chapter" id="sec-3" data-screen-label="04 定版工作台">
       <div class="chapter-head">
         <div class="num">§ 03</div>
-        <h2>新框架：先定版工作台，再让 AI 参与迭代</h2>
+        <h2>工作台框架：先定版环境，再让 AI 参与迭代</h2>
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">不是给 AI 更多权限，而是给 AI 更明确的工作台——环境越稳定，AI 越能承担复杂任务。</div></div>
       <div class="prose">
-        <p>Hypothesis-Driven 解决的是实验该围绕什么推进；定版工作台解决的是 AI 凭什么稳定参与推进。新的设计没有继续把实验管理助手做大，而是把它收窄成一个轻量实验文档管理工具能力。</p>
+        <p>Hypothesis-Driven 解决的是实验该围绕什么推进；定版工作台解决的是 AI 凭什么稳定参与推进。</p>
+        <p>对应的工具设计不是把实验管理助手做大，而是把它收窄成一个轻量实验文档管理工具能力。这个工具只保留三类动作：恢复上下文与判断文档落点，维护 handoff、registry、索引和路径一致性，在新建、迁移、改名后做最小同步。</p>
+        <p>它不代写报告正文，不生成占位主文档，不做覆盖实验全生命周期的重型命令系统，也不自动删除、归档、重命名文件或全量重建索引。</p>
 
-        <div class="dodont">
-          <div class="yes"><h4>它只做这五件事</h4><ul>
-            <li>恢复实验上下文。</li>
-            <li>判断文档落点。</li>
-            <li>维护交接文档。</li>
-            <li>检查索引、唯一事实源和路径漂移。</li>
-            <li>新建、迁移、改名后做最小索引同步。</li>
-          </ul></div>
-          <div class="no"><h4>它明确不做</h4><ul>
-            <li>不代写报告正文。</li>
-            <li>不复活旧的全生命周期命令系统。</li>
-            <li>不批量生成占位的阶段主文档或高层认知文档。</li>
-            <li>不把索引当成可自动覆盖的生成物。</li>
-            <li>不静默删除、归档或重命名文件。</li>
-          </ul></div>
-        </div>
-
-        <p>这次收窄不是设计直觉，而是从"大一统助手"回滚里学到的：<strong>工具能力越想全自动化，实验负责人越要介入兜底；工具能力越守边界，实验负责人越能专心做判断</strong>。</p>
+        <p>工具能力收窄的原因很直接：<strong>工具能力越想全自动化，实验负责人越要介入兜底；工具能力越守边界，实验负责人越能专心做判断</strong>。</p>
 
         <figure>
           <img src="assets/03_workbench.png" alt="定版实验工作台" />
           <figcaption><span class="fnum">FIG 03 · WORKBENCH</span><span>定版工作台的六个固定面：路径 / 数据 / 证据 / 文档 / 交接 / 工具边界。</span></figcaption>
         </figure>
 
+        <p>实际落地时，工作台首先表现为一套稳定目录结构。下面是一个抽象版：</p>
+<pre class="codeblock">companion_agent/experiments/
+├── INDEX.md                         <span style="color:var(--ink-4)"># 实验入口索引</span>
+├── {NN-期名}/
+│   ├── main_*.md                    <span style="color:var(--ink-4)"># 阶段主文档</span>
+│   ├── series_认知地图.md            <span style="color:var(--ink-4)"># 本期认知地图</span>
+│   ├── report_*.md                  <span style="color:var(--ink-4)"># 专题复盘</span>
+│   ├── raw/
+│   │   ├── *handoff*.md             <span style="color:var(--ink-4)"># 当前状态与接力</span>
+│   │   ├── pipeline.md              <span style="color:var(--ink-4)"># 搜索 / 分析流程追踪</span>
+│   │   └── round_*.md               <span style="color:var(--ink-4)"># 原始证据与过程记录</span>
+│   └── scripts/ configs/            <span style="color:var(--ink-4)"># 可复现执行入口</span>
+├── eval/                            <span style="color:var(--ink-4)"># 固定评测协议与结果登记</span>
+├── handoff/                         <span style="color:var(--ink-4)"># 跨期交接</span>
+├── insights/                        <span style="color:var(--ink-4)"># 可复用认知</span>
+├── schema_ab_results.md             <span style="color:var(--ink-4)"># 线上 AB 结果统一 schema</span>
+├── ab_results_registry.jsonl        <span style="color:var(--ink-4)"># 线上 AB 结果登记</span>
+├── training_registry.md             <span style="color:var(--ink-4)"># 训练任务登记</span>
+└── tos_registry.md                  <span style="color:var(--ink-4)"># 数据资产登记</span></pre>
+
         <p>定版实验工作台包含六个固定面：</p>
         <ul>
           <li><strong>路径固定</strong>：实验索引、实验阶段目录、脚本入口稳定。</li>
           <li><strong>数据固定</strong>：数据源、打分链路、奖励公式、线上实验口径都有唯一事实源。</li>
-          <li><strong>证据固定</strong>：原始证据保存样本、指标、脚本、日志、过程，不急着抽象。</li>
+          <li><strong>证据固定</strong>：原始证据先保存样本、指标、脚本、日志、过程，再进入抽象判断。</li>
           <li><strong>文档固定</strong>：阶段主文档回答一个实验阶段的逻辑链，可复用认知只在实验负责人点题后沉淀。</li>
           <li><strong>交接固定</strong>：跨 AI 会话、跨执行单元的接力靠文件化状态机，不靠聊天记录。</li>
           <li><strong>工具边界固定</strong>：每个可复用工具能力只做单一职责，不追求全生命周期自动化。</li>
         </ul>
 
+        <p>工作台还覆盖文档目录之外的事实入口。registry 在本文中指结构化登记表：训练任务、评测结果、线上实验 ID、主对照、源数据和结果文档都登记在固定位置。线上 AB 用固定 schema 和 AB registry，离线评测用固定 suite 和 eval registry，训练任务、训练数据、模型产物也单独登记。它们共同回答一个问题：下一轮 AI 或同事接手时，应该从哪里恢复事实，而不是从哪段聊天里猜。</p>
+
         <div class="callout"><p><em>不是给 AI 更多权限，而是给 AI 更明确的工作台。环境越稳定，AI 越能承担复杂任务。</em></p></div>
+
+        <p>有了这套工作台，AI 的参与可以稳定沉淀为四类协作能力：执行委派、搜索迭代、线上归因和认知沉淀。后文按这四类能力展开。</p>
       </div>
     </section>
 
@@ -234,7 +249,7 @@
     <section class="chapter" id="sec-4" data-screen-label="05 执行委派">
       <div class="chapter-head">
         <div class="num">§ 04</div>
-        <h2>能力一：把繁杂执行委派出去</h2>
+        <h2>AI 协作能力一：执行委派</h2>
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">AI 节省的是操作时间，但每一步结果必须落到原始证据，而不是直接产出结论。</div></div>
       <div class="prose">
@@ -242,7 +257,7 @@
         <div class="chips">
           <span class="chip">SQL 拉数</span><span class="chip">远端跑脚本</span><span class="chip">查任务状态</span><span class="chip">看日志报错</span><span class="chip">检查中间产物</span><span class="chip">字段覆盖核查</span><span class="chip">实验分层统计</span><span class="chip">原始事实归档</span><span class="chip">交接状态更新</span>
         </div>
-        <p>关键不是"AI 会写命令"，而是它能在稳定工作台里连续执行一组命令，并把结果放回证据链。</p>
+        <p>关键在于 AI 能在稳定工作台里连续执行一组命令，并把结果放回证据链。</p>
 
         <figure>
           <img src="assets/04_delegation.png" alt="执行委派" />
@@ -256,13 +271,13 @@
           <li><strong>线上实验下钻类</strong>：针对无意义 query 占比、字数分布、样本提问方式做指标下钻和切片分析。</li>
         </ul>
 
-        <p>一个典型场景是：让 AI 去远端拉一批线上切片数据，它的价值不只是写 SQL，而是把取数脚本、样本规模、字段覆盖、异常口径一起写回原始证据。这样负责人验收时看的不是"AI 的结论"，而是可复查的执行轨迹。</p>
+        <p>让 AI 去远端拉一批线上切片数据时，价值不只是写 SQL，而是把取数脚本、样本规模、字段覆盖、异常口径一起写回原始证据。这样负责人验收时看的不是"AI 的结论"，而是可复查的执行轨迹。</p>
 
         <p>这类能力节省的是操作时间，但不替代判断权。人仍然负责设定问题和验收边界，AI 负责执行、排查和证据整理。</p>
 
-        <blockquote>AI 最先带来的收益，是把我从繁杂操作中释放出来。但它必须把每一步结果落到原始证据，而不是直接产出结论。</blockquote>
+        <blockquote>AI 最先带来的收益，是把实验负责人从繁杂操作中释放出来。但它必须把每一步结果落到原始证据，而不是直接产出结论。</blockquote>
 
-        <p>工具能力只是"具备能力"。AI 要稳定串起多步执行，还需要搜索迭代工作流。</p>
+        <p>单点工具能力只能解决局部执行。AI 要稳定串起多步实验，还需要搜索迭代工作流。</p>
       </div>
     </section>
 
@@ -270,21 +285,23 @@
     <section class="chapter" id="sec-5" data-screen-label="06 方案搜索">
       <div class="chapter-head">
         <div class="num">§ 05</div>
-        <h2>能力二：用搜索迭代推进方案收敛</h2>
+        <h2>AI 协作能力二：搜索迭代</h2>
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">"搜索"不是搜索资料——它是把算法目标拆成候选方案，用同一套评价协议，逐轮证伪、修正、收敛。</div></div>
       <div class="prose">
-        <p>"搜索"不是搜索资料，也不是让 AI 随机想方案。它指的是：<strong>在正式训练或上线前，把一个算法目标拆成一组候选方案，通过离线搜索、消融和参数扫描，用同一套评价协议（evaluation protocol）逐轮排除、修正、收敛</strong>。</p>
-        <p>以回复形态优化为例，任务不是笼统地"让回复更短"或"让反馈更好"，而是回答一个更具体的问题：</p>
+        <p>本文里的"搜索"指：<strong>在正式训练或上线前，把一个算法目标拆成一组候选方案，通过离线搜索、消融和参数扫描，用同一套评价协议（evaluation protocol）逐轮排除、修正、收敛</strong>。</p>
+        <p>以回复形态优化为例，主问题可以定义为：</p>
         <blockquote>在当前候选池和评价口径下，哪一种奖励函数、重排策略或候选过滤策略，能把排序推向目标行为分布，同时不诱发 reward hacking / metric gaming？</blockquote>
-        <p>这个任务天然需要搜索，因为单个方案往往只解决一个局部问题：</p>
+        <p>这个问题需要搜索迭代，因为单点策略只能验证链路中的一层。几轮搜索连起来，才能定位瓶颈到底在候选池、reward 形状、训练迁移，还是评价协议。</p>
         <ul>
-          <li>只加长度惩罚，可能压短回复，但也可能放大短问句、模板化追问。</li>
-          <li>只提高偏好分权重，可能保住自然度，但压不住目标行为分布。</li>
-          <li>只做候选过滤，可能改善候选池，但不一定改变模型训练后的行为。</li>
-          <li>只看离线均值，可能漏掉分布尾部和 case 级退化。</li>
+          <li>长度惩罚验证长度压力能否改变回复形态，同时暴露短问句、模板化追问等副作用。</li>
+          <li>偏好分权重验证偏好信号能否保住自然度；目标行为分布压不住时，问题转向行为约束或样本结构。</li>
+          <li>候选过滤验证候选池是否存在足够多目标行为候选；训练后不迁移时，问题转向训练目标、数据分布或 reward 形状。</li>
+          <li>离线均值验证整体水位，case 和尾部分布验证是否出现局部退化。</li>
         </ul>
-        <p>所以每一轮搜索迭代都在回答一个小问题：当前假设是否成立；如果不成立，是评价协议错、奖励函数形状不对、候选池支撑不足，还是需要换一种方案。</p>
+        <p>搜索迭代的价值，是把大问题拆成一组可回答的小判断：当前瓶颈在哪一层，哪条路线已经被证伪，下一轮该补评价协议、改 reward 形状、换候选池，还是进入训练后复验或线上实验。</p>
+        <p>离线方案搜索能集中体现这套工作流。它不是一次简单地比较几个方案，而是多轮搜索迭代组成的假设搜索。其中，"主会话"负责定义问题和验收边界，"执行单元"负责跑数、查证据、产出原始材料；主会话再核查证据、修正判断并决定下一轮问题。</p>
+        <p>核心分工很简单：主会话负责问题定义和验收边界，执行单元负责原始证据，所有状态通过文件化接力进入下一轮。</p>
 
         <h3><span class="num">5.1</span><span>一次搜索迭代的标准动作</span></h3>
         <p>一次搜索迭代通常包含五步：</p>
@@ -292,7 +309,7 @@
           <li><strong>主会话出问题定义</strong>：本轮要搜索的方案空间、要回答的具体假设、需要的证据、判停 / 推进判据。</li>
           <li><strong>执行单元跑原始证据</strong>：每个执行单元负责一个子任务，产出独立文档，命名清楚迭代顺序和主题。</li>
           <li><strong>主会话对齐事实</strong>：核查原始证据里的关键数字、字段、路径和链路。</li>
-          <li><strong>错的不删，加纠错说明</strong>：如果发现幻觉或错误数据源，在原文档头部加纠错段，说明哪些错、哪些相对结论仍可读、下一轮该怎么补。</li>
+          <li><strong>错误留痕</strong>：如果发现幻觉或错误数据源，在原文档头部加纠错段，说明哪些错、哪些相对结论仍可读、下一轮该怎么补。</li>
           <li><strong>交接文档同步状态</strong>：把已完成、已决策、未决问题、纠错结论写回交接文档，作为下一轮入口。</li>
         </ol>
 
@@ -301,40 +318,62 @@
           <figcaption><span class="fnum">FIG 05a · WORKFLOW</span><span>问题定义和原始证据产出分离，错误留痕，状态接力——一次搜索迭代的标准动作。</span></figcaption>
         </figure>
 
-        <h3><span class="num">5.2</span><span>一个离线方案搜索样本</span></h3>
-        <p>这个样本展示了这套动作如何从"流程"变成连续的实验判断。原始证据文档留下了完整轨迹：</p>
-        <details class="fold" open><summary><span class="tag">R1</span><span class="ttl">第一轮：有没有基础可行性</span></summary><div class="fold-body">建立基线锚点，初跑几类候选方案，同时发现数据源误判。</div></details>
-        <details class="fold"><summary><span class="tag">R2</span><span class="ttl">第二轮：换到正确数据后哪些方案仍有信号</span></summary><div class="fold-body">切到真实候选级数据，补数据来源和覆盖率核查，重跑候选方案。</div></details>
-        <details class="fold"><summary><span class="tag">R3</span><span class="ttl">第三轮：reward hacking / 行为退化能否被约束</span></summary><div class="fold-body">补硬约束、长度处理和健全性检查，发现方案仍不收敛。</div></details>
-        <details class="fold"><summary><span class="tag">R4</span><span class="ttl">第四轮：失败归因到底是什么</span></summary><div class="fold-body">补分数分布、异常分数分析和参数扫描，证伪"候选池偏长"的旧归因。</div></details>
-        <details class="fold"><summary><span class="tag">P1</span><span class="ttl">训练后复盘：离线收敛能否迁移到训练后行为</span></summary><div class="fold-body">看模型输出形态、训练日志、同 case 对比和上线验收判据，形成最终复盘文档。</div></details>
+        <p>协议的核心不是"多执行单元并行架构"，而是<strong>复杂实验时的协作纪律</strong>：问题定义和原始证据产出分离，错误留痕，状态接力。</p>
 
-        <p>这批文档不是为了"显得过程完整"。它们让后来任何一个 AI 会话都能恢复：当时为什么这么判断、哪个数据源错了、哪个结论被证伪、下一轮为什么这么走。</p>
+        <h3><span class="num">5.2</span><span>多路线拆分：让候选路线能接力收敛</span></h3>
+        <p>多路线搜索的关键，是先把混在一起的目标拆成几条可独立验证的路线。每条路线只回答一个能力块的问题，主会话负责把路线状态接回同一轮判断。</p>
+        <ul>
+          <li>先把目标拆成几个能力块，而不是继续调一个全局权重。比如一条路线保内容能力，另一条路线保轻量交互和边界稳定。</li>
+          <li>每条路线只保留一个主假设和对应验收口径，避免同时解释多个能力变化。</li>
+          <li>执行单元只产出这条路线的原始证据，不顺手改写总判断。</li>
+          <li>每次跑完只往 registry 追加一行事实：候选是什么、证据目录在哪里、摘要指标是什么、当前读法是什么。</li>
+          <li>handoff 只同步当前候选、已证伪路线、在跑任务、未决问题和证据路径。</li>
+          <li>进入线上 AB 前，离线结论只用于候选筛选和风险解释，不提前写成效果结论。</li>
+        </ul>
+        <p>这些登记和交接的价值不在于形式完整，而在于让后续任何一个 AI 会话都能恢复：为什么这么判断、哪个候选被证伪、哪条路线还在跑、下一轮为什么这么走。路线拆开后，下一步是让路线之间可比较，这需要固定评测协议。</p>
 
         <figure>
-          <img src="assets/05_search.png" alt="多轮方案搜索的假设收敛" />
-          <figcaption><span class="fnum">FIG 05b · SEARCH</span><span>多轮证据出现后，AI 帮助证伪旧假设、生成下一轮更准确的问题。</span></figcaption>
+          <img src="assets/05_search.png" alt="搜索迭代：把大问题拆成可回答的小判断" />
+          <figcaption><span class="fnum">FIG 05b · SEARCH</span><span>AI 的价值不是一次给出最佳方案，而是在多轮证据出现后，帮助证伪上一轮假设，并生成下一轮更准确的问题。</span></figcaption>
         </figure>
 
-        <h3><span class="num">5.3</span><span>纠错样例：错误数据契约会生成错误归因</span></h3>
+        <h3><span class="num">5.3</span><span>固定 eval：让多路线比较成立</span></h3>
+        <p>方案搜索最怕每一轮换一套尺子。前一轮看离线均值，后一轮看 case，第三轮又换一个 judge，表面上一直在推进，实际上可能只是评价协议在漂移。</p>
+        <p>本文中的 fixed eval 指一套不随候选临时变化的离线评测协议：</p>
+        <ul>
+          <li>每个 suite 先写清楚样本、生成参数、judge、主指标和结论边界。</li>
+          <li>每次 eval 只登记摘要指标、结果目录、脚本和当前读法。</li>
+          <li>大结果保留在数据目录或服务器目录，文档只保留可追溯入口。</li>
+          <li>离线 eval 只用于候选筛选和风险解释，不替代线上 AB。</li>
+        </ul>
+        <p>fixed eval 对 AI 协作形成了直接约束：AI 可以跑评测、补登记、对比模型水位，但不能临时换指标来证明一个方案"看起来更好"。这相当于把一部分实验纪律外置到环境里。</p>
+
+        <h3><span class="num">5.4</span><span>数据契约纠错：先问数据能不能回答问题</span></h3>
         <p>关键风险是：<strong>AI 会把错误数据契约（data contract）整理成一份看起来很完整的报告</strong>。</p>
-        <p>当时的入口是一份 <code>pipeline.md</code> 追踪文档。它默认训练池可以直接用于候选方案排序：每条样本都有多条候选，也有逐候选打分。执行单元继承了这个前提，开始跑方案排序和模拟校准。问题是在执行中暴露的：本应能对齐的候选文本对不上，本应存在的逐候选分数也找不到。主会话没有继续接收报告结论，而是回到源文件核查，确认目标训练池只是训练样本，不是候选方案对比表。</p>
+        <p>某轮自动化搜索的入口是一份追踪文档。它默认训练池可以直接用于候选方案排序：每条样本都有多条候选，也有逐候选打分。执行单元继承了这个前提，开始跑方案排序和模拟校准。问题是在执行中暴露的：本应能对齐的候选文本对不上，本应存在的逐候选分数也找不到。主会话没有继续接收报告结论，而是回到源文件核查，确认目标训练池只是训练样本，不是候选方案对比表。</p>
         <p>因此，第一轮报告不能再作为决策依据。能保留的只有一部分方案间相对线索；覆盖率、交集规模、绝对指标和通过 / 驳回判断都要作废。处理方式不是删除原报告，而是文件化纠错：</p>
         <ol>
-          <li>写 <code>round1_data_correction.md</code>，说明错前提、真实数据结构和下一轮数据源。</li>
+          <li>写纠错文档，说明错前提、真实数据结构和下一轮数据源。</li>
           <li>在错误报告头部加纠错说明，把报告状态从"可用于决策"降级成"只保留相对线索"。</li>
-          <li>在 <code>pipeline.md</code> 和 handoff 里指向 correction 文档，让下一轮基于正确数据源重跑。</li>
+          <li>在追踪文档和 handoff 里指向纠错文档，让下一轮基于正确数据源重跑。</li>
         </ol>
         <p>这件事的可迁移经验是：AI 跑实验前，不只要检查代码能不能跑，还要<strong>检查数据是否真的支持这个问题</strong>。数据契约不成立时，报告越完整，误导性越强。</p>
 
-        <h3><span class="num">5.4</span><span>关键机制：文件化接力，而不是聊天接力</span></h3>
-        <p>工作流有效，不是因为执行单元永远正确，而是因为它把"下一轮怎么继续"落在文件里，而不是落在某一次聊天上下文里。文件化接力至少包含三类文件：</p>
+        <h3><span class="num">5.5</span><span>关键机制：文件化接力，而不是聊天接力</span></h3>
+        <p>工作流有效，不是因为执行单元永远正确，而是因为它把"下一轮怎么继续"落在文件里，而不是落在某一次聊天上下文里。</p>
+        <p>文件化接力至少包含三类文件：</p>
         <ul>
           <li><strong>原始证据文档</strong>：记录执行过程、数据路径、关键数字和样本，不急着抽象成结论。</li>
           <li><strong>纠错说明</strong>：直接写在错误文档头部，说明哪里错了、哪些相对结论还能读、哪些绝对数字不能再用。</li>
-          <li><strong>交接文档</strong>：同步已完成、已决策、未决问题和下一轮入口，让下一任执行单元不用从聊天记录里考古。</li>
+          <li><strong>交接文档</strong>：同步已完成、已决策、未决问题和下一轮入口，让下一任执行单元不用从聊天记录里恢复状态。</li>
         </ul>
-        <p>机制默认执行单元可能错，并把纠错设计进流程：问题定义和原始证据产出分离；事实核查显式化；错误留底；交接文档是状态机。</p>
+        <p>机制默认执行单元可能错，并把纠错设计进流程：</p>
+        <ul>
+          <li><strong>问题定义和原始证据产出分离</strong>：主会话负责方向和验收边界，执行单元负责执行和事实材料。</li>
+          <li><strong>事实核查显式化</strong>：路径、字段、覆盖率、样本口径都要回到源文件。</li>
+          <li><strong>错误留底</strong>：纠错说明比删除更有教育价值。</li>
+          <li><strong>交接文档是状态机</strong>：它不是工作日志，而是下一轮搜索迭代的入口。</li>
+        </ul>
 
         <div class="callout"><p><em>AI 协作能跑稳，不只是模型能力问题，更是文件化接力机制问题。</em></p></div>
       </div>
@@ -344,12 +383,12 @@
     <section class="chapter" id="sec-6" data-screen-label="07 线上归因">
       <div class="chapter-head">
         <div class="num">§ 06</div>
-        <h2>能力三：做线上归因，但不越界判定</h2>
+        <h2>AI 协作能力三：线上归因</h2>
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">AI 把线上复杂信号压成下一轮可证伪假设；但不替代线上实验的因果效果判定。</div></div>
       <div class="prose">
         <p>离线方案搜索解决的是候选方案收敛；线上归因解决的是另一个问题：复杂线上信号如何进入下一轮可证伪假设。</p>
-        <p>某个候选模型进入线上实验后，AI 帮我做了两天反馈率和点踩样本的阶段性观测。它适合 AI 处理，因为需要把很多维度串起来：</p>
+        <p>候选模型进入线上实验后，AI 适合承担阶段性观测、点踩样本下钻和归因材料整理。这类任务需要把很多维度串起来：</p>
         <ul>
           <li>线上正反馈、负反馈和流量分母。</li>
           <li>业务场景、用户角色、内容标签、长度桶等切片。</li>
@@ -367,17 +406,27 @@
           <figcaption><span class="fnum">FIG 06 · ATTRIBUTION</span><span>从线上指标到下一轮评价规则修订的归因路径。</span></figcaption>
         </figure>
 
+        <p>线上归因也需要固定机制，而不是每次临时让 AI 去读看板：</p>
+        <ul>
+          <li>固定主对照，避免 AI 继承平台默认对照组。</li>
+          <li>固定主指标和解释指标，避免用字数、轮次、反馈率替代最终效果。</li>
+          <li>固定活跃度、query 类型、case 下钻等解释维度，方便把线上变化转成下一轮假设。</li>
+          <li>每个线上实验登记证据文档、源数据、当前成熟度和读法边界。</li>
+        </ul>
+        <p>这些约束让跨会话归因口径保持一致，线上胜负仍由核心线上指标判定。</p>
+
         <p>线上归因需要先做指标拆解：</p>
-        <ol>
+        <ul>
           <li><strong>先看整体指标是否同向</strong>：正反馈、负反馈、样本量和流量分母要一起看，避免只盯一个上升或下降的指标。</li>
           <li><strong>再看结构变化来自哪里</strong>：按场景、用户类型、query 类型、长度桶等切片，找出变化是否集中在少数结构上。</li>
           <li><strong>再看模型行为怎么变了</strong>：回复长度、追问比例、语气符号、模板化表达、拒答 / 边界处理是否发生系统变化。</li>
-          <li><strong>最后回到同 query case</strong>：用同一个 query 下的基线组和实验组回复，检查统计变化对应的真实行为差异。</li>
-        </ol>
+          <li><strong>回到同 query case</strong>：用同一个 query 下的基线组和实验组回复，检查统计变化对应的真实行为差异。</li>
+        </ul>
 
-        <p>一个典型模式是：整体指标看不出单向结论，拆开后才发现变化集中在少数 query 类型。同 query case 进一步说明，实验组不是"整体更差"，而是在某些场景里多做了不必要的延展。这时下一轮要验证的就不是"是否回滚模型"，而是更具体的问题：能不能保留有效延展，同时限制特定场景下的多余延展。</p>
+        <p>线上归因经常会出现这种结构：整体指标看不出单向结论，拆开后才发现变化集中在少数 query 类型。同 query case 进一步说明，实验组不是"整体更差"，而是在某些场景里多做了不必要的延展。</p>
+        <p>这时下一轮要验证的就不是"是否直接回退模型"，而是更具体的问题：能不能保留有效延展，同时限制特定场景下的多余延展。</p>
 
-        <p>这样 AI 产出的不是线上结论，而是下一轮可检验的假设：哪些场景要收紧，哪些行为要保留，哪些指标要继续观察。边界很明确：AI 可以把线上复杂信号压成下一轮可证伪假设，但不能越界替代线上实验的因果效果判定。这条边界不是教条。线上实验存在的意义，就是防止我们把"离线看起来不错"误读成"线上一定会涨"。</p>
+        <p>这样 AI 产出的不是线上结论，而是下一轮可检验的假设：哪些场景要收紧，哪些行为要保留，哪些指标要继续观察。AI 可以把线上复杂信号压成下一轮可证伪假设，但不能越界替代线上实验的因果效果判定。</p>
       </div>
     </section>
 
@@ -385,7 +434,7 @@
     <section class="chapter" id="sec-7" data-screen-label="08 认知沉淀">
       <div class="chapter-head">
         <div class="num">§ 07</div>
-        <h2>能力四：把证据沉淀成可复用认知</h2>
+        <h2>AI 协作能力四：认知沉淀</h2>
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">三层文档解决信息密度问题；交接 / 历史归档 / 认知地图解决跨会话长程记忆。</div></div>
       <div class="prose">
@@ -405,7 +454,7 @@
           <div><h4>原则</h4><p>每一层回答不同问题。文档不是越多越好。</p></div>
         </div>
 
-        <p>在这条实验线里，下面三条是 L1 判断原则的例子。它们不是给所有实验照抄的结论，而是展示"证据如何沉淀成下一轮判断原则"：</p>
+        <p>实际实验可以沉淀出多类 L1 判断原则。它们不是通用结论模板，而是给下一轮实验提供判断边界：</p>
         <details class="fold" open><summary><span class="tag">L1·a</span><span class="ttl">离线偏好分不能当验收指标</span></summary><div class="fold-body">它可以做奖励分量或先验信号，但不能独立决定方案通过 / 驳回。最终仍要回到人工内容评审和线上指标。</div></details>
         <details class="fold"><summary><span class="tag">L1·b</span><span class="ttl">归因要干预验证</span></summary><div class="fold-body">归因观察只能提出假设，不能直接写成因果结论。真正的归因需要后续干预、消融或同 case 对照验证。</div></details>
         <details class="fold"><summary><span class="tag">L1·c</span><span class="ttl">reward shaping 有能力边界</span></summary><div class="fold-body">改奖励函数只能推动候选分布里已经存在、且奖励信号能看见的维度；推不动时，要改候选池、数据或评价信号。</div></details>
@@ -414,10 +463,12 @@
         <p>文档分层解决的是信息密度问题，但 AI 协作还有另一个矛盾：项目跨月、跨 AI 会话、跨执行单元，而模型上下文窗口总会丢。解法是文件化长程记忆，主要有三类：</p>
         <ol>
           <li><strong>交接文档</strong>：写当前状态、已完成、已决策、未决问题和纠错结论。它写给下一任执行单元看，不是业务汇报。</li>
-          <li><strong>历史归档</strong>：保存旧规划、旧稿和被替换但仍需追溯的材料。后面复盘"当时为什么这么选"时，它是证据来源。</li>
-          <li><strong>认知地图</strong>：记录一个阶段最高层的判断节点。它不是普通报告，而是后续实验对齐判断口径时的入口。</li>
+          <li><strong>历史归档</strong>：保存被替换的规划、草稿和仍需追溯的材料。追溯某个路线选择的原因时，它是证据来源。</li>
+          <li><strong>认知地图</strong>：记录一个阶段最高层的判断节点。它的定位是后续实验对齐判断口径时的入口。</li>
         </ol>
-        <p>这些文件的共同点是：<strong>不依赖聊天上下文，不依赖模型记忆，而是把关键状态落到文件系统里</strong>。这是 AI 工具能长期稳定参与实验的前提。没有文件化长程记忆，每次新 AI 会话都会从"我大概记得"开始；有了它，AI 才能从"请先读这些入口文件"开始。</p>
+        <p>前面提到的 registry 也是长程记忆的一种结构化形态。训练 registry 记录任务、数据和模型产物；eval registry 记录 fixed suite 的结果；AB registry 记录实验 ID、主对照、源数据和统一结果文档。它们不替代主文档，但能让 AI 恢复事实时少猜很多。</p>
+        <p>这些文件的共同点是：<strong>不依赖聊天上下文，不依赖模型记忆，而是把关键状态落到文件系统里</strong>。</p>
+        <p>这是 AI 工具能长期稳定参与实验的前提。没有文件化长程记忆，每次新 AI 会话都会从"我大概记得"开始；有了它，AI 才能从"请先读这些入口文件"开始。</p>
       </div>
     </section>
 
@@ -429,7 +480,7 @@
       </div>
       <div class="tldr"><div class="label">TL;DR</div><div class="body">框架不是为了证明 AI 可以自动做算法研究——它的边界很清楚。</div></div>
       <div class="prose">
-        <p>框架不是为了证明"AI 可以自动做算法研究"。它的边界很清楚。</p>
+        <p>这个框架的目标是让 AI 稳定参与算法迭代。它的边界很清楚。</p>
         <div class="dodont">
           <div class="yes"><h4>AI 适合做</h4><ul>
             <li>恢复上下文。</li>
