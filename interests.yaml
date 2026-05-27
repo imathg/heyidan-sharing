@@ -1,0 +1,142 @@
+# 雷达兴趣表 — heyidan-sharing 公开仓版（公开安全子集）。
+#
+# 这是 imathg/knowledge-base/compiler/interests.yaml 的公共子集：
+#   - 包含 domains / arxiv / rss_feeds / exclude
+#   - 不含 me / tech_shares / chrome_mcp（本地脚本用，含 ByteDance 内部标识）
+#
+# 编辑规则：
+#   - **canonical 是私有仓 knowledge-base/compiler/interests.yaml**
+#   - 本仓只跑 scripts/ingest_feeds_arxiv.py + scripts/ingest_feeds_rss.py（云端 routine）
+#   - 改 domains/keywords/feeds 后，在 bytedance-mac 上跑：
+#       python3 /Users/bytedance/knowledge-base/tools/sync_interests_to_public.py --apply
+#     把私有仓的对应段同步过来
+#   - 不要在本仓直接编辑这个文件（会被同步脚本覆盖）
+
+rss_feeds:
+- name: OpenAI Blog
+  url: https://openai.com/news/rss.xml
+  category: official
+- name: Google DeepMind Blog
+  url: https://deepmind.google/blog/rss.xml
+  category: official
+- name: Lilian Weng
+  url: https://lilianweng.github.io/index.xml
+  category: personal
+- name: Bounded Regret (Steinhardt)
+  url: https://bounded-regret.ghost.io/rss/
+  category: personal
+- name: Karpathy
+  url: https://karpathy.github.io/feed.xml
+  category: personal
+- name: Chip Huyen
+  url: https://huyenchip.com/feed.xml
+  category: personal
+- name: Sebastian Raschka
+  url: https://magazine.sebastianraschka.com/feed
+  category: personal
+arxiv:
+  categories:
+  - cs.LG
+  - cs.CL
+  - cs.AI
+  max_results_per_query: 30
+  watched_authors: []
+exclude:
+  title_patterns:
+  - (?i)\b(survey|tutorial)\b on benchmark
+  - (?i)apply now
+  - (?i)recruitment
+domains:
+- id: agentic-rl
+  aliases:
+  - agentic
+  - rl
+  - multi-turn
+  - long-horizon
+  keywords:
+  - GRPO
+  - Dr-GRPO
+  - Dr.GRPO
+  - CISPO
+  - DAPO
+  - GSPO
+  - on-policy distillation
+  - OPD
+  - long-horizon
+  - multi-turn alignment
+  - rule following
+  - verifier reward
+  - agentic RL
+  - agent RL
+  - tool-use RL
+  - ReMax
+- id: rubrics
+  aliases:
+  - rubric
+  - reward-model
+  - ranking
+  keywords:
+  - rubric
+  - reward model
+  - preference learning
+  - listwise ranking
+  - pairwise ranking
+  - Bradley-Terry
+- id: planner
+  aliases:
+  - planning
+  - goal-directed
+  keywords:
+  - goal-directed dialogue
+  - session goal
+  - dialogue planner
+  - dialogue planning
+  - conversation strategy
+- id: claude-code-ecosystem
+  aliases:
+  - claude-code
+  - agent-sdk
+  keywords:
+  - Claude Code
+  - agent SDK
+  - tool use
+  - MCP server
+  - subagent
+  - skill marketplace
+- id: research-methodology
+  aliases:
+  - research-meta
+  - de-risking
+  keywords:
+  - research methodology
+  - experimental design
+  - de-risking
+  - stochastic decision process
+- id: hf-alpha-factor
+  aliases:
+  - quant
+  - factor-mining
+  - alpha-factor
+  - fafm
+  - llm-mutate-factor
+  - personal-quant
+  keywords:
+  - high-frequency trading
+  - intraday
+  - tick-level
+  - limit order book
+  - market microstructure
+  - alpha factor
+  - formulaic alpha
+  - factor mining
+  - factor discovery
+  - symbolic regression
+  - evolutionary search
+  - Text2Alpha
+  - LLM for finance
+  - LLM-driven factor
+  - factor mutation
+  - commodity futures
+  - futures trading
+  - alpha decay
+  - Qlib
