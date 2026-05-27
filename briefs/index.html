@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>前沿 — Yidan He</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-card: #131922;
+  --bg-elev: #1a2230;
+  --border: #2a3441;
+  --border-soft: #1f2733;
+  --text: #e6edf3;
+  --text-secondary: #8b97a4;
+  --text-tertiary: #5d6875;
+  --accent: #5fd0c8;            /* shifted from main-site blue to muted teal */
+  --accent-dim: rgba(95,208,200,0.12);
+  --accent-deep: #3aa89f;
+  --grid: rgba(95,208,200,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', 'Songti SC', 'Noto Serif SC', serif;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
+  background-size: 24px 24px;
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  padding-top: 49px;
+}
+/* ---------- Top nav (shared) ---------- */
+.topnav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(13,17,23,0.88);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.topnav-inner {
+  max-width: 1180px; margin: 0 auto;
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+}
+.topnav-brand {
+  font-size: 14px; font-weight: 600;
+  color: var(--text); text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.topnav-links { display: flex; gap: 22px; font-size: 13px; align-items: center; }
+.topnav-links a {
+  color: var(--text-secondary); text-decoration: none;
+  transition: color .12s, border-color .12s;
+  padding-bottom: 2px; border-bottom: 2px solid transparent;
+}
+.topnav-links a:hover { color: var(--text); }
+.topnav-links a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.mono {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+}
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 28px 80px;
+}
+/* Top machine-character bar */
+.machine-bar {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  padding: 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 28px;
+  background: rgba(95,208,200,0.03);
+}
+.machine-bar .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 8px;
+  vertical-align: middle;
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+.machine-bar .sep { color: var(--border); margin: 0 8px; }
+
+.breadcrumb {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 36px;
+}
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-deep);
+}
+.breadcrumb a:hover { color: var(--text); border-color: var(--text); }
+
+header.section-head h1 {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+header.section-head h1 .slash {
+  color: var(--accent);
+  font-weight: 400;
+  margin-right: 6px;
+}
+header.section-head .intro {
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 64ch;
+  margin-bottom: 12px;
+}
+header.section-head .intro em {
+  color: var(--text);
+  font-style: italic;
+  background: linear-gradient(transparent 62%, var(--accent-dim) 62%);
+  padding: 0 2px;
+}
+header.section-head .meta-note {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.7;
+  margin-top: 12px;
+}
+header.section-head .meta-note span.k { color: var(--accent); }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  margin: 40px 0 28px;
+}
+.divider-label {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 36px 0 18px;
+}
+.divider-label::before, .divider-label::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Domain filter chips */
+.domain-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 22px;
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.domain-filter .chip {
+  padding: 5px 11px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color .12s, border-color .12s, background .12s;
+  user-select: none;
+}
+.domain-filter .chip:hover {
+  color: var(--text);
+  border-color: var(--accent-deep);
+}
+.domain-filter .chip.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.domain-filter .chip .count {
+  color: var(--text-tertiary);
+  margin-left: 5px;
+  font-size: 11px;
+}
+.domain-filter .chip.active .count { color: var(--accent-deep); }
+.brief-card[hidden] { display: none; }
+.brief-card .badge.domain {
+  color: var(--accent);
+  border-color: rgba(95,208,200,0.25);
+  background: rgba(95,208,200,0.06);
+}
+
+/* Brief cards */
+.brief-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.brief-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-deep);
+  border-radius: 4px;
+  padding: 20px 24px 22px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s, transform .12s, background .15s;
+  position: relative;
+}
+.brief-card:hover {
+  border-color: var(--border);
+  border-left-color: var(--accent);
+  background: var(--bg-elev);
+  transform: translateX(2px);
+}
+.brief-card .row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.brief-card .idx {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.brief-card h2 {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  flex: 1 1 100%;
+  margin-top: 4px;
+}
+.brief-card .desc {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+.brief-card .badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.brief-card .badge {
+  padding: 3px 8px;
+  background: rgba(95,208,200,0.06);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+}
+.brief-card .badge.sources { color: var(--accent); border-color: rgba(95,208,200,0.25); }
+.brief-card .badge.date { color: var(--text-secondary); }
+
+footer {
+  margin-top: 80px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-soft);
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { color: var(--text); }
+
+@media (max-width: 640px) {
+  .container { padding: 32px 18px 60px; }
+  header.section-head h1 { font-size: 26px; }
+  .brief-card { padding: 16px 18px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a class="topnav-brand" href="../">Yidan He</a>
+    <div class="topnav-links">
+      <a href="../">Home</a>
+      <a href="./" class="active">前沿</a>
+      <a href="../meta/">本站约定</a>
+      <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+<header class="section-head">
+  <h1><span class="slash">/</span>前沿</h1>
+</header>
+
+<div class="divider-label">filter · by domain</div>
+
+<div class="domain-filter" id="domain-filter">
+  <a class="chip active" data-domain="all" href="#all">All<span class="count" data-count-all></span></a>
+  <a class="chip" data-domain="agentic-rl" href="#agentic-rl">Agentic RL<span class="count" data-count-agentic-rl></span></a>
+  <a class="chip" data-domain="rubrics" href="#rubrics">Rubrics<span class="count" data-count-rubrics></span></a>
+  <a class="chip" data-domain="planner" href="#planner">Planner<span class="count" data-count-planner></span></a>
+  <a class="chip" data-domain="claude-code-ecosystem" href="#claude-code-ecosystem">Claude Code 生态<span class="count" data-count-claude-code-ecosystem></span></a>
+  <a class="chip" data-domain="research-methodology" href="#research-methodology">研究方法论<span class="count" data-count-research-methodology></span></a>
+  <a class="chip" data-domain="hf-alpha-factor" href="#hf-alpha-factor">因子研究<span class="count" data-count-hf-alpha-factor></span></a>
+</div>
+
+<div class="divider-label">index · <span id="visible-count">1</span> brief</div>
+
+<div class="brief-list" id="brief-list">
+
+  <a class="brief-card" href="on-policy-distillation/" data-domain="agentic-rl">
+    <div class="row1">
+      <span class="idx mono">B001 / 2026-05-27</span>
+    </div>
+    <h2>OPD：on-policy 数据是抗遗忘的真正承担者</h2>
+    <p class="desc">2026 上半年从 GKD / TML 博客一路走到 DeepSeek-V4 / MiMo-V2-Flash / SDAR / Uni-OPD / ROPD / Rethinking-OPD 的 on-policy distillation 主线综述。把 10+ 个方案归到 5 个正交 knob，给出几何视角 (RL's Razor) + token-level 机制 (97-99% overlap) + failure mode (伪收敛) + 选型直觉。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-05-27</span>
+      <span class="badge sources">12 sources</span>
+      <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
+  <!-- 后续 briefs 在这里追加 -->
+
+</div>
+
+<footer>
+  Source at <a href="https://github.com/imathg/heyidan-sharing">heyidan-sharing</a>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var filter = document.getElementById('domain-filter');
+  var list = document.getElementById('brief-list');
+  var visibleCount = document.getElementById('visible-count');
+  if (!filter || !list) return;
+  var cards = Array.prototype.slice.call(list.querySelectorAll('.brief-card'));
+  var chips = Array.prototype.slice.call(filter.querySelectorAll('.chip'));
+
+  // Compute per-domain counts
+  var counts = { all: cards.length };
+  cards.forEach(function (c) {
+    var d = c.getAttribute('data-domain') || 'unknown';
+    counts[d] = (counts[d] || 0) + 1;
+  });
+  chips.forEach(function (chip) {
+    var d = chip.getAttribute('data-domain');
+    var n = counts[d] || 0;
+    var span = chip.querySelector('.count');
+    if (span) span.textContent = ' · ' + n;
+  });
+
+  function applyFilter(domain) {
+    chips.forEach(function (c) {
+      c.classList.toggle('active', c.getAttribute('data-domain') === domain);
+    });
+    var shown = 0;
+    cards.forEach(function (card) {
+      var ok = (domain === 'all') || (card.getAttribute('data-domain') === domain);
+      card.hidden = !ok;
+      if (ok) shown++;
+    });
+    if (visibleCount) visibleCount.textContent = shown;
+  }
+
+  // Initial: read hash, default 'all'
+  var initial = (window.location.hash || '#all').slice(1);
+  if (!counts.hasOwnProperty(initial)) initial = 'all';
+  applyFilter(initial);
+
+  filter.addEventListener('click', function (e) {
+    var t = e.target.closest('.chip');
+    if (!t) return;
+    e.preventDefault();
+    var d = t.getAttribute('data-domain');
+    history.replaceState(null, '', '#' + d);
+    applyFilter(d);
+  });
+})();
+</script>
+
+</body>
+</html>
