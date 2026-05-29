@@ -2,15 +2,15 @@
 
 <!-- domain: agentic-rl -->
 
-[DeepSeek-V4](#ref-deepseek-v4)（DeepSeek，2026-04 发布）在 post-training 里完全砍掉 mixed RL，用 pure multi-teacher On-Policy Distillation 做最终 consolidation；[MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，tech report 报告以 1/3 总参数对齐 Kimi-K2-Thinking；[SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
+`[tech report]` [DeepSeek-V4](#ref-deepseek-v4)（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。`[tech report]` [MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，tech report 报告以 1/3 总参数对齐 Kimi-K2-Thinking。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
 
-这条线半年内从"另一种 post-training 选项"变成 frontier model 的标配步骤，但多数介绍把因果讲反了。**本文的核心论点：OPD 的关键不在 teacher 给的 token-level 监督，关键在数据是 student 自己 rollout 出来的**。teacher 可以替换、可以退化、甚至可以是 student 自己；on-policy data 一旦失去，整条机制就退化为带噪声的 SFT。
+`[本文归纳]` 这条线半年内从"另一种 post-training 选项"变成 frontier model consolidation 的常用组件。**本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment**。teacher 可以替换、可以退化、甚至可以是 student 自己；on-policy data 一旦失去，整条机制就退化为带噪声的 SFT。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
 ## Minimal Code Editing 实验
 
-`[个人实验]` 出处：[@nrehiew_](#ref-nrehiew2026) 在 X 长文里设计的私人任务"Minimal Code Editing"——给定 buggy function，只修 bug、不动其他代码。他先训两个 teacher：
+`[个人实验]` 出处：[@nrehiew_](#ref-nrehiew2026) 在 X 长文里设计的私人任务"Minimal Code Editing"：给定 buggy function，目标是只修 bug，并尽量少改其他代码。他先训两个 teacher：
 
 | Teacher  | 任务表现 | 通用代码 benchmark (LiveCodeBench) |
 |----------|----------|-------------------|
@@ -44,7 +44,7 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | RL   | 当前模型 induced |
 | OPD  | 当前模型 induced（student 端） |
 
-`[本文归纳]` OPD 的 anti-forgetting 来自这条几何约束的继承。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化时，退化体现在 teacher 自己 rollout 的分布上，student 跑的不是 teacher 的分布。
+`[本文归纳]` OPD 的 anti-forgetting 来自这条几何约束的继承。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。
 
 ## Token 视角：高概率交集承担学习
 
@@ -72,7 +72,7 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 
 ## 伪收敛的微观签名
 
-`[论文]` [Rethinking OPD](#ref-li2026) 的 failure mode 分析：per-token reverse-KL 持续下降、loss 看起来在收敛、downstream 不提升。机制是 reverse-KL 可以在很多形态下数值下降——student 把概率从一个错误的非 teacher token 挪到另一个错误的非 teacher token 上，per-token loss 仍然降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。
+`[论文]` [Rethinking OPD](#ref-li2026) 的 failure mode 分析：per-token reverse-KL 持续下降、loss 看起来在收敛、downstream 不提升。机制是 reverse-KL 可以在很多形态下数值下降：student 把概率从一个错误的非 teacher token 挪到另一个错误的非 teacher token 上，per-token loss 仍然降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。
 
 监控诊断表（沿用 [Rethinking OPD](#ref-li2026) 的 R1-Distill 配置阈值）：
 
@@ -93,9 +93,9 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | K2   | 每个 state 上给多少 token 的监督 | sampled-token / top-k / full-vocab |
 | K3   | teacher 信号的源 | teacher logits / OPSD self+answer / ROPD rubric |
 | K4   | 什么时候相信 teacher | 直接接受 / Uni-OPD margin calibration / SDAR sigmoid gate |
-| K5   | OPD 在 pipeline 里的位置 | 替换 mixed RL / 与 RL 融合 / RL 的 gated 辅助 |
+| K5   | OPD 在 pipeline 里的位置 | domain experts 后 consolidation / 与 RL 融合 / RL 的 gated 辅助 |
 
-下面每个 knob 取值的具体设计来自外部源。
+这五个 knob 的取值分别对应外部源中的具体设计。
 
 **K1（state coverage）**。默认 student rollout 是 OPD 的标准设定。`[论文]` [Uni-OPD](#ref-hou2026)（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问"既不全对也不全错"的 informative state，避免 dense token signal 浪费在饱和或全错的 state 上。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）反向走，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己跑不到的区域，再压回 student 权重。
 
@@ -107,15 +107,15 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | top-k         | 截断到 teacher top-k 上的 reverse-KL | 中等 | `[论文]` [Revisiting OPD](#ref-fu2026)（CASIA SKL-MAIS + UCAS，Fu et al. 2026），自报在长 prefix 上 +19.8% 优于 sampled-token baseline |
 | full-vocab    | 零方差、零偏差 | 贵：teacher logits 要 FP4 量化 + hidden state cache 才装得下 10+ specialist | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) |
 
-**K3（signal source）**。经典 OPD 用 teacher logits（[GKD](#ref-gkd) 范式）。OPSD（On-Policy Self-Distillation）让 teacher 和 student 共享同一份权重，差别只在 teacher 多看了一份 ground-truth answer 作为 prompt 上下文。`[个人实验]` [@nrehiew_](#ref-nrehiew2026) 把这条范式概括为"蒸馏的本质是信息差，不是参数量差"。`[论文]` [ROPD](#ref-fang2026)（中科大 + 腾讯，Fang et al. 2026）走得更远：teacher 只给文本答案，rubricator 生成 prompt-specific 的语义评判标准，verifier 用 rubric 给 rollout 打分作为 GRPO-style reward。论文自报 ~10× sample efficiency，黑盒 teacher 也支持。
+**K3（signal source）**。经典 OPD 用 teacher logits（[GKD](#ref-gkd) 范式）。OPSD（On-Policy Self-Distillation）让 teacher 和 student 共享同一份权重，差别只在 teacher 多看了一份 ground-truth answer 作为 prompt 上下文。`[个人实验]` [@nrehiew_](#ref-nrehiew2026) 把 OPSD 的关键写成 teacher 与 student 之间的信息差：teacher 多拿一份答案上下文，参数量可以保持一致。`[论文]` [ROPD](#ref-fang2026)（中科大 + 腾讯，Fang et al. 2026）走得更远：teacher 只给文本答案，rubricator 生成 prompt-specific 的语义评判标准，verifier 用 rubric 给 rollout 打分作为 GRPO-style reward。论文自报 ~10× sample efficiency，黑盒 teacher 也支持。
 
-**K4（signal acceptance）**。`[论文]` [Uni-OPD](#ref-hou2026) 的 outcome-guided margin calibration 强行恢复"正确轨迹的 OPD return > 错误轨迹"这个顺序约束。`[论文]` [SDAR](#ref-sdar) 的 sigmoid gate `g_t = σ(β · sg(Δ_t))` 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap **多数情况为负**——privileged context 把 teacher 分布拉偏到了 student 跑不到的区域；只接受正 gap 等于做 overlap 对齐检测。
+**K4（signal acceptance）**。`[论文]` [Uni-OPD](#ref-hou2026) 的 outcome-guided margin calibration 强行恢复"正确轨迹的 OPD return > 错误轨迹"这个顺序约束。`[论文]` [SDAR](#ref-sdar) 的 sigmoid gate `g_t = σ(β · sg(Δ_t))` 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap **多数情况为负**；privileged context 把 teacher 分布拉偏到了 student 跑不到的区域，只接受正 gap 等于做 overlap 对齐检测。
 
 **K5（pipeline position）**。三种和 RL 共处的姿态：
 
 | 取值 | 代表方案 | 设计动机 |
 |------|---------|---------|
-| 替换 mixed RL | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) pure full-vocab MOPD | multi-domain RLVR 有 see-saw 问题，把 reward interference 从 RL 阶段挪到 distillation 阶段；dense token signal 在 credit assignment 上比 sparse outcome reward 稳定 |
+| domain experts 后 consolidation | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) on-policy distillation consolidation | 先用 SFT / GRPO 独立培养 domain experts，再用 OPD 把不同 domain 的能力合并进单一模型 |
 | 与 RL 融合    | `[tech report]` [MiMo-V2-Flash](#ref-mimo) MOPD | dense token reverse-KL 和 sparse outcome reward 双轨叠加 |
 | RL 的 gated 辅助 | `[论文]` [SDAR](#ref-sdar) | 主干仍是 GRPO，OPSD 仅在 gate 通过时贡献梯度；自报 ALFWorld +9.4%、WebShop +10.2%、Search-QA +7.0% |
 
@@ -130,15 +130,15 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 1. **informative state 的结构化定义**。[Uni-OPD](#ref-hou2026) 用难度做代理（不全对也不全错），是经验启发式；RL 框架里它对应 group advantage variance > 0；OPD 框架里应该有一个更准的描述。这两个写法对应同一个量吗？
 2. **KL-tradeoff Pareto frontier 的可操作化**。把每种 post-training 方法画在 "capability gain vs KL move" 平面上目前是 conceptual layer。手头能拿到的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。
 
-`[本文归纳]` 对手里已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式打开了一条额外路径——这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。**"没有更大的白盒对话 teacher" 这个长期约束因此从硬约束变成可绕过的工程问题**。
+`[本文归纳]` 对手里已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式打开了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。**白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束**。
 
 ## Reference
 
 <a id="ref-nrehiew2026"></a>
-**[On-Policy Distillation: A Distributional Lens]** [@nrehiew_](https://x.com/nrehiew_) 个人 X 长文 / Substack 长文，2026-05-10。本文 "Minimal Code Editing" 实验、"蒸馏本质是信息差" 的命题来自这里。`[个人实验 / X 长文]`
+**[SFT, RL, and On-Policy Distillation Through a Distributional Lens]** [@nrehiew_](https://nrehiew.github.io/blog/sft_rl_opd) 个人 X 长文 / 博客长文，2026-05-10。本文 "Minimal Code Editing" 实验和 OPSD 信息差命题来自这里。`[个人实验 / X 长文]`
 
 <a id="ref-deepseek-v4"></a>
-**[DeepSeek-V4]** DeepSeek，2026-04 发布。post-training 中用 pure multi-teacher full-vocab OPD 替换 mixed RL。来源：团队内部 OPD 论文调研 wiki + 业界转述。`[tech report / 业界转述，无 arxiv 论文]`
+**[DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence]** DeepSeek-AI，2026. [technical report](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf)。本文用到它的两阶段 post-training：先通过 SFT 和 GRPO 独立培养 domain experts，再通过 on-policy distillation 做统一 consolidation。`[tech report]`
 
 <a id="ref-mimo"></a>
 **[MiMo-V2-Flash Technical Report]** Xiaomi LLM-Core，2026. [arXiv:2601.02780](https://arxiv.org/abs/2601.02780)。309B 总 / 15B active MoE；MOPD merging（per-token reverse-KL + verifier outcome reward 双轨）。`[tech report]`
