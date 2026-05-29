@@ -2,7 +2,7 @@
 
 <!-- domain: agentic-rl -->
 
-`[本文归纳]` 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。更稳的读法是把名字压回一个问题：**更新信号到底被谁承载、在哪里归一化、和什么参照系比较**。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
+`[本文归纳]` 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以压回一个问题：**更新信号到底被谁承载、在哪里归一化、和什么参照系比较**。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -46,7 +46,7 @@
 
 `[论文]` [DAPO](#ref-yu2025)（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）是最好的入门切面，因为它在同一篇系统报告里把多个旋钮放进 ablation：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表本身说明：GRPO 更像一套可以局部替换的 update-signal 管线。
 
-`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 把另一个旋钮暴露出来：Cursor Composer 2 技术报告里的改法被概括为去掉 group std normalization 和 response length normalization。这个点不够形成一篇论文结论，但足够提醒读者：很多“新 GRPO”的主要动作落在 A1。
+`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 把另一个旋钮暴露出来：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不够形成一篇论文结论，但足够提醒读者：很多“新 GRPO”的主要动作落在 A1。
 
 ## BPPO 是最干净的 A4 案例
 

@@ -478,7 +478,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
-<p><span class="claim claim-self">本文归纳</span> 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。更稳的读法是把名字压回一个问题：<strong>更新信号到底被谁承载、在哪里归一化、和什么参照系比较</strong>。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。</p>
+<p><span class="claim claim-self">本文归纳</span> 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以压回一个问题：<strong>更新信号到底被谁承载、在哪里归一化、和什么参照系比较</strong>。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -552,7 +552,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-yu2025">DAPO</a>（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）是最好的入门切面，因为它在同一篇系统报告里把多个旋钮放进 ablation：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表本身说明：GRPO 更像一套可以局部替换的 update-signal 管线。</p>
-<p><span class="claim claim-tech">tech report</span> <a href="#ref-drgrpo">Dr-GRPO pin</a> 把另一个旋钮暴露出来：Cursor Composer 2 技术报告里的改法被概括为去掉 group std normalization 和 response length normalization。这个点不够形成一篇论文结论，但足够提醒读者：很多“新 GRPO”的主要动作落在 A1。</p>
+<p><span class="claim claim-tech">tech report</span> <a href="#ref-drgrpo">Dr-GRPO pin</a> 把另一个旋钮暴露出来：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不够形成一篇论文结论，但足够提醒读者：很多“新 GRPO”的主要动作落在 A1。</p>
 <h2 id="bppo-是最干净的-a4-案例">BPPO 是最干净的 A4 案例</h2>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a>（TeleAI + 上海交通大学，Zhao et al. 2026）问的问题很窄：同一个 prompt group 里，是不是每条 completion 都提供同等有用的更新信号。它的 gradient-similarity 分析给出答案：same-class completions 的方向高度相似，correct-incorrect pair 更能提供区分信号。于是 BPPO 只拿最短 correct completion 和最短 incorrect completion 做 compact update unit，并且只更新 prefix。</p>
 <p><span class="claim claim-paper">论文</span> 这个设计的价值在于独立性。<a href="#ref-zhao2026">BPPO</a> 明确保留 full-group sampling、reward 和 group-relative advantage normalization，只改 update 作用在哪里。MATH setup 下，BPPO 报告 mean response length 降低 50.6%，训练 wall-clock speedup 到 6.08x；abstract 把 30-50% 长度下降放在 prefix-focused optimization 这条路径上。BPPO 的核心旋钮是 A4：<strong>谁承载更新信号</strong>。</p>
