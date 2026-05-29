@@ -478,7 +478,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
-<p><span class="claim claim-self">本文归纳</span> 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。更稳的读法是把名字压回一个问题：<strong>更新信号到底被谁承载、在哪里归一化、和什么参照系比较</strong>。</p>
+<p><span class="claim claim-self">本文归纳</span> 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。更稳的读法是把名字压回一个问题：<strong>更新信号到底被谁承载、在哪里归一化、和什么参照系比较</strong>。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -569,10 +569,46 @@ footer.brief-foot a:hover { color: var(--text); }
 <h2 id="baseline-value-source-是第三条主线">baseline/value source 是第三条主线</h2>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-remax">ReMax 背后的故事</a> 回到更早的 baseline 选择：ReMax 用 greedy decoding response 当 baseline，是为了解耦“采样随机性到 response”的偏差，也和当时 rollout 基础设施昂贵有关。到 GRPO，baseline 变成同 prompt group 的相对比较；到 CARL，value source 变成 segment-level critic。</p>
 <p><span class="claim claim-self">本文归纳</span> 所以 A3 不能被 A1 吸收。normalization scale 问的是 advantage 怎么缩放，baseline/value source 问的是 advantage 和什么参照系比较。group mean、greedy response、segment critic 会带来不同方差、不同 bias，也会把 credit 的可解释边界推向不同位置。</p>
+<h2 id="退化角-小-group-会让-a1-a3-a4-数值重合">退化角：小 group 会让 A1 / A3 / A4 数值重合</h2>
+<p><span class="claim claim-self">本文归纳</span> group size 不是普通 batch 超参。GRPO 的“relative”来自同 prompt group 内的对比；当有效 group 变小，A1 normalization、A3 baseline、A4 update carrier 会一起退化。极端到 <code>G = 1</code> 时，group mean 不再提供相对参照，std normalization 失去稳定意义，full-group update carrier 也只剩一个样本。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a> 的 clean case 之所以干净，是因为它保留 full-group advantage normalization，只把 carrier 换成最短 correct / incorrect prefix。<span class="claim claim-tech">tech report</span> <a href="#ref-drgrpo">Dr-GRPO pin</a> 之所以值得单独标出来，是因为它直接碰 A1：去掉 group std normalization 和 response length normalization。两者放在一起看，能解释这个退化角：当 group 的相对比较变弱，baseline、normalization、carrier 不再像五轴表里那样清楚分离。</p>
+<table>
+<thead>
+<tr>
+<th>边界条件</th>
+<th>A1</th>
+<th>A3</th>
+<th>A4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正常 group</td>
+<td>advantage 可缩放</td>
+<td>group mean / critic</td>
+<td>多样本、多 token</td>
+</tr>
+<tr>
+<td>小 group / 单一 completion</td>
+<td>std 不稳或被移除</td>
+<td>group mean 变弱</td>
+<td>carrier 近单样本</td>
+</tr>
+<tr>
+<td>agentic segment</td>
+<td>按 state / segment 重定</td>
+<td>critic 更自然</td>
+<td>key 迁到 state / branch / segment</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> 这就是“边界上耦合”的硬含义。五轴表适合读算法差异；退化角提醒工程实现时别把轴当完全正交。一个方案如果同时调 group size、去标准化、换 carrier，看起来是三项改动，实际可能是在修同一个退化点。</p>
 <h2 id="伪轴的判据-独立性和干净性">伪轴的判据：独立性和干净性</h2>
-<p><span class="claim claim-self">本文归纳</span> “伪轴”不是说某个改法没用，而是说它暂时不能作为设计空间里的独立坐标。判据有两个：第一，独立改它时应该有明确可观测量；第二，固定其他轴时它还能产生可分辨效果。BPPO 通过了这个测试。DAPO 的 Clip-Higher 大致通过。overlong shaping、length penalty、entropy trigger 这类改法通常更像 pressure routing，常常同时牵动 A2、A4、A5。</p>
+<p><span class="claim claim-self">本文归纳</span> “伪轴”不是说某个改法没用，而是说它暂时不能作为设计空间里的独立坐标。这里有两种不同的 disqualification，必须拆开看。</p>
+<p><span class="claim claim-self">本文归纳</span> 第一关是<strong>独立性</strong>：它是不是能被已有轴张成。BPPO 通过这关，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有把“长度”当独立旋钮直接优化，所以“长度”在这里更像 A4 的副产物，不是新轴。</p>
+<p><span class="claim claim-self">本文归纳</span> 第二关是<strong>干净性</strong>：效果有没有被转嫁。一个改法可以独立，却仍然不干净；它压住目标 proxy 的同时，可能把优化压力推到相邻 proxy。overlong shaping、length penalty、entropy trigger 这类改法常常落在这里。它们可能有效，但需要同时监控长度、正确率、entropy、tool-use rate 或其他相邻指标，才能证明不是把压力从一个洞口挤到另一个洞口。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a> 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着“长度”不天然是一条独立轴。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。</p>
-<p><span class="claim claim-self">本文归纳</span> 更实用的读法是：看到一个 GRPO 新名词，先不要问“它是哪篇论文的新算法”，先填这张表。如果某个名字只能填进一个格子，它是局部旋钮；如果它跨多个格子，需要看 ablation 是否能把格子拆开；如果它填不进表，才值得考虑是不是新的轴。</p>
+<p><span class="claim claim-self">本文归纳</span> 更实用的读法是：看到一个 GRPO 新名词，先不要问“它是哪篇论文的新算法”，先填这张表。如果某个名字只能填进一个格子，它是局部旋钮；如果它跨多个格子，需要看 ablation 是否能把格子拆开；如果它通过独立性但过不了干净性，就把它写成 pressure routing，而不是新轴。</p>
 <table>
 <thead>
 <tr>
@@ -603,13 +639,52 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
+<h2 id="工程读法-论文名和实践配置落在同一张轴表">工程读法：论文名和实践配置落在同一张轴表</h2>
+<p><span class="claim claim-self">本文归纳</span> 论文名适合检索，配置名适合落地，两者不该分成两套语言。工程上遇到训练症状时，先填轴表，再决定读哪篇论文。</p>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>先查的轴</th>
+<th>对应读法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>长 CoT 不长、探索词起不来</td>
+<td>A2 + A1</td>
+<td>看 Clip-Higher、CISPO、去 std / length normalization</td>
+</tr>
+<tr>
+<td>token 开销大、response 变啰嗦</td>
+<td>A4</td>
+<td>看 BPPO 的 prefix carrier，而不是先加 length penalty</td>
+</tr>
+<tr>
+<td>tool call 太多且 easy question 也调用</td>
+<td>A4 + A5</td>
+<td>看 CARL 的 segment boundary 和 competence critic</td>
+</tr>
+<tr>
+<td>方差大、同组 advantage 不稳</td>
+<td>A1 + A3</td>
+<td>区分 normalization 问题和 baseline/value source 问题</td>
+</tr>
+<tr>
+<td>reward shaping 看起来生效但副作用变多</td>
+<td>A5 的干净性</td>
+<td>查相邻 proxy 是否承接了优化压力</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> 这样读，Dr-GRPO / DAPO / CISPO / BPPO / CARL / ReMax 不再是六个并列名字，而是同一组旋钮的不同取值。新论文如果只改一个旋钮，就按该轴吸收；如果同时改多个旋钮，就先要求拆 ablation；如果声称开了新轴，就要求给出独立性和干净性证据。</p>
 <h2 id="可证伪问题">可证伪问题</h2>
 <p><span class="claim claim-self">本文归纳</span> 这篇 brief 的主结论可以被三类实验推翻。第一，如果有主流 GRPO 变体无法映射到 A1-A5 任意一轴，五轴表不完备。第二，如果 BPPO 的收益在 random pair 或 same-class pair 上同样成立，A4 的 correct/incorrect contrast 解释就弱。第三，如果 CARL 的 segment critic 被 token-level PPO 完全追平，agentic 场景里“边界对齐 credit”就不是主因。</p>
 <p><span class="claim claim-self">本文归纳</span> 在这些反例出现前，把 GRPO 变体当成五个 update-signal 旋钮，比按论文名堆列表更有操作性：要省 token，先看 A4；要修长 CoT 探索，先看 A2 和 A1；要做 tool-use agent，先看 A4/A5 的 state 或 segment 边界；要解释方差和 bias，先看 A3。</p>
 <h2 id="reference">Reference</h2>
 <ol class="ref-list">
 
-<li><a id="ref-yu2025"></a> <strong>[DAPO: An Open-Source LLM Reinforcement Learning System at Scale]</strong> Qiying Yu et al.，ByteDance Seed / Institute for AI Industry Research (AIR), Tsinghua University / The University of Hong Kong / SIA-Lab，2025. <a href="https://dapo-sia.github.io/">Project</a>。本文用它定位 GRPO baseline、Clip-Higher、Dynamic Sampling、token-level loss 和 overlong shaping。<span class="claim claim-paper">论文</span></li>
+<li><a id="ref-yu2025"></a> <strong>[DAPO: An Open-Source LLM Reinforcement Learning System at Scale]</strong> Qiying Yu et al.，ByteDance Seed / Institute for AI Industry Research (AIR), Tsinghua University / The University of Hong Kong / SIA-Lab，2025. <a href="https://arxiv.org/abs/2503.14476">arXiv:2503.14476</a> / <a href="https://dapo-sia.github.io/">Project</a>。本文用它定位 GRPO baseline、Clip-Higher、Dynamic Sampling、token-level loss 和 overlong shaping。<span class="claim claim-paper">论文</span></li>
 
 <li><a id="ref-zhao2026"></a> <strong>[BPPO: Binary Prefix Policy Optimization for Efficient GRPO-Style Reasoning RL with Concise Responses]</strong> Qingfei Zhao, Huan Song, Shuyu Tian, Jiawei Shao, Xuelong Li，TeleAI / Shanghai Jiao Tong University，2026. <a href="https://arxiv.org/abs/2605.28028">arXiv:2605.28028</a>。本文用它作为 update carrier 轴的 clean case。<span class="claim claim-paper">论文</span></li>
 
@@ -619,7 +694,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
 <li><a id="ref-cispo"></a> <strong>[CISPO 的发现过程]</strong> 炼熵师（前 MiniMax），知乎长文，2026. <a href="https://zhuanlan.zhihu.com/p/1962307894105048283">Zhihu</a>。本文用它说明 off-policy clipping 对 long-CoT response length 的压力。<span class="claim claim-tech">tech report</span></li>
 
-<li><a id="ref-drgrpo"></a> <strong>[Composer 2 技术报告里的 Dr-GRPO 去标准化]</strong> 香港市民董先生，知乎想法，2026. <a href="https://www.zhihu.com/pin/2029888667460822187">Zhihu pin</a>。本文用它标注 group std normalization 和 response length normalization 这条设计轴。<span class="claim claim-tech">tech report</span></li>
+<li><a id="ref-drgrpo"></a> <strong>[Composer 2 技术报告里的 Dr-GRPO 去标准化]</strong> 香港市民董先生（知乎 handle，本文不映射真实姓名），知乎想法，2026. <a href="https://www.zhihu.com/pin/2029888667460822187">Zhihu pin</a>。本文用它标注 group std normalization 和 response length normalization 这条设计轴。<span class="claim claim-tech">tech report</span></li>
 
 <li><a id="ref-remax"></a> <strong>[ReMax 背后的故事]</strong> 李子牛，知乎长文，2026. <a href="https://zhuanlan.zhihu.com/p/1963218041199387877">Zhihu</a>。本文用它说明 greedy decoding baseline 的历史动机。<span class="claim claim-tech">tech report</span></li>
 
