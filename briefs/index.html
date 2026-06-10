@@ -326,7 +326,7 @@ footer a:hover { color: var(--text); }
   <a class="chip" data-domain="hf-alpha-factor" href="#hf-alpha-factor">因子研究<span class="count" data-count-hf-alpha-factor></span></a>
 </div>
 
-<div class="divider-label">index · <span id="visible-count">2</span> briefs</div>
+<div class="divider-label">index · <span id="visible-count">4</span> briefs</div>
 
 <div class="brief-list" id="brief-list">
 
@@ -353,6 +353,32 @@ footer a:hover { color: var(--text); }
       <span class="badge date">2026-05-29</span>
       <span class="badge sources">7 sources</span>
       <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="dvao-multireward/" data-domain="agentic-rl">
+    <div class="row1">
+      <span class="idx mono">B003 / 2026-06-11</span>
+    </div>
+    <h2>DVAO：多目标 RL 里按方差自适应的优势组合</h2>
+    <p class="desc">GRPO 下多个冲突奖励（准确率 vs 长度、正确性 vs JSON 格式）标量化时，奖励相加 (RC) 幅值爆炸、独立优势组合 (AC/GDPO) 目标孤立甚至塌陷到易满分目标。DVAO（arXiv:2605.25604）用 rollout 组内经验方差动态加权，Prop 2 有界、Prop 3 隐式交叉正则，实验里双赢且支配帕累托前沿。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-06-11</span>
+      <span class="badge sources">2 sources</span>
+      <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="alphabench-llm-factor/" data-domain="hf-alpha-factor">
+    <div class="row1">
+      <span class="idx mono">B004 / 2026-06-11</span>
+    </div>
+    <h2>AlphaBench：LLM 做公式化因子挖掘，到底卡在哪一环</h2>
+    <p class="desc">首个面向公式化 alpha 因子挖掘 (FAFM) 的 LLM 基准（CSI300 + Qlib 闭环）。核心警示：零样本下没有任何 LLM 能稳定判别因子优劣（≈掷硬币，因公式省略执行上下文是欠定问题）；但 pairwise 成对选择 SFT 极有效且跨市场泛化（GPT-4.1-Mini 0.44→0.83，SP500 仍 0.64）。EA 当变异算子最优。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-06-11</span>
+      <span class="badge sources">2 sources</span>
+      <span class="badge domain">hf-alpha-factor</span>
     </div>
   </a>
 
