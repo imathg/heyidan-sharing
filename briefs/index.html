@@ -276,6 +276,76 @@ header.section-head .meta-note span.k { color: var(--accent); }
 .brief-card .badge.sources { color: var(--accent); border-color: rgba(95,208,200,0.25); }
 .brief-card .badge.date { color: var(--text-secondary); }
 
+/* View tabs (全部 / 精选) + edit-featured */
+.view-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  margin: 14px 0 4px;
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+}
+.view-tabs { display: flex; gap: 8px; }
+.view-tab {
+  font: inherit; font-size: 13px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 16px; cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+.view-tab:hover { color: var(--text); border-color: var(--accent-deep); }
+.view-tab.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+.view-tab .vc { color: var(--text-tertiary); font-size: 11px; margin-left: 3px; }
+.view-tab.active .vc { color: var(--accent-deep); }
+.edit-toggle {
+  font: inherit; font-size: 12px;
+  padding: 5px 12px;
+  border: 1px dashed var(--border); background: transparent;
+  color: var(--text-tertiary); border-radius: 14px; cursor: pointer;
+  transition: color .12s, border-color .12s;
+}
+.edit-toggle:hover { color: var(--text-secondary); border-color: var(--accent-deep); }
+body.editing .edit-toggle { color: var(--accent); border-color: var(--accent); border-style: solid; }
+.edit-banner {
+  display: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  font-size: 12.5px; line-height: 1.75;
+  color: var(--text-secondary);
+  background: rgba(95,208,200,0.05);
+  border: 1px solid var(--border-soft); border-left: 3px solid var(--accent-deep);
+  border-radius: 4px; padding: 10px 14px; margin: 10px 0 4px;
+}
+body.editing .edit-banner { display: block; }
+.copy-btn {
+  font: inherit; font-size: 12px;
+  padding: 3px 9px; margin: 0 2px;
+  border: 1px solid var(--accent-deep); background: var(--accent-dim);
+  color: var(--accent); border-radius: 3px; cursor: pointer;
+}
+.copy-btn:hover { background: rgba(95,208,200,0.18); }
+.copy-msg { color: var(--accent-deep); margin-left: 8px; }
+
+/* Favorite star on each card */
+.fav-star {
+  position: absolute; top: 15px; right: 16px;
+  font-size: 17px; line-height: 1;
+  color: var(--text-tertiary);
+  opacity: 0; transition: opacity .12s, color .12s, transform .12s;
+  pointer-events: none; user-select: none;
+}
+.fav-star.on { opacity: 1; color: var(--accent); }
+body.editing .fav-star { opacity: 1; pointer-events: auto; cursor: pointer; }
+body.editing .fav-star:not(.on) { color: var(--text-tertiary); }
+body.editing .fav-star:hover { transform: scale(1.18); color: var(--accent); }
+.brief-card .row1 { padding-right: 26px; }
+
+.empty-state {
+  display: none;
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+  font-size: 13px; color: var(--text-tertiary);
+  padding: 30px 4px; text-align: center;
+}
+
 footer {
   margin-top: 80px;
   padding-top: 20px;
@@ -313,6 +383,20 @@ footer a:hover { color: var(--text); }
 <header class="section-head">
   <h1><span class="slash">/</span>前沿</h1>
 </header>
+
+<div class="view-bar">
+  <div class="view-tabs" id="view-tabs">
+    <button class="view-tab active" data-view="all" type="button">全部 <span class="vc" id="vc-all"></span></button>
+    <button class="view-tab" data-view="featured" type="button">★ 精选 <span class="vc" id="vc-featured"></span></button>
+  </div>
+  <button class="edit-toggle" id="edit-toggle" type="button">编辑精选</button>
+</div>
+<div class="edit-banner" id="edit-banner">
+  编辑模式：点每张卡右上角的星标，选中的进「精选」。选择暂存在你本地浏览器；点
+  <button class="copy-btn" id="copy-featured" type="button">复制精选清单</button>
+  把结果 commit 到源码后，对所有访客生效。
+  <span class="copy-msg" id="copy-msg"></span>
+</div>
 
 <div class="divider-label">filter · by domain</div>
 
@@ -399,6 +483,8 @@ footer a:hover { color: var(--text); }
 
 </div>
 
+<div class="empty-state" id="empty-state">还没有精选。点右上角【编辑精选】挑几篇。</div>
+
 <footer>
   Source at <a href="https://github.com/imathg/heyidan-sharing">heyidan-sharing</a>
 </footer>
@@ -407,14 +493,77 @@ footer a:hover { color: var(--text); }
 
 <script>
 (function () {
+  var LS_KEY = 'heyidan_featured_overrides_v1';
   var filter = document.getElementById('domain-filter');
   var list = document.getElementById('brief-list');
   var visibleCount = document.getElementById('visible-count');
+  var viewTabs = document.getElementById('view-tabs');
+  var editToggle = document.getElementById('edit-toggle');
+  var copyBtn = document.getElementById('copy-featured');
+  var copyMsg = document.getElementById('copy-msg');
+  var emptyState = document.getElementById('empty-state');
+  var vcAll = document.getElementById('vc-all');
+  var vcFeatured = document.getElementById('vc-featured');
   if (!filter || !list) return;
+
   var cards = Array.prototype.slice.call(list.querySelectorAll('.brief-card'));
   var chips = Array.prototype.slice.call(filter.querySelectorAll('.chip'));
 
-  // Compute per-domain counts
+  // ---- helpers ----
+  function slugOf(card) {
+    var href = card.getAttribute('href') || '';
+    return href.replace(/\/+$/, '');
+  }
+  function dateOf(card) {
+    var idx = card.querySelector('.idx');
+    var m = idx && idx.textContent.match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '0000-00-00';
+  }
+  function idxNumOf(card) {
+    var idx = card.querySelector('.idx');
+    var m = idx && idx.textContent.match(/B(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
+
+  // ---- sort: newest date first, tiebreak higher B-number first ----
+  cards.sort(function (a, b) {
+    var da = dateOf(a), db = dateOf(b);
+    if (da !== db) return da < db ? 1 : -1;
+    return idxNumOf(b) - idxNumOf(a);
+  });
+  cards.forEach(function (c) { list.appendChild(c); });
+
+  // ---- inject favorite star into each card ----
+  cards.forEach(function (card) {
+    var star = document.createElement('span');
+    star.className = 'fav-star';
+    star.setAttribute('role', 'button');
+    star.setAttribute('aria-label', '收藏到精选');
+    star.textContent = '☆';
+    card.appendChild(star);
+  });
+
+  // ---- featured set: committed data-featured ∪ localStorage overrides ----
+  function readOverrides() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      var obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function writeOverride(slug, on) {
+    var obj = readOverrides();
+    if (on) obj[slug] = true; else delete obj[slug];
+    try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch (e) {}
+  }
+  function isFeatured(card) {
+    var slug = slugOf(card);
+    var overrides = readOverrides();
+    if (overrides.hasOwnProperty(slug)) return overrides[slug] === true;
+    return card.getAttribute('data-featured') === 'true';
+  }
+
+  // ---- per-domain counts ----
   var counts = { all: cards.length };
   cards.forEach(function (c) {
     var d = c.getAttribute('data-domain') || 'unknown';
@@ -422,37 +571,106 @@ footer a:hover { color: var(--text); }
   });
   chips.forEach(function (chip) {
     var d = chip.getAttribute('data-domain');
-    var n = counts[d] || 0;
     var span = chip.querySelector('.count');
-    if (span) span.textContent = ' · ' + n;
+    if (span) span.textContent = ' · ' + (counts[d] || 0);
   });
 
-  function applyFilter(domain) {
-    chips.forEach(function (c) {
-      c.classList.toggle('active', c.getAttribute('data-domain') === domain);
-    });
-    var shown = 0;
+  var currentDomain = 'all';
+  var currentView = 'all';
+
+  function apply() {
+    var shown = 0, featCount = 0;
     cards.forEach(function (card) {
-      var ok = (domain === 'all') || (card.getAttribute('data-domain') === domain);
+      var feat = isFeatured(card);
+      if (feat) featCount++;
+      var star = card.querySelector('.fav-star');
+      if (star) {
+        star.classList.toggle('on', feat);
+        star.textContent = feat ? '★' : '☆';
+      }
+      var domainOK = (currentDomain === 'all') || (card.getAttribute('data-domain') === currentDomain);
+      var viewOK = (currentView === 'all') || feat;
+      var ok = domainOK && viewOK;
       card.hidden = !ok;
       if (ok) shown++;
     });
     if (visibleCount) visibleCount.textContent = shown;
+    if (vcAll) vcAll.textContent = cards.length;
+    if (vcFeatured) vcFeatured.textContent = featCount;
+    chips.forEach(function (c) {
+      c.classList.toggle('active', c.getAttribute('data-domain') === currentDomain);
+    });
+    if (viewTabs) {
+      Array.prototype.slice.call(viewTabs.querySelectorAll('.view-tab')).forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-view') === currentView);
+      });
+    }
+    if (emptyState) {
+      emptyState.style.display = (currentView === 'featured' && shown === 0) ? 'block' : 'none';
+    }
   }
 
-  // Initial: read hash, default 'all'
+  // ---- initial: read hash for domain ----
   var initial = (window.location.hash || '#all').slice(1);
-  if (!counts.hasOwnProperty(initial)) initial = 'all';
-  applyFilter(initial);
+  if (counts.hasOwnProperty(initial)) currentDomain = initial;
+  apply();
 
+  // ---- domain chips ----
   filter.addEventListener('click', function (e) {
     var t = e.target.closest('.chip');
     if (!t) return;
     e.preventDefault();
-    var d = t.getAttribute('data-domain');
-    history.replaceState(null, '', '#' + d);
-    applyFilter(d);
+    currentDomain = t.getAttribute('data-domain');
+    history.replaceState(null, '', '#' + currentDomain);
+    apply();
   });
+
+  // ---- view tabs ----
+  if (viewTabs) {
+    viewTabs.addEventListener('click', function (e) {
+      var t = e.target.closest('.view-tab');
+      if (!t) return;
+      currentView = t.getAttribute('data-view');
+      apply();
+    });
+  }
+
+  // ---- edit toggle ----
+  if (editToggle) {
+    editToggle.addEventListener('click', function () {
+      var on = document.body.classList.toggle('editing');
+      editToggle.textContent = on ? '完成编辑' : '编辑精选';
+    });
+  }
+
+  // ---- star clicks (only in editing mode) ----
+  list.addEventListener('click', function (e) {
+    var star = e.target.closest('.fav-star');
+    if (!star) return;
+    if (!document.body.classList.contains('editing')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var card = star.closest('.brief-card');
+    if (!card) return;
+    writeOverride(slugOf(card), !isFeatured(card));
+    apply();
+  });
+
+  // ---- copy featured slug list (sorted, comma-joined) ----
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var slugs = cards.filter(isFeatured).map(slugOf);
+      var text = slugs.join(', ');
+      function done() {
+        if (copyMsg) copyMsg.textContent = '已复制 ' + slugs.length + ' 篇';
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        done();
+      }
+    });
+  }
 })();
 </script>
 
