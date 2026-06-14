@@ -323,7 +323,20 @@ body.editing .edit-banner { display: block; }
   color: var(--accent); border-radius: 3px; cursor: pointer;
 }
 .copy-btn:hover { background: rgba(95,208,200,0.18); }
+.copy-btn:disabled { opacity: .45; cursor: default; }
 .copy-msg { color: var(--accent-deep); margin-left: 8px; }
+.copy-msg.err { color: #e3826b; }
+.eb-row { margin: 4px 0; }
+.eb-token { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.eb-token input {
+  font: inherit; font-size: 12px;
+  padding: 4px 8px; min-width: 240px; flex: 1 1 240px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 3px;
+}
+.eb-token input:focus { outline: none; border-color: var(--accent-deep); }
+.token-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); margin-right: 5px; vertical-align: middle; }
+.token-dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent-dim); }
 
 /* Favorite star on each card */
 .fav-star {
@@ -392,10 +405,14 @@ footer a:hover { color: var(--text); }
   <button class="edit-toggle" id="edit-toggle" type="button">编辑精选</button>
 </div>
 <div class="edit-banner" id="edit-banner">
-  编辑模式：点每张卡右上角的星标，选中的进「精选」。选择暂存在你本地浏览器；点
-  <button class="copy-btn" id="copy-featured" type="button">复制精选清单</button>
-  把结果 commit 到源码后，对所有访客生效。
-  <span class="copy-msg" id="copy-msg"></span>
+  <div class="eb-row">编辑模式：点每张卡右上角的星标即收藏。改动实时同步到云端，<b>对所有访客生效</b>。</div>
+  <div class="eb-token">
+    <span><span class="token-dot" id="token-dot"></span><span id="token-state">未连接</span></span>
+    <input type="password" id="gist-token" placeholder="粘贴 gist 令牌（只存在你本地浏览器，不上传源码）" autocomplete="off" spellcheck="false">
+    <button class="copy-btn" id="save-token" type="button">连接</button>
+    <button class="copy-btn" id="clear-token" type="button">断开</button>
+    <span class="copy-msg" id="copy-msg"></span>
+  </div>
 </div>
 
 <div class="divider-label">filter · by domain</div>
@@ -493,27 +510,36 @@ footer a:hover { color: var(--text); }
 
 <script>
 (function () {
-  var LS_KEY = 'heyidan_featured_overrides_v1';
+  // ---- cloud store: a public GitHub Gist holds the featured slug list ----
+  // Reads are public (no token). Writes use the owner's fine-grained gist
+  // token, kept only in this browser's localStorage — never committed.
+  var GIST_ID   = '8c7aecc2d9fbdf34b69bc5d75f0a1c75';
+  var GIST_FILE = 'featured.json';
+  var GIST_API  = 'https://api.github.com/gists/' + GIST_ID;
+  var LS_TOKEN  = 'heyidan_gist_token_v1';
+  var LS_CACHE  = 'heyidan_featured_cache_v1';
+
   var filter = document.getElementById('domain-filter');
   var list = document.getElementById('brief-list');
   var visibleCount = document.getElementById('visible-count');
   var viewTabs = document.getElementById('view-tabs');
   var editToggle = document.getElementById('edit-toggle');
-  var copyBtn = document.getElementById('copy-featured');
   var copyMsg = document.getElementById('copy-msg');
   var emptyState = document.getElementById('empty-state');
   var vcAll = document.getElementById('vc-all');
   var vcFeatured = document.getElementById('vc-featured');
+  var tokenInput = document.getElementById('gist-token');
+  var saveToken = document.getElementById('save-token');
+  var clearToken = document.getElementById('clear-token');
+  var tokenDot = document.getElementById('token-dot');
+  var tokenState = document.getElementById('token-state');
   if (!filter || !list) return;
 
   var cards = Array.prototype.slice.call(list.querySelectorAll('.brief-card'));
   var chips = Array.prototype.slice.call(filter.querySelectorAll('.chip'));
 
   // ---- helpers ----
-  function slugOf(card) {
-    var href = card.getAttribute('href') || '';
-    return href.replace(/\/+$/, '');
-  }
+  function slugOf(card) { return (card.getAttribute('href') || '').replace(/\/+$/, ''); }
   function dateOf(card) {
     var idx = card.querySelector('.idx');
     var m = idx && idx.textContent.match(/(\d{4}-\d{2}-\d{2})/);
@@ -543,24 +569,28 @@ footer a:hover { color: var(--text); }
     card.appendChild(star);
   });
 
-  // ---- featured set: committed data-featured ∪ localStorage overrides ----
-  function readOverrides() {
-    try {
-      var raw = localStorage.getItem(LS_KEY);
-      var obj = raw ? JSON.parse(raw) : {};
-      return (obj && typeof obj === 'object') ? obj : {};
-    } catch (e) { return {}; }
+  // ---- featured set (in-memory source of truth) ----
+  var featured = new Set();
+  var dirty = false;   // local edits made; don't let a late gist fetch clobber them
+  var saveTimer = null;
+
+  function getToken() { try { return localStorage.getItem(LS_TOKEN) || ''; } catch (e) { return ''; } }
+  function readCache() {
+    try { var raw = localStorage.getItem(LS_CACHE); return raw ? JSON.parse(raw) : null; }
+    catch (e) { return null; }
   }
-  function writeOverride(slug, on) {
-    var obj = readOverrides();
-    if (on) obj[slug] = true; else delete obj[slug];
-    try { localStorage.setItem(LS_KEY, JSON.stringify(obj)); } catch (e) {}
+  function writeCache(arr) { try { localStorage.setItem(LS_CACHE, JSON.stringify(arr)); } catch (e) {} }
+  function sortedFeatured() {
+    return cards.filter(function (c) { return featured.has(slugOf(c)); }).map(slugOf);
   }
-  function isFeatured(card) {
-    var slug = slugOf(card);
-    var overrides = readOverrides();
-    if (overrides.hasOwnProperty(slug)) return overrides[slug] === true;
-    return card.getAttribute('data-featured') === 'true';
+  function isFeatured(card) { return featured.has(slugOf(card)); }
+
+  // seed: cache first (instant), else committed data-featured attrs
+  var cached = readCache();
+  if (cached && cached.length !== undefined) {
+    cached.forEach(function (s) { featured.add(s); });
+  } else {
+    cards.forEach(function (c) { if (c.getAttribute('data-featured') === 'true') featured.add(slugOf(c)); });
   }
 
   // ---- per-domain counts ----
@@ -610,10 +640,70 @@ footer a:hover { color: var(--text); }
     }
   }
 
-  // ---- initial: read hash for domain ----
+  function setMsg(text, isErr) {
+    if (!copyMsg) return;
+    copyMsg.textContent = text || '';
+    copyMsg.classList.toggle('err', !!isErr);
+  }
+  function refreshTokenUI() {
+    var has = !!getToken();
+    if (tokenDot) tokenDot.classList.toggle('ok', has);
+    if (tokenState) tokenState.textContent = has ? '已连接（可同步）' : '未连接（改动只在本机）';
+  }
+
+  // ---- read authoritative state from the gist ----
+  function fetchGist() {
+    return fetch(GIST_API, { headers: { 'Accept': 'application/vnd.github+json' } })
+      .then(function (r) { if (!r.ok) throw new Error('gist GET ' + r.status); return r.json(); })
+      .then(function (data) {
+        var f = data.files && data.files[GIST_FILE];
+        var arr = f ? JSON.parse(f.content) : [];
+        return Array.isArray(arr) ? arr : [];
+      });
+  }
+
+  // ---- write featured list back to the gist (needs token) ----
+  function saveGist() {
+    var token = getToken();
+    var arr = sortedFeatured();
+    writeCache(arr);
+    if (!token) { setMsg('改动只在本机；粘贴令牌后才会同步给访客', true); return; }
+    setMsg('同步中…');
+    var body = { files: {} };
+    body.files[GIST_FILE] = { content: JSON.stringify(arr, null, 0) + '\n' };
+    fetch(GIST_API, {
+      method: 'PATCH',
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (r.status === 401 || r.status === 403) throw new Error('令牌无效或无 gist 写权限');
+      if (!r.ok) throw new Error('同步失败 HTTP ' + r.status);
+      setMsg('已同步 · 所有访客可见（' + arr.length + ' 篇）');
+    }).catch(function (e) {
+      setMsg(String(e.message || e), true);
+    });
+  }
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveGist, 600);
+  }
+
+  // ---- initial render, then reconcile with gist ----
   var initial = (window.location.hash || '#all').slice(1);
   if (counts.hasOwnProperty(initial)) currentDomain = initial;
   apply();
+  refreshTokenUI();
+
+  fetchGist().then(function (arr) {
+    if (dirty) return;            // user already edited; keep local truth
+    featured = new Set(arr);
+    writeCache(arr);
+    apply();
+  }).catch(function () { /* offline / rate-limited: keep cached/seed view */ });
 
   // ---- domain chips ----
   filter.addEventListener('click', function (e) {
@@ -640,10 +730,11 @@ footer a:hover { color: var(--text); }
     editToggle.addEventListener('click', function () {
       var on = document.body.classList.toggle('editing');
       editToggle.textContent = on ? '完成编辑' : '编辑精选';
+      if (on) refreshTokenUI();
     });
   }
 
-  // ---- star clicks (only in editing mode) ----
+  // ---- star clicks (only in editing mode) → toggle + sync ----
   list.addEventListener('click', function (e) {
     var star = e.target.closest('.fav-star');
     if (!star) return;
@@ -652,23 +743,29 @@ footer a:hover { color: var(--text); }
     e.stopPropagation();
     var card = star.closest('.brief-card');
     if (!card) return;
-    writeOverride(slugOf(card), !isFeatured(card));
+    var slug = slugOf(card);
+    if (featured.has(slug)) featured.delete(slug); else featured.add(slug);
+    dirty = true;
     apply();
+    scheduleSave();
   });
 
-  // ---- copy featured slug list (sorted, comma-joined) ----
-  if (copyBtn) {
-    copyBtn.addEventListener('click', function () {
-      var slugs = cards.filter(isFeatured).map(slugOf);
-      var text = slugs.join(', ');
-      function done() {
-        if (copyMsg) copyMsg.textContent = '已复制 ' + slugs.length + ' 篇';
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, done);
-      } else {
-        done();
-      }
+  // ---- token controls ----
+  if (saveToken) {
+    saveToken.addEventListener('click', function () {
+      var v = (tokenInput && tokenInput.value || '').trim();
+      if (!v) { setMsg('请先粘贴令牌', true); return; }
+      try { localStorage.setItem(LS_TOKEN, v); } catch (e) {}
+      if (tokenInput) tokenInput.value = '';
+      refreshTokenUI();
+      setMsg('令牌已存本机，下次改动会同步');
+    });
+  }
+  if (clearToken) {
+    clearToken.addEventListener('click', function () {
+      try { localStorage.removeItem(LS_TOKEN); } catch (e) {}
+      refreshTokenUI();
+      setMsg('令牌已从本机清除');
     });
   }
 })();
