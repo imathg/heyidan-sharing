@@ -425,6 +425,7 @@ footer a:hover { color: var(--text); }
   <a class="chip" data-domain="claude-code-ecosystem" href="#claude-code-ecosystem">Claude Code 生态<span class="count" data-count-claude-code-ecosystem></span></a>
   <a class="chip" data-domain="research-methodology" href="#research-methodology">研究方法论<span class="count" data-count-research-methodology></span></a>
   <a class="chip" data-domain="hf-alpha-factor" href="#hf-alpha-factor">因子研究<span class="count" data-count-hf-alpha-factor></span></a>
+  <a class="chip" data-domain="training-infra" href="#training-infra">训练基建<span class="count" data-count-training-infra></span></a>
 </div>
 
 <div class="divider-label">index · <span id="visible-count">4</span> briefs</div>
@@ -493,6 +494,19 @@ footer a:hover { color: var(--text); }
       <span class="badge date">2026-06-14</span>
       <span class="badge sources">8 sources</span>
       <span class="badge domain">rubrics</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="low-precision-recipes/" data-domain="training-infra">
+    <div class="row1">
+      <span class="idx mono">B006 / 2026-06-21</span>
+    </div>
+    <h2>低精度训练的共同主线：损伤集中在分布的尖锐处</h2>
+    <p class="desc">2026 年 6 月六个互不隶属的团队（UFP4 / Nemotron 3 Ultra / ReQAT / TWLA / UltraQuant / ReSET）把 4-bit 精度推到 LLM 生命周期每一段。核心论点：低精度损伤集中在分布的尖锐处——网格几何不对称、low-entropy token、激活 outlier 是同一现象的三个投影，每个配方都在把稀缺的 bit / 训练信号 / scale 粒度往尖锐处分配。归出 4 个正交 knob（lifecycle 位置、量化张量、格式几何、尖锐再分配机制），并用 DeepSeek-V4 / Ideogram INT8 划边界。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-06-21</span>
+      <span class="badge sources">8 sources</span>
+      <span class="badge domain">training-infra</span>
     </div>
   </a>
 
