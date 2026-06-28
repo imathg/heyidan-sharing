@@ -2,7 +2,7 @@
 
 <!-- domain: agentic-rl -->
 
-2026 年 6 月，七个互不隶属的团队动的是同一件事：GRPO 给长程 agent 分配 credit 的方式。`[论文]` [HSD](#ref-hsd)（George Washington University，Li et al. 2026）把 token 级 credit 定位到失败与成功路径的分叉处；`[论文]` [SCPO](#ref-scpo)（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；`[论文]` [HiMPO](#ref-himpo)（中国联通，Yan et al. 2026）只给 memory 写入动作单独的 credit 通道；`[论文]` [VIMPO](#ref-vimpo)（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；`[论文]` [Progress Advantage](#ref-progress-advantage)（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比当 step 信号；`[论文]` [BiPACE](#ref-bipace)（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse)（中科院自动化所，Hao et al. 2026）诊断这套训练为什么会失稳、外部监督怎么救它。
+2026 年 6 月，七个互不隶属的团队都在改 GRPO 给长程 agent 分配 credit 的方式。`[论文]` [HSD](#ref-hsd)（George Washington University，Li et al. 2026）把 token 级 credit 定位到失败与成功路径的分叉处；`[论文]` [SCPO](#ref-scpo)（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；`[论文]` [HiMPO](#ref-himpo)（中国联通，Yan et al. 2026）只给 memory 写入动作单独的 credit 通道；`[论文]` [VIMPO](#ref-vimpo)（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；`[论文]` [Progress Advantage](#ref-progress-advantage)（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比当 step 信号；`[论文]` [BiPACE](#ref-bipace)（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse)（中科院自动化所，Hao et al. 2026）诊断这套训练为什么会失稳、外部监督怎么救它。
 
 这七篇调的是同一组旋钮，针对的是同一个失败模式。
 
@@ -93,7 +93,7 @@ group-based RL（GRPO 是代表）的做法是采一组 rollout，用每条的�
 
 `[论文]` [SCPO](#ref-scpo) 把这个问题说得最干脆：一个 step 的 credit 绑死在它所在 rollout 的终局上，于是语义近乎相同的两个中间步，因为各自轨迹最终一个成功一个失败，拿到符号相反的 credit。`[论文]` [HiMPO](#ref-himpo) 指出长程 agent 里的具体后果：一次有用的 memory 写入会因为下游工具失败、噪声观测被连坐惩罚，模型于是学会丢掉有用证据。`[论文]` [VIMPO](#ref-vimpo) 从算法侧点出根本原因，group-relative 方法回避了 critic，代价是只能给出轨迹级 advantage，对每个 token 取同一个值。
 
-这三种描述是同一件事的三个切面。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 报告了退化的终点，在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。
+这三种描述是同一件事的三个切面。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 报告了退化的极端情形：在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。
 
 | 论文 | 同一失败模式的不同说法 |
 |---|---|
@@ -139,7 +139,7 @@ actor-critic 方法本来有一个部件专门解这个问题。critic 估「从
 
 ## 成本那一端：什么时候免不了外部监督
 
-前六篇的共同主张是省掉 critic。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 站在成本谱的另一端，它的结论是有些情况下省不掉外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。
+前六篇的共同主张是省掉 critic。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 站在成本轴的另一端，它的结论是有些情况下省不掉外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。
 
 `[本文归纳]` 把它和前六篇对照，得到一条边界：内生的反事实基线（从成功轨迹、当前策略或同类动作里挖出来的信号）在奖励虽稀疏但同组里存在成功路径时够用；当一组 rollout 全错、没有成功 sibling 可对照，或动作空间稀疏到聚不出可靠的同类，内生信号本身就失效了，这时候得从外部灌入 off-policy 数据或 hint。成本最低的 Progress Advantage 是零成本管线副产物，成本最高的这一端要专门准备外部监督数据，四个旋钮里「额外部件成本」这一轴的两端就是这两篇。
 
@@ -172,4 +172,4 @@ actor-critic 方法本来有一个部件专门解这个问题。critic 估「从
 **[BiPACE: Bisimulation-Guided Policy Optimization with Action Counterfactual Estimation for LLM Agents]** Hanyang Wang, Weijieying Ren, Yuxiang Zhang, Ding Cao, Zhizhao Zeng, Ke Zeng, Tianxiang Zhao，University of Chicago / Stanford University / HKUST (Guangzhou) / USTC / Meituan，2026. [arXiv:2606.25556](https://arxiv.org/abs/2606.25556)。本文用到它按行为相似度聚类 step（bisimulation）、给每类动作配 action-specific 反事实基线。`[arxiv 论文]`
 
 <a id="ref-tooluse-collapse"></a>
-**[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]** Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. [arXiv:2606.26027](https://arxiv.org/abs/2606.26027)。本文用作成本谱另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。`[arxiv 论文]`
+**[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]** Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. [arXiv:2606.26027](https://arxiv.org/abs/2606.26027)。本文用作成本轴另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。`[arxiv 论文]`

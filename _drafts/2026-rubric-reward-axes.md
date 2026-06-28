@@ -4,7 +4,7 @@
 
 `[论文]` RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就没了。`[论文]` [Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 **11.1 分**。`[论文]` [VeriGate](#ref-verigate)（马里兰大学，Agrawal et al. 2026）从另一头切：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。
 
-`[本文归纳]` 2026 年这半年，一批互不引用的工作收敛到同一个动作：把一个标量 reward 摊成一组子信号，再聚合回去。**核心论点：rubric 构造（judge 侧把回答拆成要求条目）和 credit assignment（RL 侧把轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元**。这条线上的方案差异，落在五个正交旋钮上。
+`[本文归纳]` 2026 年上半年，一批互不引用的工作收敛到同一个动作：把一个标量 reward 摊成一组子信号，再聚合回去。**核心论点：rubric 构造（judge 侧把回答拆成要求条目）和 credit assignment（RL 侧把轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元**。这条线上的方案差异，落在五个正交旋钮上。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -45,7 +45,7 @@
 
 `[本文归纳]` 第三个旋钮是每个子分锚在哪里。锚在 LLM 的主观判断（这一步看起来对不对）容易被 reward hacking，因为打分者和被打分者共享盲区；锚在下游结果（这一步是否真的提升解题率）把信号绑到可验证的终态上，更难被操纵。
 
-`[论文]` [PUM](#ref-pum) 把 prefix 评估从局部步骤正确性改成 prefix gain，定义为用一组轻量 student 模型条件在该 prefix 上、测得的解题率提升量，是 outcome-grounded 的 prefix utility。`[论文]` [VeriGate](#ref-verigate) 把 PRM 步骤分转成 future-cumulated reward，自报比直接优化聚合 PRM 分的方法更难被 reward hacking。`[本文归纳]` 两者指向同一条经验：主观步骤分提供密度，结果锚定提供抗操纵性，工程上需要在两者之间取位置。
+`[论文]` [PUM](#ref-pum) 把 prefix 评估从局部步骤正确性改成 prefix gain，定义为用一组轻量 student 模型条件在该 prefix 上、测得的解题率提升量，是 outcome-grounded 的 prefix utility。`[论文]` [VeriGate](#ref-verigate) 把 PRM 步骤分转成 future-cumulated reward，称比直接优化聚合 PRM 分的方法更难被 reward hacking。`[本文归纳]` 两者指向同一条经验：主观步骤分提供密度，结果锚定提供抗操纵性，工程上需要在两者之间取位置。
 
 ## 分解引入的新失败模式
 

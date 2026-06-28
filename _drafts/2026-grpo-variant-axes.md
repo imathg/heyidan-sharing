@@ -2,7 +2,7 @@
 
 <!-- domain: agentic-rl -->
 
-`[本文归纳]` 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 在去标准化，DAPO 在改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以压回一个问题：**更新信号到底被谁承载、在哪里归一化、和什么参照系比较**。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
+`[本文归纳]` 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以压回一个问题：**更新信号到底由谁承载、在哪里归一化、和什么参照系比较**。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -46,7 +46,7 @@
 
 `[论文]` [DAPO](#ref-yu2025)（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）是最好的入门切面，因为它在同一篇系统报告里把多个旋钮放进 ablation：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表本身说明：GRPO 更像一套可以局部替换的 update-signal 管线。
 
-`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 把另一个旋钮暴露出来：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不够形成一篇论文结论，但足够提醒读者：很多“新 GRPO”的主要动作落在 A1。
+`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 暴露出另一个旋钮：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不足以形成一篇论文结论，但足够说明很多新 GRPO 的主要动作落在 A1。
 
 ## BPPO 是最干净的 A4 案例
 
@@ -72,7 +72,7 @@
 
 `[论文]` [CARL](#ref-kumar2026)（Microsoft AI，Kumar et al. 2026）把这个迁移写得更结构化。它指出 trajectory-level reward 无法隔离一次成功 episode 里哪个工具调用真正有用，也无法惩罚不必要调用；因此把 rollout 按自然工具边界拆成 segment，用 critic 学每个 segment 对最终正确率的增减。7B setup 上，GRPO 到 PPO 是 +4.0 EM，PPO 到 CARL 还有 +6.7 EM；Tier2 easy questions 上，CARL tool-use rate 38.6%，GRPO 是 87.5%，同时 CARL EM 更高。
 
-`[本文归纳]` 这说明 A4 和 A5 在 agentic 场景会贴得很近：group key 迁到 state 或 branch，credit 粒度自然也从 trajectory 迁到 segment。它们仍可分开讨论，但边界不像 BPPO 那么干净。agent 任务里真正的单位不再是 prompt，而是“同一个可决策局面”。
+`[本文归纳]` 这说明 A4 和 A5 在 agentic 场景会贴得很近：group key 迁到 state 或 branch，credit 粒度自然也从 trajectory 迁到 segment。它们仍可分开讨论，但边界不像 BPPO 那么干净。agent 任务里真正的单位是“同一个可决策局面”，而非单条 prompt。
 
 ## baseline/value source 是第三条主线
 
@@ -84,7 +84,7 @@
 
 `[本文归纳]` group size 属于核心结构超参。GRPO 的“relative”来自同 prompt group 内的对比；当有效 group 变小，A1 normalization、A3 baseline、A4 update carrier 会一起退化。极端到 `G = 1` 时，group mean 不再提供相对参照，std normalization 失去稳定意义，full-group update carrier 也只剩一个样本。
 
-`[论文]` [BPPO](#ref-zhao2026) 的 clean case 之所以干净，是因为它保留 full-group advantage normalization，只把 carrier 换成最短 correct / incorrect prefix。`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 之所以值得单独标出来，是因为它直接碰 A1：去掉 group std normalization 和 response length normalization。两者放在一起看，能解释这个退化角：当 group 的相对比较变弱，baseline、normalization、carrier 不再像五轴表里那样清楚分离。
+`[论文]` [BPPO](#ref-zhao2026) 的 clean case 之所以干净，是因为它保留 full-group advantage normalization，只把 carrier 换成最短 correct / incorrect prefix。`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 之所以单独列出，是因为它直接碰 A1：去掉 group std normalization 和 response length normalization。两者放在一起看，能解释这个退化角：当 group 的相对比较变弱，baseline、normalization、carrier 不再像五轴表里那样清楚分离。
 
 | 边界条件 | A1 | A3 | A4 |
 |---|---|---|---|
@@ -98,11 +98,11 @@
 
 `[本文归纳]` “伪轴”指有效但暂时缺少独立坐标资格的改法。这里有两种不同的 disqualification，必须拆开看。
 
-`[本文归纳]` 第一关是**独立性**：它是否能被已有轴张成。BPPO 通过这关，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有把“长度”当独立旋钮直接优化，所以“长度”在这里更像 A4 的副产物，缺少新轴资格。
+`[本文归纳]` 第一关是**独立性**：它是否能被已有轴张成。BPPO 通过这关，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有把长度当独立旋钮直接优化，所以长度在这里更像 A4 的副产物，缺少新轴资格。
 
 `[本文归纳]` 第二关是**干净性**：效果有没有被转嫁。一个改法可以独立，却仍然不干净；它压住目标 proxy 的同时，可能把优化压力推到相邻 proxy。overlong shaping、length penalty、entropy trigger 这类改法常常落在这里。它们可能有效，但需要同时监控长度、正确率、entropy、tool-use rate 或其他相邻指标，验证优化压力停在目标 proxy 上。
 
-`[论文]` [BPPO](#ref-zhao2026) 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着“长度”不天然是一条独立轴。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。
+`[论文]` [BPPO](#ref-zhao2026) 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着长度不天然是一条独立轴。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。
 
 `[本文归纳]` 更实用的读法是：看到一个 GRPO 新名词，先填这张表，再判断它的论文定位。如果某个名字只能填进一个格子，它是局部旋钮；如果它跨多个格子，需要看 ablation 是否能把格子拆开；如果它通过独立性但过不了干净性，就把它写成 pressure routing，保留新轴资格的判断。
 
@@ -152,7 +152,7 @@
 **[CISPO 的发现过程]** 炼熵师（前 MiniMax），知乎长文，2026. [Zhihu](https://zhuanlan.zhihu.com/p/1962307894105048283)。本文用它说明 off-policy clipping 对 long-CoT response length 的压力。`[tech report]`
 
 <a id="ref-drgrpo"></a>
-**[Composer 2 技术报告里的 Dr-GRPO 去标准化]** 香港市民董先生（知乎 handle，本文不映射真实姓名），知乎想法，2026. [Zhihu pin](https://www.zhihu.com/pin/2029888667460822187)。本文用它标注 group std normalization 和 response length normalization 这条设计轴。`[tech report]`
+**[Composer 2 技术报告里的 Dr-GRPO 去标准化]** 香港市民董先生（知乎用户），知乎想法，2026. [Zhihu pin](https://www.zhihu.com/pin/2029888667460822187)。本文用它标注 group std normalization 和 response length normalization 这条设计轴。`[tech report]`
 
 <a id="ref-remax"></a>
 **[ReMax 背后的故事]** 李子牛，知乎长文，2026. [Zhihu](https://zhuanlan.zhihu.com/p/1963218041199387877)。本文用它说明 greedy decoding baseline 的历史动机。`[tech report]`
