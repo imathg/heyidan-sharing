@@ -510,6 +510,19 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
+  <a class="brief-card" href="long-horizon-credit-assignment/" data-domain="agentic-rl">
+    <div class="row1">
+      <span class="idx mono">B007 / 2026-06-28</span>
+    </div>
+    <h2>长程 credit assignment：奖励信号该在轨迹的哪一层附着</h2>
+    <p class="desc">2026 年 6 月七个互不隶属的团队（HSD / SCPO / HiMPO / VIMPO / Progress Advantage / BiPACE + 多步 tool-use 失稳分析）在同一个月里改 GRPO 给长程 agent 分配 credit 的方式。核心论点：GRPO 把一条轨迹的成败压成一个数均匀盖到每个 token，长程稀疏奖励下分不清「失败轨迹上的好步」和「成功轨迹上的坏步」；六个配方都在补 critic 被砍掉后留下的 per-step 反事实基线，分歧只在「反事实从哪里取」（成功轨迹 / 当前策略 / 同类动作三派）。归出四个旋钮（附着粒度、反事实参照系、额外部件成本、时序方向），并用单步 RLVR 与 on-policy 蒸馏划边界。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-06-28</span>
+      <span class="badge sources">7 sources</span>
+      <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
   <!-- 后续 briefs 在这里追加 -->
 
 </div>
