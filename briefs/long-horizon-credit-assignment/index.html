@@ -479,7 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
-<p>2026 年 6 月，七个互不隶属的团队动的是同一件事：GRPO 给长程 agent 分配 credit 的方式。<span class="claim claim-paper">论文</span> <a href="#ref-hsd">HSD</a>（George Washington University，Li et al. 2026）把 token 级 credit 定位到失败与成功路径的分叉处；<span class="claim claim-paper">论文</span> <a href="#ref-scpo">SCPO</a>（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；<span class="claim claim-paper">论文</span> <a href="#ref-himpo">HiMPO</a>（中国联通，Yan et al. 2026）只给 memory 写入动作单独的 credit 通道；<span class="claim claim-paper">论文</span> <a href="#ref-vimpo">VIMPO</a>（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；<span class="claim claim-paper">论文</span> <a href="#ref-progress-advantage">Progress Advantage</a>（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比当 step 信号；<span class="claim claim-paper">论文</span> <a href="#ref-bipace">BiPACE</a>（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a>（中科院自动化所，Hao et al. 2026）诊断这套训练为什么会失稳、外部监督怎么救它。</p>
+<p>2026 年 6 月，七个互不隶属的团队都在改 GRPO 给长程 agent 分配 credit 的方式。<span class="claim claim-paper">论文</span> <a href="#ref-hsd">HSD</a>（George Washington University，Li et al. 2026）把 token 级 credit 定位到失败与成功路径的分叉处；<span class="claim claim-paper">论文</span> <a href="#ref-scpo">SCPO</a>（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；<span class="claim claim-paper">论文</span> <a href="#ref-himpo">HiMPO</a>（中国联通，Yan et al. 2026）只给 memory 写入动作单独的 credit 通道；<span class="claim claim-paper">论文</span> <a href="#ref-vimpo">VIMPO</a>（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；<span class="claim claim-paper">论文</span> <a href="#ref-progress-advantage">Progress Advantage</a>（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比当 step 信号；<span class="claim claim-paper">论文</span> <a href="#ref-bipace">BiPACE</a>（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a>（中科院自动化所，Hao et al. 2026）诊断这套训练为什么会失稳、外部监督怎么救它。</p>
 <p>这七篇调的是同一组旋钮，针对的是同一个失败模式。</p>
 <blockquote>
 <p><strong>核心论点：GRPO 把一条轨迹的成败压成一个数，均匀盖到轨迹里每个 token。长程、稀疏奖励下，这个数分不清「失败轨迹上的好步」和「成功轨迹上的坏步」。七个配方都在做同一件事，在不训练 critic 的前提下给每个 step 估一个反事实基线，分歧只在「反事实从哪里取」。</strong></p>
@@ -566,7 +566,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <h2 id="失败模式-一个数盖整条轨迹">失败模式：一个数盖整条轨迹</h2>
 <p>group-based RL（GRPO 是代表）的做法是采一组 rollout，用每条的终局成败算一个轨迹级 advantage，并把这个 advantage 原样发给该轨迹里的每一个 token。单步任务里这没问题，一次问答就是一个 step，终局即 step。长程 agent 不一样：一条轨迹是几十步工具调用、几十轮对话，奖励只在最后才给。一个数盖整条轨迹，等于声明这条轨迹里所有 step 一样好或一样坏。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-scpo">SCPO</a> 把这个问题说得最干脆：一个 step 的 credit 绑死在它所在 rollout 的终局上，于是语义近乎相同的两个中间步，因为各自轨迹最终一个成功一个失败，拿到符号相反的 credit。<span class="claim claim-paper">论文</span> <a href="#ref-himpo">HiMPO</a> 指出长程 agent 里的具体后果：一次有用的 memory 写入会因为下游工具失败、噪声观测被连坐惩罚，模型于是学会丢掉有用证据。<span class="claim claim-paper">论文</span> <a href="#ref-vimpo">VIMPO</a> 从算法侧点出根本原因，group-relative 方法回避了 critic，代价是只能给出轨迹级 advantage，对每个 token 取同一个值。</p>
-<p>这三种描述是同一件事的三个切面。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a> 报告了退化的终点，在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。</p>
+<p>这三种描述是同一件事的三个切面。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a> 报告了退化的极端情形：在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。</p>
 <table>
 <thead>
 <tr>
@@ -662,7 +662,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p>附着粒度是最直接的一条轴。从轨迹往下走到 token，credit 的分辨率越来越高，但定位越来越难。<span class="claim claim-paper">论文</span> <a href="#ref-hsd">HSD</a> 在 token 层用分叉点解决定位，它在简答任务（AIME）上增益更大，说明分叉点集中时定位最划算；长链推理里分叉分散，这条收益下降。<span class="claim claim-paper">论文</span> <a href="#ref-himpo">HiMPO</a> 走了另一个极端，不追求全轨迹细粒度，只把一类最容易被连坐的动作（memory 写入）单独拎出来走一条去纠缠的通道，其余 token 仍走轨迹级。这是一种以约束换稳健的取法，只解一类动作，但解得干净。</p>
 <p>时序方向这条轴和反事实参照系有关联。用同组成功轨迹当参照的方法本就是回溯的，因为「成功」是已实现的事实。用当前策略当参照的方法偏前瞻，估的是期望。两条轴在已知的七个样本里没完全分开，正交性要更多方案才能判定。</p>
 <h2 id="成本那一端-什么时候免不了外部监督">成本那一端：什么时候免不了外部监督</h2>
-<p>前六篇的共同主张是省掉 critic。<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a> 站在成本谱的另一端，它的结论是有些情况下省不掉外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。</p>
+<p>前六篇的共同主张是省掉 critic。<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a> 站在成本轴的另一端，它的结论是有些情况下省不掉外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。</p>
 <p><span class="claim claim-self">本文归纳</span> 把它和前六篇对照，得到一条边界：内生的反事实基线（从成功轨迹、当前策略或同类动作里挖出来的信号）在奖励虽稀疏但同组里存在成功路径时够用；当一组 rollout 全错、没有成功 sibling 可对照，或动作空间稀疏到聚不出可靠的同类，内生信号本身就失效了，这时候得从外部灌入 off-policy 数据或 hint。成本最低的 Progress Advantage 是零成本管线副产物，成本最高的这一端要专门准备外部监督数据，四个旋钮里「额外部件成本」这一轴的两端就是这两篇。</p>
 <h2 id="与单步-rlvr-与蒸馏的边界">与单步 RLVR、与蒸馏的边界</h2>
 <p><span class="claim claim-self">本文归纳</span> 这条线和单步 RLVR 的目标函数变体（GRPO 的裁剪、归一化、优势估计那些轴）落在不同层。目标函数变体改的是单步上损失怎么算，这条线改的是 credit 沿一条长轨迹怎么附着。在单步任务上两者重合，因为终局就是唯一的 step；任务越长，本文这条轴越独立。</p>
@@ -685,7 +685,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
 <li><a id="ref-bipace"></a> <strong>[BiPACE: Bisimulation-Guided Policy Optimization with Action Counterfactual Estimation for LLM Agents]</strong> Hanyang Wang, Weijieying Ren, Yuxiang Zhang, Ding Cao, Zhizhao Zeng, Ke Zeng, Tianxiang Zhao，University of Chicago / Stanford University / HKUST (Guangzhou) / USTC / Meituan，2026. <a href="https://arxiv.org/abs/2606.25556">arXiv:2606.25556</a>。本文用到它按行为相似度聚类 step（bisimulation）、给每类动作配 action-specific 反事实基线。<span class="claim claim-paper">arxiv 论文</span></li>
 
-<li><a id="ref-tooluse-collapse"></a> <strong>[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]</strong> Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. <a href="https://arxiv.org/abs/2606.26027">arXiv:2606.26027</a>。本文用作成本谱另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。<span class="claim claim-paper">arxiv 论文</span></li>
+<li><a id="ref-tooluse-collapse"></a> <strong>[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]</strong> Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. <a href="https://arxiv.org/abs/2606.26027">arXiv:2606.26027</a>。本文用作成本轴另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
 

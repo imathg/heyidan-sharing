@@ -465,81 +465,78 @@ footer.brief-foot a:hover { color: var(--text); }
   <div class="machine-bar">
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
-    <span class="sep">·</span> 2 sources
-    <span class="sep">·</span> last update 2026-06-11
+    <span class="sep">·</span> 3 sources
+    <span class="sep">·</span> last update 2026-06-28
   </div>
 
   <h1 class="brief-title">AlphaBench：LLM 做公式化因子挖掘，到底卡在哪一环</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-06-11</span></span>
-    <span class="item"><span class="k">sources</span> <span class="v">2</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-28</span></span>
+    <span class="item"><span class="k">sources</span> <span class="v">3</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#hf-alpha-factor" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">hf-alpha-factor</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">alphabench-llm-factor</span></span>
   </div>
 
   <article class="body" id="brief-body">
-<p><span class="claim claim-paper">论文</span> <a href="#ref-alphabench">AlphaBench</a>（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ Qlib 回测闭环，把"该用哪个 LLM 搭因子挖掘 Agent"这个工程问题做成了可量化的评测，分生成 / 评估 / 搜索三个维度。</p>
-
+<!-- domain: hf-alpha-factor -->
+<p><span class="claim claim-paper">论文</span> <a href="#ref-alphabench">AlphaBench</a>（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ <a href="#ref-qlib">Qlib</a> 回测闭环，把&quot;该用哪个 LLM 搭因子挖掘 Agent&quot;这个工程问题做成了可量化的评测，分生成 / 评估 / 搜索三个维度。</p>
 <p><span class="claim claim-self">本文归纳</span> AlphaBench 在评估维度暴露了一条硬约束：<strong>零样本下没有任何 LLM 能稳定判别因子优劣</strong>，但<strong>成对选择（pairwise）SFT 极其有效且跨市场泛化</strong>。这两点直接决定了因子挖掘 Agent 该怎么搭。</p>
-
-<blockquote>正文每条 claim 带 <code>[论文]</code> / <code>[本文归纳]</code> tag。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</blockquote>
-
-<h2 id="three-dims">三个维度怎么测</h2>
-
+<blockquote>
+<p>正文每条 claim 带 <code>[论文]</code> / <code>[本文归纳]</code> tag。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
+</blockquote>
+<h2 id="三个维度怎么测">三个维度怎么测</h2>
 <p><span class="claim claim-paper">论文</span> AlphaBench 把因子挖掘分成三块：</p>
-
 <ol>
 <li><strong>因子生成</strong>：Text2Alpha（自然语言→DSL 公式，84 Easy / 106 Medium / 121 Hard）+ 定向挖掘（给技术主题如波动率突破，8 大类 90 细分自主发挥）。</li>
 <li><strong>因子评估</strong>：Factor Ranking + Scoring，再分出两个原子任务，即 Signal Classification（有效信号 vs 噪声）、Pairwise Selection（两个公式二选一谁 RankIC 更优）。</li>
 <li><strong>因子搜索</strong>：CoE（经验链）/ ToT（思维树）/ EA（进化算法，LLM 当突变 + 交叉算子）。</li>
 </ol>
-
 <p><span class="claim claim-paper">论文</span> 外加严苛质量过滤器：算子嵌套 ≤5 层、Qlib 算子合法性 + arity 校验、单因子两周计算 ≤30s、NaN ≤1%、Lookahead（用 Ref 等未来函数）强制标 Noise + 评分直接打 1 分。</p>
-
-<h2 id="zero-shot">核心警示：零样本判别力≈掷硬币</h2>
-
+<h2 id="核心发现-零样本判别力≈掷硬币">核心发现：零样本判别力≈掷硬币</h2>
 <p><span class="claim claim-paper">论文</span> 零样本下，没有任何 LLM 表现出稳定的因子优劣判别能力：DeepSeek-V3 信号 / 噪声分类仅 0.46、成对选择 0.48（与掷硬币无异），强如 GPT-5 成对选择也只到 0.64（SP500 上 0.52）。</p>
-
 <p><span class="claim claim-paper">论文</span> 论文给出的解释：LLM 只能看纯文本公式，但因子真实绩效高度依赖执行上下文（调仓频率、信息滞后、平滑策略、市场风格），公式文本省略了这些物理变量，使纯公式的性能推断在数学上是<strong>欠定问题</strong>。而且 CoT 帮倒忙，在评分排名任务中引入思维链反而增大方差、拉低 NDCG@K。</p>
-
-<h2 id="pairwise-sft">但 pairwise SFT 是魔法</h2>
-
+<h2 id="但成对选择-pairwise-sft-效果极强">但成对选择（pairwise）SFT 效果极强</h2>
 <p><span class="claim claim-paper">论文</span> SFT 的两条路径反差极大：</p>
-
 <table>
-<thead><tr><th>SFT 任务</th><th>结果</th></tr></thead>
+<thead>
+<tr>
+<th>SFT 任务</th>
+<th>结果</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>噪声二分类微调</td><td>彻底失效（过拟合特定市场噪声模式）</td></tr>
-<tr><td>成对选择微调</td><td>GPT-4.1-Mini 在 CSI300 上 0.44→0.83（CoT 0.86），且 CSI300 微调直接评 SP500 仍保 0.64</td></tr>
+<tr>
+<td>噪声二分类微调</td>
+<td>彻底失效（过拟合特定市场噪声模式）</td>
+</tr>
+<tr>
+<td>成对选择微调</td>
+<td>GPT-4.1-Mini 在 CSI300 上 0.44→0.83（CoT 0.86），且 CSI300 微调直接评 SP500 仍保 0.64</td>
+</tr>
 </tbody>
 </table>
-
 <p><span class="claim claim-paper">论文</span> 相对排序逼模型学的是更本质的通用结构特征（算子单调性、窗口交互逻辑、分母防零鲁棒性、量价组合合理性），这些在不同市场间高度通用，所以跨市场迁移能力强。搜索任务上 EA 整体最好；性价比最高的是 Gemini-2.5-Flash / GPT-4.1-Mini；温度 0.75 在搜索效率 / 收敛 / 多样性间最佳（过高如 1.5 会暴增不合规公式、拉升 search cost）。</p>
-
 <p><span class="claim claim-paper">论文</span> 生成维度最容易出问题的地方：Word Salad（长 CoT + 高温→输出乱码）；代码专用模型（Qwen2.5-Coder、CodeLlama-70B）在 FAFM 上无优势；Hard 难度集上 Accuracy 普遍大幅下降（GPT-5 0.99→0.10）。</p>
-
-<h2 id="takeaways">落地建议</h2>
-
-<p><span class="claim claim-paper">论文</span> 论文 / 解读给出的工程取舍：</p>
-
+<h2 id="落地建议">落地建议</h2>
+<p><span class="claim claim-paper">论文</span> 论文 / <a href="#ref-alphabench-explainer">解读</a>给出的工程取舍：</p>
 <ol>
 <li><strong>绝不依赖 LLM 零样本过滤因子</strong>：硬规则交给 Python AST，或把 LLM 微调成 pairwise 比较器，真实性能交回 Qlib / 自研回测做最终约束。</li>
-<li><strong>SFT 输入用 AST / 算子图结构化 JSON</strong>，并补执行元数据（调仓频率 / lag / 板块 / NaN 处理），缓解"欠定问题"。</li>
+<li><strong>SFT 输入用 AST / 算子图结构化 JSON</strong>，并补执行元数据（调仓频率 / lag / 板块 / NaN 处理），缓解&quot;欠定问题&quot;。</li>
 <li><strong>构建高 contrast 的 pairwise 训练集</strong>：确定 Noise vs 确定 Signal 强行配对。</li>
 <li><strong>EA crossover 必须代码层硬过滤算子爆炸</strong>（nesting depth + Ref 检测），别靠 prompt 口头警告。</li>
 </ol>
-
-<p><span class="claim claim-self">本文归纳</span> 一句话定位：把 LLM 当"有创造力的变异 / 杂交算子生成器"，回测做最终约束，是当前 LLM 量化因子挖掘唯一可行的做法。LLM 负责生成多样性，区分好坏这件事不要交给它的零样本判断。</p>
-
+<p><span class="claim claim-self">本文归纳</span> 一句话定位：把 LLM 当&quot;有创造力的变异 / 杂交算子生成器&quot;，回测做最终约束，是当前 LLM 量化因子挖掘唯一可行的做法。LLM 负责生成多样性，区分好坏这件事不要交给它的零样本判断。</p>
 <h2 id="reference">Reference</h2>
-
 <ol class="ref-list">
 
-<li><a id="ref-alphabench"></a><strong>[AlphaBench：面向公式化 alpha 因子挖掘（FAFM）的 LLM 基准]</strong> 香港城市大学 / 上海财经大学等，2026。CSI300（2020–2025）+ Qlib 回测闭环；生成 / 评估 / 搜索三维度；零样本判别力失效 + pairwise SFT 跨市场泛化的核心发现。<span class="claim claim-paper">论文</span></li>
+<li><a id="ref-alphabench"></a> <strong>[AlphaBench：面向公式化 alpha 因子挖掘（FAFM）的 LLM 基准]</strong> 香港城市大学 / 上海财经大学等，2026。CSI300（2020–2025）+ Qlib 回测闭环；生成 / 评估 / 搜索三维度；零样本判别力失效 + pairwise SFT 跨市场泛化的核心发现。<span class="claim claim-paper">论文</span></li>
 
-<li><a id="ref-alphabench-explainer"></a><strong>[哪款大模型更适合因子挖掘？]</strong> QuantML，知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042339790650077676">zhuanlan.zhihu.com/p/2042339790650077676</a>。本文对 AlphaBench 各项数据与落地建议的解读来自这篇公开解读。<span class="claim claim-blog">公开解读</span></li>
+<li><a id="ref-qlib"></a> <strong>[Qlib: An AI-oriented Quantitative Investment Platform]</strong> Microsoft，Yang et al. 2020. <a href="https://arxiv.org/abs/2009.11189">arXiv:2009.11189</a>。AlphaBench 的因子回测闭环（CSI300 + 算子合法性 / arity 校验）跑在此平台上。<span class="claim claim-paper">论文</span></li>
+
+<li><a id="ref-alphabench-explainer"></a> <strong>[哪款大模型更适合因子挖掘？]</strong> QuantML，知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042339790650077676">zhuanlan.zhihu.com/p/2042339790650077676</a>。本文对 AlphaBench 各项数据与落地建议的解读来自这篇公开解读。<code>[公开解读]</code></li>
 
 </ol>
+
   </article>
 
   <footer class="brief-foot">

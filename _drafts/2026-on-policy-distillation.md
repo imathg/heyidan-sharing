@@ -2,7 +2,7 @@
 
 <!-- domain: agentic-rl -->
 
-`[tech report]` [DeepSeek-V4](#ref-deepseek-v4)（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。`[tech report]` [MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，tech report 报告以 1/3 总参数对齐 Kimi-K2-Thinking。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
+`[tech report]` [DeepSeek-V4](#ref-deepseek-v4)（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。`[tech report]` [MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，自报以 1/3 总参数对齐 Kimi-K2-Thinking。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
 
 `[本文归纳]` 这条线半年内从"另一种 post-training 选项"变成 frontier model consolidation 的常用组件。**本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment**。teacher 可以替换、可以退化、甚至可以是 student 自己；on-policy data 一旦失去，整条机制就退化为带噪声的 SFT。
 
@@ -44,7 +44,7 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | RL   | 当前模型 induced |
 | OPD  | 当前模型 induced（student 端） |
 
-`[本文归纳]` OPD 的 anti-forgetting 来自这条几何约束的继承。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。
+`[本文归纳]` OPD 的 anti-forgetting 沿用了这条几何约束。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。
 
 ## Token 视角：高概率交集承担学习
 
@@ -103,7 +103,7 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 
 | 取值 | 估计性质 | 工程代价 | 默认采用方 |
 |------|---------|---------|----------|
-| sampled-token | 单样本无偏估计，方差大 | 便宜 | `[论文]` [GKD](#ref-gkd)（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；`[工程博客]` [Thinking Machines Lab](#ref-tml-opd) 工程化导读；`[tech report]` 小米 [MiMo-V2-Flash](#ref-mimo)、字节方舟内部默认走这条 |
+| sampled-token | 单样本无偏估计，方差大 | 便宜 | `[论文]` [GKD](#ref-gkd)（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；`[工程博客]` [Thinking Machines Lab](#ref-tml-opd) 工程化导读；`[tech report]` 小米 [MiMo-V2-Flash](#ref-mimo) |
 | top-k         | 截断到 teacher top-k 上的 reverse-KL | 中等 | `[论文]` [Revisiting OPD](#ref-fu2026)（CASIA SKL-MAIS + UCAS，Fu et al. 2026），自报在长 prefix 上 +19.8% 优于 sampled-token baseline |
 | full-vocab    | 零方差、零偏差 | 贵：teacher logits 要 FP4 量化 + hidden state cache 才装得下 10+ specialist | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) |
 

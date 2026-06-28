@@ -465,82 +465,86 @@ footer.brief-foot a:hover { color: var(--text); }
   <div class="machine-bar">
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
-    <span class="sep">·</span> 2 sources
-    <span class="sep">·</span> last update 2026-06-11
+    <span class="sep">·</span> 3 sources
+    <span class="sep">·</span> last update 2026-06-28
   </div>
 
   <h1 class="brief-title">DVAO：多目标 RL 里按方差自适应的优势组合</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-06-11</span></span>
-    <span class="item"><span class="k">sources</span> <span class="v">2</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-28</span></span>
+    <span class="item"><span class="k">sources</span> <span class="v">3</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">dvao-multireward</span></span>
   </div>
 
   <article class="body" id="brief-body">
-<p><span class="claim claim-paper">论文</span> <a href="#ref-dvao">DVAO</a>（arXiv:2605.25604，阿里云团队，2026）针对一个 GRPO 下很常见的工程问题：多个互相冲突的奖励，比如数学推理的"答对" vs "别无限套娃"（长度）、工具调用的"参数对" vs "JSON 格式合法"，都要标量化成一个标量再做 group-relative 优化，"直接合"为什么会失稳、怎么合才稳定。</p>
-
-<p><span class="claim claim-self">本文归纳</span> 它把"多个奖励信号粗暴合一时，强目标被弱/易目标吃掉"这件工程上反复踩的事，用 GRPO 框架下的两条闭式命题写清楚了。</p>
-
-<blockquote>正文每条 claim 带 <code>[论文]</code> / <code>[本文归纳]</code> tag。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</blockquote>
-
-<h2 id="two-failures">两类"直接合"各自的病灶</h2>
-
-<p><span class="claim claim-paper">论文</span> 论文把主流标量化分成两类，各证一个病灶：</p>
-
+<!-- domain: agentic-rl -->
+<p><span class="claim claim-paper">论文</span> <a href="#ref-dvao">DVAO</a>（arXiv:2605.25604，阿里云团队，2026）针对 <a href="#ref-grpo">GRPO</a> 下一类常见的工程问题：多个互相冲突的奖励，比如数学推理的&quot;答对&quot; vs &quot;别无限套娃&quot;（长度）、工具调用的&quot;参数对&quot; vs &quot;JSON 格式合法&quot;，都要标量化成一个标量再做 group-relative 优化，&quot;直接合&quot;为什么会失稳、怎么合才稳定。</p>
+<p><span class="claim claim-self">本文归纳</span> 它把&quot;多个奖励信号直接合并时，强目标被弱/易目标盖过&quot;这件工程上反复出现的现象，用 GRPO 框架下的两条闭式命题写清楚了。</p>
+<blockquote>
+<p>正文每条 claim 带 <code>[论文]</code> / <code>[本文归纳]</code> tag。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
+</blockquote>
+<h2 id="两类&quot-直接合&quot-各自的病灶">两类&quot;直接合&quot;各自的病灶</h2>
+<p><span class="claim claim-paper">论文</span> 论文把主流标量化分成两类，各证一个病灶（三条命题的中文解读见 <a href="#ref-dvao-explainer">此文</a>）：</p>
 <ul>
 <li><strong>奖励组合（RC, Reward Combination）</strong>：先加权求和原始奖励、再统一归一化。Proposition 1 证明，当目标间冲突（样本相关系数 ρ&lt;1）时，RC 的均方优势恒 ≥ 优势组合，归一化又把组合方差强行拉回 1、抹掉冲突的抵消效应，等于在冲突剧烈时变相放大优势数值，引发巨大梯度更新、训练失稳。</li>
 <li><strong>优势组合（AC，如 GDPO）</strong>：先对每个目标独立归一化得各自优势、再加权求和。把组合方差压到 ≤1 稳住了梯度幅值，但用静态权重、且归一化时把各目标完全隔离，梯度信息完全解耦（∇J = Σ wk ∇Jk），抓不到单次 rollout 内多目标的协同/对抗关系，易陷次优。</li>
 </ul>
-
-<h2 id="dvao">DVAO：用组内经验方差动态加权</h2>
-
-<p><span class="claim claim-paper">论文</span> DVAO（Dynamic Variance-adaptive Advantage Optimization）把静态权重换成数据驱动的动态权重：对每个 rollout 组先算各目标经验标准差 σk，自适应权重 <code>w̃k = wk·σk / Σ wl·σl</code>。想法是"强信号放大、弱/噪声信号抑制"：某目标组内方差大（回复有好有坏、区分度高）说明学习信号强，调大权重；方差近 0（都差不多或太易满分）则压低。</p>
-
+<h2 id="dvao-用组内经验方差动态加权">DVAO：用组内经验方差动态加权</h2>
+<p><span class="claim claim-paper">论文</span> DVAO（Dynamic Variance-adaptive Advantage Optimization）把静态权重换成数据驱动的动态权重：对每个 rollout 组先算各目标经验标准差 σk，自适应权重 <code>w̃k = wk·σk / Σ wl·σl</code>。想法是&quot;强信号放大、弱/噪声信号抑制&quot;：某目标组内方差大（回复有好有坏、区分度高）说明学习信号强，调大权重；方差近 0（都差不多或太易满分）则压低。</p>
 <p>两条理论保障：</p>
-
 <ul>
 <li><span class="claim claim-paper">论文</span> <strong>Proposition 2（有界性）</strong>：<code>|A_DVAO| ≤ |A_sum|</code> 逐点成立，以 RC 为上确界，本身就能防止梯度爆炸；等号当且仅当奖励两两完美正相关。</li>
 <li><span class="claim claim-paper">论文</span> <strong>Proposition 3（隐式交叉正则）</strong>：DVAO 偏导敏感度由交叉项 <code>A_DVAO·A_k</code> 决定（AC 是孤立的 <code>A_k²</code>），把单目标表现和全局表现绑定：某样本目标 k 上好、全局差时敏感度随之放大，迫使模型优先补全局短板；全局局部都好时敏感度收缩，防止在易优化目标上过度压榨核心目标。</li>
 </ul>
-
-<h2 id="experiments">实验：双赢且支配帕累托前沿</h2>
-
+<h2 id="实验-双赢且支配帕累托前沿">实验：双赢且支配帕累托前沿</h2>
 <p><span class="claim claim-paper">论文</span> verl 框架、G=16、500 步（math 用 Qwen3-4B/8B-Base，tool-use 用 Qwen2.5-3B/7B-Instruct，BFCL-v4）：</p>
-
 <table>
-<thead><tr><th>方法</th><th>现象</th></tr></thead>
+<thead>
+<tr>
+<th>方法</th>
+<th>现象</th>
+</tr>
+</thead>
 <tbody>
-<tr><td>单目标 GRPO</td><td>准确率升、长度依从度大幅下降（Qwen3-8B 94.28%→63.47%）</td></tr>
-<tr><td>RC / AC</td><td>长度拉回 96%+ 但准确率回落（8B RC 52.57%→46.26%）</td></tr>
-<tr><td>GDPO</td><td>灾难性失效（4B 准确率跌到 13.41%，彻底倒向"长度"这个易满分目标）</td></tr>
-<tr><td>DVAO</td><td>双赢（4B 42.19% / 99.91%，8B 47.49% / 99.92%），反超单目标 GRPO</td></tr>
+<tr>
+<td>单目标 GRPO</td>
+<td>准确率升、长度依从度大幅下降（Qwen3-8B 94.28%→63.47%）</td>
+</tr>
+<tr>
+<td>RC / AC</td>
+<td>长度拉回 96%+ 但准确率回落（8B RC 52.57%→46.26%）</td>
+</tr>
+<tr>
+<td>GDPO</td>
+<td>灾难性失效（4B 准确率跌到 13.41%，彻底倒向&quot;长度&quot;这个易满分目标）</td>
+</tr>
+<tr>
+<td>DVAO</td>
+<td>双赢（4B 42.19% / 99.91%，8B 47.49% / 99.92%），反超单目标 GRPO</td>
+</tr>
 </tbody>
 </table>
-
-<p><span class="claim claim-paper">论文</span> 在 w1∈{0.1,0.3,0.5,0.7,0.9} 扫参下，DVAO 在"准确率 vs 依从度"平面右上角绝对支配，AC 在大部分权重下失效。</p>
-
-<h2 id="limits">局限</h2>
-
+<p><span class="claim claim-paper">论文</span> 在 w1∈{0.1,0.3,0.5,0.7,0.9} 扫参下，DVAO 在&quot;准确率 vs 依从度&quot;平面右上角绝对支配，AC 在大部分权重下失效。</p>
+<h2 id="局限">局限</h2>
 <p><span class="claim claim-paper">论文</span> 论文自陈三条：</p>
-
 <ol>
 <li><strong>G 下限依赖</strong>：G≤4 时组内方差估计误差大，可引历史动量 / 跨批次滑动平均。</li>
 <li><strong>高维冲突扩展性</strong>：只实证双目标，多目标空间未验。</li>
-<li><strong>辅助奖励质量瓶颈</strong>：DVAO 是"信号放大器"，若某目标本身是高方差随机噪声，DVAO 会把它当成强信号、调大权重，合并算法救不了坏信号。</li>
+<li><strong>辅助奖励质量瓶颈</strong>：DVAO 是&quot;信号放大器&quot;，若某目标本身是高方差随机噪声，DVAO 会把它当成强信号、调大权重，合并算法处理不了坏信号。</li>
 </ol>
-
-<p><span class="claim claim-self">本文归纳</span> 一句话：DVAO 把"按信号区分度分配训练权重"这个想法做成了连续、可证有界的优势加权。它和"按场景/样本切分把冲突信号物理隔离"那类离散工程解法正交，两者可叠加。</p>
-
+<p><span class="claim claim-self">本文归纳</span> 一句话：DVAO 把&quot;按信号区分度分配训练权重&quot;这个想法做成了连续、可证有界的优势加权。它和&quot;按场景/样本切分把冲突信号物理隔离&quot;那类离散工程解法正交，两者可叠加。</p>
 <h2 id="reference">Reference</h2>
-
 <ol class="ref-list">
 
-<li><a id="ref-dvao"></a><strong>[DVAO: Dynamic Variance-adaptive Advantage Optimization for Multi-reward Reinforcement Learning]</strong> 阿里云团队，2026. <a href="https://arxiv.org/abs/2605.25604">arXiv:2605.25604</a>。RC 幅值爆炸（Prop 1）/ AC 目标孤立 / DVAO 组内方差自适应加权（Prop 2 有界 + Prop 3 隐式交叉正则）；verl G=16 实验。<span class="claim claim-paper">arxiv 论文</span></li>
+<li><a id="ref-dvao"></a> <strong>[DVAO: Dynamic Variance-adaptive Advantage Optimization for Multi-reward Reinforcement Learning]</strong> 阿里云团队，2026. <a href="https://arxiv.org/abs/2605.25604">arXiv:2605.25604</a>。RC 幅值爆炸（Prop 1）/ AC 目标孤立 / DVAO 组内方差自适应加权（Prop 2 有界 + Prop 3 隐式交叉正则）；verl G=16 实验。<span class="claim claim-paper">arxiv 论文</span></li>
 
-<li><a id="ref-dvao-explainer"></a><strong>[LLM 多目标 RL 中，为什么简单的奖励相加会导致训练不收敛？]</strong> 0xC001（阿里巴巴 大模型算法专家），知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042735452688580754">zhuanlan.zhihu.com/p/2042735452688580754</a>。本文对 DVAO 三条命题和实验的中文解读来自这篇公开解读。<span class="claim claim-blog">公开解读</span></li>
+<li><a id="ref-grpo"></a> <strong>[DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models]</strong> DeepSeek-AI，Shao et al. 2024. <a href="https://arxiv.org/abs/2402.03300">arXiv:2402.03300</a>。提出 GRPO（group-relative policy optimization），本文讨论的多目标优化都在此框架下。<span class="claim claim-paper">论文</span></li>
+
+<li><a id="ref-dvao-explainer"></a> <strong>[LLM 多目标 RL 中，为什么简单的奖励相加会导致训练不收敛？]</strong> 0xC001（阿里巴巴 大模型算法专家），知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042735452688580754">zhuanlan.zhihu.com/p/2042735452688580754</a>。本文对 DVAO 三条命题和实验的中文解读来自这篇公开解读。<code>[公开解读]</code></li>
 
 </ol>
+
   </article>
 
   <footer class="brief-foot">

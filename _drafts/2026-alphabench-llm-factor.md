@@ -2,7 +2,7 @@
 
 <!-- domain: hf-alpha-factor -->
 
-`[论文]` [AlphaBench](#ref-alphabench)（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ Qlib 回测闭环，把"该用哪个 LLM 搭因子挖掘 Agent"这个工程问题做成了可量化的评测，分生成 / 评估 / 搜索三个维度。
+`[论文]` [AlphaBench](#ref-alphabench)（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ [Qlib](#ref-qlib) 回测闭环，把"该用哪个 LLM 搭因子挖掘 Agent"这个工程问题做成了可量化的评测，分生成 / 评估 / 搜索三个维度。
 
 `[本文归纳]` AlphaBench 在评估维度暴露了一条硬约束：**零样本下没有任何 LLM 能稳定判别因子优劣**，但**成对选择（pairwise）SFT 极其有效且跨市场泛化**。这两点直接决定了因子挖掘 Agent 该怎么搭。
 
@@ -18,13 +18,13 @@
 
 `[论文]` 外加严苛质量过滤器：算子嵌套 ≤5 层、Qlib 算子合法性 + arity 校验、单因子两周计算 ≤30s、NaN ≤1%、Lookahead（用 Ref 等未来函数）强制标 Noise + 评分直接打 1 分。
 
-## 核心警示：零样本判别力≈掷硬币
+## 核心发现：零样本判别力≈掷硬币
 
 `[论文]` 零样本下，没有任何 LLM 表现出稳定的因子优劣判别能力：DeepSeek-V3 信号 / 噪声分类仅 0.46、成对选择 0.48（与掷硬币无异），强如 GPT-5 成对选择也只到 0.64（SP500 上 0.52）。
 
 `[论文]` 论文给出的解释：LLM 只能看纯文本公式，但因子真实绩效高度依赖执行上下文（调仓频率、信息滞后、平滑策略、市场风格），公式文本省略了这些物理变量，使纯公式的性能推断在数学上是**欠定问题**。而且 CoT 帮倒忙，在评分排名任务中引入思维链反而增大方差、拉低 NDCG@K。
 
-## 但 pairwise SFT 是魔法
+## 但成对选择（pairwise）SFT 效果极强
 
 `[论文]` SFT 的两条路径反差极大：
 
@@ -39,7 +39,7 @@
 
 ## 落地建议
 
-`[论文]` 论文 / 解读给出的工程取舍：
+`[论文]` 论文 / [解读](#ref-alphabench-explainer)给出的工程取舍：
 
 1. **绝不依赖 LLM 零样本过滤因子**：硬规则交给 Python AST，或把 LLM 微调成 pairwise 比较器，真实性能交回 Qlib / 自研回测做最终约束。
 2. **SFT 输入用 AST / 算子图结构化 JSON**，并补执行元数据（调仓频率 / lag / 板块 / NaN 处理），缓解"欠定问题"。
@@ -52,6 +52,9 @@
 
 <a id="ref-alphabench"></a>
 **[AlphaBench：面向公式化 alpha 因子挖掘（FAFM）的 LLM 基准]** 香港城市大学 / 上海财经大学等，2026。CSI300（2020–2025）+ Qlib 回测闭环；生成 / 评估 / 搜索三维度；零样本判别力失效 + pairwise SFT 跨市场泛化的核心发现。`[论文]`
+
+<a id="ref-qlib"></a>
+**[Qlib: An AI-oriented Quantitative Investment Platform]** Microsoft，Yang et al. 2020. [arXiv:2009.11189](https://arxiv.org/abs/2009.11189)。AlphaBench 的因子回测闭环（CSI300 + 算子合法性 / arity 校验）跑在此平台上。`[论文]`
 
 <a id="ref-alphabench-explainer"></a>
 **[哪款大模型更适合因子挖掘？]** QuantML，知乎专栏，2026. [zhuanlan.zhihu.com/p/2042339790650077676](https://zhuanlan.zhihu.com/p/2042339790650077676)。本文对 AlphaBench 各项数据与落地建议的解读来自这篇公开解读。`[公开解读]`
