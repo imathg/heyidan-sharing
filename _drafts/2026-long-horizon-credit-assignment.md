@@ -4,9 +4,9 @@
 
 2026 年 6 月，七个互不隶属的团队都在改 GRPO 给长程 agent 分配 credit 的方式。`[论文]` [HSD](#ref-hsd)（George Washington University，Li et al. 2026）把 token 级 credit 定位到失败与成功路径的分叉处；`[论文]` [SCPO](#ref-scpo)（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；`[论文]` [HiMPO](#ref-himpo)（中国联通，Yan et al. 2026）只给 memory 写入动作单独的 credit 通道；`[论文]` [VIMPO](#ref-vimpo)（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；`[论文]` [Progress Advantage](#ref-progress-advantage)（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比当 step 信号；`[论文]` [BiPACE](#ref-bipace)（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse)（中科院自动化所，Hao et al. 2026）诊断这套训练为什么会失稳、外部监督怎么救它。
 
-这七篇调的是同一组旋钮，针对的是同一个失败模式。
+同一时期，`[tech report]` [GLM-5.2](#ref-glm52) 给出了系统实践中的另一端答案：长程任务会产生更长执行轨迹，compaction 后同一个 prompt 下的 rollout 会被切成数量不同、长度高度可变的 sub-trace，因此从 group-wise optimization 转到 critic-based PPO，让 critic 估 token-level advantage。它补上了同一问题的另一端：一旦训练目标从「免 critic」转向「稳定处理变长 sub-trace」，critic 应该在什么条件下回到训练环节？
 
-> **核心论点：GRPO 把一条轨迹的成败压成一个数，均匀盖到轨迹里每个 token。长程、稀疏奖励下，这个数分不清「失败轨迹上的好步」和「成功轨迹上的坏步」。七个配方都在做同一件事，在不训练 critic 的前提下给每个 step 估一个反事实基线，分歧只在「反事实从哪里取」。**
+> **核心论点：GRPO 把一条轨迹的成败压成一个数，均匀盖到轨迹里每个 token。长程、稀疏奖励下，这个数分不清「失败轨迹上的好步」和「成功轨迹上的坏步」。七篇论文大多在不训练 critic 的前提下给每个 step 估一个反事实基线；GLM-5.2 则说明，当 compaction 后的 trace 数量和长度方差足够大时，回到 critic-based PPO 也是同一组设计选择里的合理端点。**
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -21,8 +21,8 @@
     </marker>
   </defs>
   <rect x="0" y="0" width="780" height="500" rx="14" fill="url(#lhbg)"/>
-  <text x="390" y="36" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="18.5" font-weight="600" fill="#e8eef2">长程 credit assignment：七个配方补的是同一个洞</text>
-  <text x="390" y="59" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12.5" fill="#8a96a0">失败模式 → 缺的 per-step 反事实基线 → 三种取法（颜色） × 附着粒度（横轴）</text>
+  <text x="390" y="36" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="18.5" font-weight="600" fill="#e8eef2">长程 credit assignment：七篇论文补同一个基线缺口</text>
+  <text x="390" y="59" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12.5" fill="#8a96a0">失败模式 → 缺失的 per-step 反事实基线 → 三种取法（颜色） × 附着粒度（横轴）</text>
   <g font-family="-apple-system,Segoe UI,sans-serif">
     <rect x="36" y="80" width="206" height="36" rx="8" fill="#222d36" stroke="#3a4550"/>
     <text x="139" y="98" text-anchor="middle" font-size="11.5" font-weight="600" fill="#c2ccd4">GRPO：轨迹级 advantage</text>
@@ -43,7 +43,7 @@
   <g font-family="-apple-system,Segoe UI,sans-serif">
     <rect x="42" y="222" width="136" height="42" rx="8" fill="#1c2630" stroke="#4d5a64" stroke-dasharray="4 3"/>
     <text x="110" y="241" text-anchor="middle" font-size="12" font-weight="600" fill="#8a96a0">GRPO 基线</text>
-    <text x="110" y="256" text-anchor="middle" font-size="10" fill="#6b7785">一个数盖整条</text>
+    <text x="110" y="256" text-anchor="middle" font-size="10" fill="#6b7785">同一数分给整条</text>
     <rect x="252" y="166" width="136" height="42" rx="8" fill="#1c2630" stroke="#5fd0c8"/>
     <text x="320" y="185" text-anchor="middle" font-size="12.5" font-weight="600" fill="#5fd0c8">SCPO</text>
     <text x="320" y="200" text-anchor="middle" font-size="10" fill="#8a96a0">成功 sibling 语义一致</text>
@@ -87,30 +87,35 @@
   </g>
 </svg>
 
-## 失败模式：一个数盖整条轨迹
+## 失败模式：轨迹级 advantage 均摊到整条轨迹
 
-group-based RL（GRPO 是代表）的做法是采一组 rollout，用每条的终局成败算一个轨迹级 advantage，并把这个 advantage 原样发给该轨迹里的每一个 token。单步任务里这没问题，一次问答就是一个 step，终局即 step。长程 agent 不一样：一条轨迹是几十步工具调用、几十轮对话，奖励只在最后才给。一个数盖整条轨迹，等于声明这条轨迹里所有 step 一样好或一样坏。
+以 GRPO 为代表的 group-based RL 会采一组 rollout，用每条轨迹的终局成败计算 trajectory-level advantage，再把同一个 advantage 分给该轨迹里的每个 token。单步任务里，这个近似通常够用：一次问答就是一个 step，终局即 step。换成长程 agent，一条轨迹可能包含几十步工具调用、几十轮对话，奖励却只在最后出现。同一个数覆盖整条轨迹，相当于假设所有 step 的贡献相同。
 
-`[论文]` [SCPO](#ref-scpo) 把这个问题说得最干脆：一个 step 的 credit 绑死在它所在 rollout 的终局上，于是语义近乎相同的两个中间步，因为各自轨迹最终一个成功一个失败，拿到符号相反的 credit。`[论文]` [HiMPO](#ref-himpo) 指出长程 agent 里的具体后果：一次有用的 memory 写入会因为下游工具失败、噪声观测被连坐惩罚，模型于是学会丢掉有用证据。`[论文]` [VIMPO](#ref-vimpo) 从算法侧点出根本原因，group-relative 方法回避了 critic，代价是只能给出轨迹级 advantage，对每个 token 取同一个值。
+`[论文]` [SCPO](#ref-scpo) 把这个问题说得最直接：一个 step 的 credit 绑定在它所在 rollout 的终局上，于是语义近乎相同的两个中间步，因为各自轨迹最终一个成功一个失败，拿到符号相反的 credit。`[论文]` [HiMPO](#ref-himpo) 指出长程 agent 里的具体后果：一次有用的 memory 写入会因为下游工具失败、噪声观测而一并受罚，模型于是学会丢掉有用证据。`[论文]` [VIMPO](#ref-vimpo) 从算法侧点出根本原因，group-relative 方法回避了 critic，代价是只能给出轨迹级 advantage，对每个 token 取同一个值。
 
-这三种描述是同一件事的三个切面。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 报告了退化的极端情形：在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。
+`[tech report]` [GLM-5.2](#ref-glm52) 把同一个问题放进实际长程训练系统里：超长轨迹经过 compaction 切成多个 sub-trace 之后，同 prompt 下不同 rollout 产生的可训练 trace 数量不同、长度也高度可变。此时 group-wise comparison 的比较单位本身就不稳定，GLM-5.2 因而改用 critic-based PPO，从单条 rollout 学习 token-level advantage。
+
+这三种表述指向同一件事。轨迹级 advantage 是一种秩退化的 credit，它在「这一步本身贡献多少」这个维度上没有分辨率。轨迹越长、奖励越稀疏，退化越严重。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 报告了退化的极端情形：在多步工具调用上只靠 RL 常常训练不稳定，或几乎拿不到增益。
 
 | 论文 | 同一失败模式的不同说法 |
 |---|---|
 | `[论文]` SCPO | 语义近乎相同的中间步，因终局成败拿到符号相反的 credit |
-| `[论文]` HiMPO | memory 写入被下游工具失败连坐，归因失真，模型丢掉有用证据 |
+| `[论文]` HiMPO | memory 写入因下游工具失败一并受罚，归因失真，模型丢掉有用证据 |
 | `[论文]` VIMPO | group-relative 免 critic，代价是只有轨迹级 advantage，每个 token 同值 |
+| `[tech report]` GLM-5.2 | compaction 后同 prompt 下 trace 数量和长度不齐，group-wise optimization 改成 critic-based PPO |
 | `[论文]` tool-use 失稳分析 | 多步工具调用上只靠 RL 常导致训练不稳定，或拿不到增益 |
 
 ## 缺的那个对象：critic 本会给的 per-step 基线
 
-actor-critic 方法本来有一个部件专门解这个问题。critic 估「从这一步往后的期望回报」，于是每个 step 都有自己的基线，advantage 是当前回报减去这个基线。问题是 critic 自己要训练，而且训练起来不稳定。GRPO 把 critic 砍掉换来简单，砍掉的同时也丢了 per-step 基线。
+actor-critic 方法本来有一个组件专门处理这个问题。critic 估「从这一步往后的期望回报」，于是每个 step 都有自己的基线，advantage 是当前回报减去这个基线。问题是 critic 自己要训练，而且训练起来不稳定。GRPO 去掉 critic 换来简单，这个简化也丢了 per-step 基线。
 
-`[本文归纳]` 七篇里有六篇明确强调自己 critic-free、value-free 或 annotation-free。这六种方法估的是同一个被砍掉的对象：critic 本该提供的 per-step 反事实基线。区别只在一点，不训 critic 的话，这个基线的代理从哪里取。三种取法：
+`[tech report]` [GLM-5.2](#ref-glm52) 走向另一端：重新引入 critic，用 critic-based PPO 适配 compaction 后的单 rollout 学习，并把 compacted sub-trace 全部作为可训练轨迹。它的重要性在于把边界说清楚了：七篇论文主要是在回答「不用 critic，怎么补上 per-step 基线缺口」；GLM-5.2 回答的是「什么时候这个缺口大到需要付 critic 成本」。
 
-`[本文归纳]` **取自同组的成功轨迹。** `[论文]` [HSD](#ref-hsd) 不拿标准答案作 teacher 的条件，改用当前训练组里成功的 peer rollout，让信号集中在失败路径与成功路径分叉的 token。`[论文]` [SCPO](#ref-scpo) 同源，但落在 step 层：给定一个中间步，到成功 sibling 里找它语义对应的那一步，看它在成功路径里出不出现。这一派的反事实是「别的轨迹在同一处怎么做对的」。
+`[本文归纳]` 七篇论文里有六篇明确强调自己 critic-free、value-free 或 annotation-free。这六种方法估的是同一个缺失对象：critic 本该提供的 per-step 反事实基线。区别只在一点，不训练 critic 的话，这个基线的代理从哪里取。三种取法：
 
-`[本文归纳]` **取自当前策略自身。** `[论文]` [VIMPO](#ref-vimpo) 从 KL 正则 RL 的最优性条件导出策略隐含的 value，自回归生成下这个 value 写成策略与参考策略的对数比，由「轨迹末端没有未来奖励」这个终止条件锚定，于是不训 critic 也拿到一个 value 损失。`[论文]` [Progress Advantage](#ref-progress-advantage) 用训练策略与参考策略的对数概率比直接当 advantage，并论证它恢复了最优 advantage 函数。这一派的反事实是「当前策略相对它的起点进步了多少」，信号本就在训练管线里。
+`[本文归纳]` **取自同组的成功轨迹。** `[论文]` [HSD](#ref-hsd) 在不把标准答案作为 teacher 的条件下，改用当前训练组里成功的 peer rollout，让信号集中在失败路径与成功路径分叉的 token。`[论文]` [SCPO](#ref-scpo) 同源，但落在 step 层：给定一个中间步，到成功 sibling 里找它语义对应的那一步，看它在成功路径里出不出现。这一派的反事实是「别的轨迹在同一处怎么做对的」。
+
+`[本文归纳]` **取自当前策略自身。** `[论文]` [VIMPO](#ref-vimpo) 从 KL 正则 RL 的最优性条件导出策略隐含的 value，自回归生成下这个 value 写成策略与参考策略的对数比，由「轨迹末端没有未来奖励」这个终止条件锚定，于是不训练 critic 也拿到一个 value 损失。`[论文]` [Progress Advantage](#ref-progress-advantage) 用训练策略与参考策略的对数概率比直接当 advantage，并论证它恢复了最优 advantage 函数。这一派的反事实是「当前策略相对它的起点进步了多少」，信号本就在训练管线里。
 
 `[本文归纳]` **取自同类的动作或状态。** `[论文]` [BiPACE](#ref-bipace) 按行为相似度把 step 聚类，给每一类动作配一个 action-specific 基线，一个 step 的 credit 与「同类动作在别处表现如何」对齐。`[论文]` [HiMPO](#ref-himpo) 对 memory 写入估 local utility，比较「同一写入前状态下，旧 memory 与更新后 memory 各能恢复多少任务相关信息」。这一派的反事实是「结构上等价的动作或状态本该是什么样」。
 
@@ -124,32 +129,36 @@ actor-critic 方法本来有一个部件专门解这个问题。critic 估「从
 
 ## 四个旋钮
 
-`[本文归纳]` 七个方案的差异落在四个维度的取值组合上，各自是这四维空间里的一个位点。
+`[本文归纳]` 七个方案加上 GLM-5.2 的差异落在四个维度的取值组合上，各自是这四维空间里的一个位点。
 
 | 旋钮 | 取值范围 | 各方法落点 |
 |---|---|---|
-| 附着粒度 | 轨迹 / token / step / 动作子集 | 轨迹（GRPO 基线）；token（HSD、VIMPO）；step（SCPO、BiPACE、Progress Advantage）；动作子集（HiMPO 只管 memory token） |
+| 附着粒度 | 轨迹 / token / step / 动作子集 | 轨迹（GRPO 基线）；token（HSD、VIMPO、GLM-5.2 PPO 的 critic advantage）；step（SCPO、BiPACE、Progress Advantage）；动作子集（HiMPO 只管 memory token） |
 | 反事实参照系 | 成功轨迹 / 当前策略 / 同类动作 | 见上一节三派 |
-| 额外部件成本 | 零成本到外部监督 | 管线副产物零成本（Progress Advantage）；解析 value 无新增部件（VIMPO）；critic-free 但加一道塑形或聚类（HSD、SCPO、BiPACE、HiMPO）；需要外部监督注入（tool-use 失稳分析） |
-| 时序方向 | 回溯 / 前瞻 | 回溯，用已实现的终局或成功 sibling（HSD、SCPO、HiMPO）；前瞻，估未来期望（VIMPO、Progress Advantage） |
+| 额外部件成本 | 零成本到外部监督 | 管线副产物零成本（Progress Advantage）；解析 value 无新增部件（VIMPO）；critic-free 但加一道塑形或聚类（HSD、SCPO、BiPACE、HiMPO）；显式 critic（GLM-5.2 PPO）；需要外部监督注入（tool-use 失稳分析） |
+| 时序方向 | 回溯 / 前瞻 | 回溯，用已实现的终局或成功 sibling（HSD、SCPO、HiMPO）；前瞻，估未来期望（VIMPO、Progress Advantage、GLM-5.2 PPO critic） |
 
-附着粒度是最直接的一条轴。从轨迹往下走到 token，credit 的分辨率越来越高，但定位越来越难。`[论文]` [HSD](#ref-hsd) 在 token 层用分叉点解决定位，它在简答任务（AIME）上增益更大，说明分叉点集中时定位最划算；长链推理里分叉分散，这条收益下降。`[论文]` [HiMPO](#ref-himpo) 走了另一个极端，不追求全轨迹细粒度，只把一类最容易被连坐的动作（memory 写入）单独拎出来走一条去纠缠的通道，其余 token 仍走轨迹级。这是一种以约束换稳健的取法，只解一类动作，但解得干净。
+附着粒度是最直接的一条轴。从轨迹细化到 token，credit 的分辨率越来越高，但定位越来越难。`[论文]` [HSD](#ref-hsd) 在 token 层用分叉点解决定位，它在简答任务（AIME）上增益更大，说明分叉点集中时定位最划算；长链推理里分叉分散，这条收益下降。`[论文]` [HiMPO](#ref-himpo) 走了另一个极端，不追求全轨迹细粒度，只把一类最容易一并受罚的动作（memory 写入）单独抽出，走一条去纠缠的通道，其余 token 仍走轨迹级。这是一种以约束换稳健的取法，只处理一类动作，但边界更清楚。
+
+`[tech report]` [GLM-5.2](#ref-glm52) 落在已有旋钮的另一端：token-level advantage、显式 critic、单 rollout 学习、适配 compaction 后的可变 trace。它把这篇 brief 的问题从「有哪些 critic-free 变体」引向更大的工程判断：当轨迹切分、长度方差和 reward hacking 风险同时升高时，省掉 critic 的收益可能小于重新训练 critic 的收益。
 
 时序方向这条轴和反事实参照系有关联。用同组成功轨迹当参照的方法本就是回溯的，因为「成功」是已实现的事实。用当前策略当参照的方法偏前瞻，估的是期望。两条轴在已知的七个样本里没完全分开，正交性要更多方案才能判定。
 
-## 成本那一端：什么时候免不了外部监督
+## 成本那一端：什么时候免不了 critic 或外部监督
 
-前六篇的共同主张是省掉 critic。`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 站在成本轴的另一端，它的结论是有些情况下省不掉外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。
+前六篇的共同主张是省掉 critic。`[tech report]` [GLM-5.2](#ref-glm52) 位于成本轴的中高端：它仍依赖内部训练信号，同时为长程 compaction 场景付出了 critic-based PPO 的成本。理由来自训练单位的形态：同一个 prompt 的 rollout 被切成不同数量、不同长度的 sub-trace 后，group-wise optimization 很难维持稳定比较；single-rollout PPO 不要求同 prompt 下 trace 数量或相对长度一致，token-level loss 也能处理长度不均衡。
 
-`[本文归纳]` 把它和前六篇对照，得到一条边界：内生的反事实基线（从成功轨迹、当前策略或同类动作里挖出来的信号）在奖励虽稀疏但同组里存在成功路径时够用；当一组 rollout 全错、没有成功 sibling 可对照，或动作空间稀疏到聚不出可靠的同类，内生信号本身就失效了，这时候得从外部灌入 off-policy 数据或 hint。成本最低的 Progress Advantage 是零成本管线副产物，成本最高的这一端要专门准备外部监督数据，四个旋钮里「额外部件成本」这一轴的两端就是这两篇。
+`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse) 位于成本轴的另一端，它的结论是有些情况需要外部信号。这篇先诊断多步 tool-use RL 为什么会失稳，再考察哪些监督信号能稳住训练，包括 off-policy 监督和 hint-based 引导。
+
+`[本文归纳]` 把它们和前六篇对照，得到一条边界：内生的反事实基线（从成功轨迹、当前策略或同类动作里提取的信号）在奖励虽稀疏但同组里存在成功路径、trace 仍可比时够用；当 compaction 让同 prompt 下训练单位的可比性下降时，显式 critic 重新变得划算；当一组 rollout 全错、没有成功 sibling 可对照，或动作空间稀疏到缺少可靠的同类聚类时，内生信号本身就失效了，这时候需要引入 off-policy 数据或 hint。成本最低的 Progress Advantage 是零成本管线副产物，中间是 GLM-5.2 这种显式 critic，成本最高的一端要专门准备外部监督数据。
 
 ## 与单步 RLVR、与蒸馏的边界
 
-`[本文归纳]` 这条线和单步 RLVR 的目标函数变体（GRPO 的裁剪、归一化、优势估计那些轴）落在不同层。目标函数变体改的是单步上损失怎么算，这条线改的是 credit 沿一条长轨迹怎么附着。在单步任务上两者重合，因为终局就是唯一的 step；任务越长，本文这条轴越独立。
+`[本文归纳]` 本文讨论的 credit-assignment 轴和单步 RLVR 的目标函数变体（GRPO 的裁剪、归一化、优势估计那些轴）落在不同层。目标函数变体改的是单步上损失怎么算，credit-assignment 轴改的是 credit 沿一条长轨迹怎么附着。在单步任务上两者重合，因为终局就是唯一的 step；任务越长，这条轴越独立。GLM-5.2 的信号尤其清楚：compaction 把一条超长轨迹切成多个训练样本后，核心从「group 内怎么归一化」转到「训练样本的单位还能不能 group-wise 比较」。
 
-`[本文归纳]` 它和 on-policy 蒸馏也有结构上的呼应。蒸馏那条线的核心是「用 teacher 信号在 student 自己的状态分布里做选择性强化」，本文这条线的核心是「在 student 自己的轨迹里做选择性 credit 分配」。HSD 把蒸馏的形式（teacher 以成功 peer 为条件）直接搬来做 credit 定位，是两条线交汇的一个具体点。一个开放问题是这两套旋钮能不能收进同一个更大的框架，都看成「在 student 自分布里，按某个反事实参照做选择性加权」。
+`[本文归纳]` 这个 credit-assignment 轴和 on-policy 蒸馏也有结构上的呼应。蒸馏那条线的核心是「用 teacher 信号在 student 自己的状态分布里做选择性强化」，本文这条线的核心是「在 student 自己的轨迹里做选择性 credit 分配」。HSD 把蒸馏的形式（teacher 以成功 peer 为条件）直接搬来做 credit 定位，是两条线交汇的一个具体点。一个开放问题是这两套旋钮能否归入同一个更大的框架，都看成「在 student 自分布里，按某个反事实参照做选择性加权」。
 
-> **一句话收束：长程 agent 的 credit assignment 问题，是 GRPO 砍掉 critic 后留下的洞。2026 年 6 月这一批方法都在补这个洞，补法的差异可以收进四个旋钮，最关键的一个是反事实基线从哪里取。**
+> **一句话收束：长程 agent 的 credit assignment 问题，是 GRPO 去掉 critic 后留下的 per-step 基线缺口。2026 年 6 月这一批方法都在补这个缺口；补法的差异可以收进四个旋钮，最关键的一个是反事实基线从哪里取，以及什么时候应该转向显式 critic、直接为 token-level advantage 付成本。**
 
 ## Reference
 
@@ -170,6 +179,9 @@ actor-critic 方法本来有一个部件专门解这个问题。critic 估「从
 
 <a id="ref-bipace"></a>
 **[BiPACE: Bisimulation-Guided Policy Optimization with Action Counterfactual Estimation for LLM Agents]** Hanyang Wang, Weijieying Ren, Yuxiang Zhang, Ding Cao, Zhizhao Zeng, Ke Zeng, Tianxiang Zhao，University of Chicago / Stanford University / HKUST (Guangzhou) / USTC / Meituan，2026. [arXiv:2606.25556](https://arxiv.org/abs/2606.25556)。本文用到它按行为相似度聚类 step（bisimulation）、给每类动作配 action-specific 反事实基线。`[arxiv 论文]`
+
+<a id="ref-glm52"></a>
+**[GLM-5.2: Built for Long-Horizon Tasks]** Z.AI，2026. [official blog on Hugging Face](https://huggingface.co/blog/zai-org/glm-52-blog) / [Z.AI blog](https://z.ai/blog/glm-5.2)。本文用到它的 long-horizon RL 训练描述：compaction 后同 prompt 下的 trainable sub-trace 数量和长度高度可变，因此从 group-wise optimization 转向 critic-based PPO，由 critic 估 token-level advantage，并对 compacted sub-trace 用 token-level loss 处理长度不均衡。`[tech report / official blog]`
 
 <a id="ref-tooluse-collapse"></a>
 **[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]** Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. [arXiv:2606.26027](https://arxiv.org/abs/2606.26027)。本文用作成本轴另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。`[arxiv 论文]`
