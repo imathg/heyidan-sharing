@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 12 sources
-    <span class="sep">·</span> last update 2026-06-28
+    <span class="sep">·</span> last update 2026-07-05
   </div>
 
   <h1 class="brief-title">OPD：on-policy 数据是抗遗忘的真正承担者</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-06-28</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-07-05</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">12</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">on-policy-distillation</span></span>
@@ -507,7 +507,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p>然后用这两个 teacher 各自做 OPD，看 student 的结果：</p>
+<p>然后用这两个 teacher 各自做 OPD，观察 student 的结果：</p>
 <table>
 <thead>
 <tr>
@@ -538,7 +538,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <blockquote>
 <p>在所有能解新任务的策略中，policy gradient 隐式偏向其中&quot;和当前策略 KL 最近&quot;的那一个。</p>
 </blockquote>
-<p>SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向&quot;距离当前策略最近的能解题策略&quot;。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两个 setting 上验证了 KL distance 与 forgetting magnitude 的相关性。</p>
+<p>SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向&quot;距离当前策略最近的能解题策略&quot;。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-nie2026">Dong Nie 2026</a>（独立研究者，arXiv:2605.22731）从 state distribution 的角度写了同一件事：</p>
 <table>
 <thead>
@@ -639,12 +639,12 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p>实操结论：<strong>把 student top-token 与 teacher top-token 的重叠率作为核心监控指标，KL 在降不算数</strong>。overlap 持平、KL 在降、downstream 不动这三件事同时出现，判定训练进入伪收敛区。补救：先做一轮短的 off-policy distillation 把 prior 拉齐，再切回 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。</p>
-<h2 id="五个正交-knob">五个正交 knob</h2>
-<p><span class="claim claim-self">本文归纳</span> 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个 knob 的不同取值组合。</p>
+<h2 id="五个正交维度">五个正交维度</h2>
+<p><span class="claim claim-self">本文归纳</span> 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个维度的不同取值组合。</p>
 <table>
 <thead>
 <tr>
-<th>Knob</th>
+<th>维度</th>
 <th>含义</th>
 <th>主要取值</th>
 </tr>
@@ -677,8 +677,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p>这五个 knob 的取值分别对应外部源中的具体设计。</p>
-<p><strong>K1（state coverage）</strong>。默认 student rollout 是 OPD 的标准设定。<span class="claim claim-paper">论文</span> <a href="#ref-hou2026">Uni-OPD</a>（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问&quot;既不全对也不全错&quot;的 informative state，避免 dense token signal 浪费在饱和或全错的 state 上。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a>（美团 + 浙大，Lu et al. 2026）反向走，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己跑不到的区域，再压回 student 权重。</p>
+<p>这五个维度的取值分别对应外部源中的具体设计。</p>
+<p><strong>K1（state coverage）</strong>。默认 student rollout 是 OPD 的标准设定。<span class="claim claim-paper">论文</span> <a href="#ref-hou2026">Uni-OPD</a>（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问&quot;既不全对也不全错&quot;的 informative state，防止 dense token signal 浪费在饱和或全错的 state 上。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a>（美团 + 浙大，Lu et al. 2026）走到另一端，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己无法到达的区域，再蒸馏回 student 权重。</p>
 <p><strong>K2（signal density）</strong>。三种粒度都是 reverse-KL 的不同估计：</p>
 <table>
 <thead>
@@ -693,7 +693,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <tr>
 <td>sampled-token</td>
 <td>单样本无偏估计，方差大</td>
-<td>便宜</td>
+<td>成本低</td>
 <td><span class="claim claim-paper">论文</span> <a href="#ref-gkd">GKD</a>（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；<span class="claim claim-blog">工程博客</span> <a href="#ref-tml-opd">Thinking Machines Lab</a> 工程化导读；<span class="claim claim-tech">tech report</span> 小米 <a href="#ref-mimo">MiMo-V2-Flash</a></td>
 </tr>
 <tr>
@@ -711,7 +711,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><strong>K3（signal source）</strong>。经典 OPD 用 teacher logits（<a href="#ref-gkd">GKD</a> 范式）。OPSD（On-Policy Self-Distillation）让 teacher 和 student 共享同一份权重，差别只在 teacher 多看了一份 ground-truth answer 作为 prompt 上下文。<span class="claim claim-personal">个人实验</span> <a href="#ref-nrehiew2026">@nrehiew_</a> 把 OPSD 的关键写成 teacher 与 student 之间的信息差：teacher 多拿一份答案上下文，参数量可以保持一致。<span class="claim claim-paper">论文</span> <a href="#ref-fang2026">ROPD</a>（中科大 + 腾讯，Fang et al. 2026）走得更远：teacher 只给文本答案，rubricator 生成 prompt-specific 的语义评判标准，verifier 用 rubric 给 rollout 打分作为 GRPO-style reward。论文自报 ~10× sample efficiency，黑盒 teacher 也支持。</p>
-<p><strong>K4（signal acceptance）</strong>。<span class="claim claim-paper">论文</span> <a href="#ref-hou2026">Uni-OPD</a> 的 outcome-guided margin calibration 强行恢复&quot;正确轨迹的 OPD return &gt; 错误轨迹&quot;这个顺序约束。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a> 的 sigmoid gate <code>g_t = σ(β · sg(Δ_t))</code> 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap <strong>多数情况为负</strong>；privileged context 把 teacher 分布拉偏到了 student 跑不到的区域，只接受正 gap 等于做 overlap 对齐检测。</p>
+<p><strong>K4（signal acceptance）</strong>。<span class="claim claim-paper">论文</span> <a href="#ref-hou2026">Uni-OPD</a> 的 outcome-guided margin calibration 显式恢复&quot;正确轨迹的 OPD return &gt; 错误轨迹&quot;这个顺序约束。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a> 的 sigmoid gate <code>g_t = σ(β · sg(Δ_t))</code> 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap <strong>多数情况为负</strong>；privileged context 把 teacher 分布拉偏到了 student 无法自主到达的区域，只接受正 gap 等于做 overlap 对齐检测。</p>
 <p><strong>K5（pipeline position）</strong>。三种和 RL 共处的姿态：</p>
 <table>
 <thead>
@@ -739,15 +739,15 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> 五个 knob 彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，远不如当 5 维参数空间里的 10+ 个位点看清晰。</p>
+<p><span class="claim claim-self">本文归纳</span> 五个维度彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，不如当 5 维参数空间里的 10+ 个位点看清楚。</p>
 <h2 id="开放问题">开放问题</h2>
-<p><span class="claim claim-self">本文归纳</span> 理想 post-training 算法的设计 brief：<strong>要 distillation 的密度、RL 的 unbiased、同时保持 on-policy 的几何性质</strong>。三条同时拿到的算法目前是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias 然后被迫上 clipping。</p>
+<p><span class="claim claim-self">本文归纳</span> 理想 post-training 算法的设计目标：<strong>要 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质</strong>。同时满足这三条的算法目前仍是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias，因此需要 clipping。</p>
 <p>围绕这个目标，两个延伸方向：</p>
 <ol>
 <li><strong>informative state 的结构化定义</strong>。<a href="#ref-hou2026">Uni-OPD</a> 用难度做代理（不全对也不全错），是经验启发式；RL 框架里它对应 group advantage variance &gt; 0；OPD 框架里应该有一个更准的描述。这两个写法对应同一个量吗？</li>
-<li><strong>KL-tradeoff Pareto frontier 的可操作化</strong>。把每种 post-training 方法画在 &quot;capability gain vs KL move&quot; 平面上目前是 conceptual layer。手头能拿到的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。</li>
+<li><strong>KL-tradeoff Pareto frontier 的可操作化</strong>。把每种 post-training 方法画在 &quot;capability gain vs KL move&quot; 平面上目前是 conceptual layer。实际可采集的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。</li>
 </ol>
-<p><span class="claim claim-self">本文归纳</span> 对手里已经有 verifier 或 rubric 资产的团队，<a href="#ref-fang2026">ROPD</a> 给出的范式打开了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。<strong>白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束</strong>。</p>
+<p><span class="claim claim-self">本文归纳</span> 对已经有 verifier 或 rubric 资产的团队，<a href="#ref-fang2026">ROPD</a> 给出的范式提供了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。<strong>白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束</strong>。</p>
 <h2 id="reference">Reference</h2>
 <ol class="ref-list">
 

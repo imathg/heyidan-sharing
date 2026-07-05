@@ -437,7 +437,7 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B001 / 2026-05-27</span>
     </div>
     <h2>OPD：on-policy 数据是抗遗忘的真正承担者</h2>
-    <p class="desc">2026 上半年从 GKD / TML 博客一路走到 DeepSeek-V4 / MiMo-V2-Flash / SDAR / Uni-OPD / ROPD / Rethinking-OPD 的 on-policy distillation 主线综述。把 10+ 个方案归到 5 个正交 knob，给出几何视角 (RL's Razor) + token-level 机制 (97-99% overlap) + failure mode (伪收敛) + 选型直觉。</p>
+    <p class="desc">2026 上半年串联 GKD / TML 博客、DeepSeek-V4 / MiMo-V2-Flash / SDAR / Uni-OPD / ROPD / Rethinking-OPD 的 on-policy distillation 主线综述。把 10+ 个方案归到 5 个正交维度，给出几何视角 (RL's Razor)、token-level 机制 (97-99% overlap)、failure mode (伪收敛) 与选型直觉。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-27</span>
       <span class="badge sources">12 sources</span>
@@ -450,7 +450,7 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B002 / 2026-05-29</span>
     </div>
     <h2>GRPO 变体的设计轴：谁在承载更新信号</h2>
-    <p class="desc">把 DAPO / Dr-GRPO / CISPO / BPPO / CARL / ReMax 这组 GRPO-style 改法压回 5 个更新信号旋钮：normalization、ratio/clip、baseline/value、update carrier 和 credit granularity。重点看 BPPO 为什么是最干净的 update-carrier 案例，以及 agentic RL 为什么把 group 从 prompt 迁到 state / segment。</p>
+    <p class="desc">把 DAPO / Dr-GRPO / CISPO / BPPO / CARL / ReMax 这组 GRPO-style 改法归入 5 个 update-signal 设计轴：normalization、ratio/clip、baseline/value、update carrier 和 credit granularity。重点看 BPPO 为什么是边界最清楚的 update-carrier 案例，以及 agentic RL 为什么把 group 从 prompt 迁到 state / segment。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-29</span>
       <span class="badge sources">7 sources</span>
@@ -489,7 +489,7 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B005 / 2026-06-14</span>
     </div>
     <h2>Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆</h2>
-    <p class="desc">当任务只满足部分要求、没有单一参考答案时，reward 从 binary verifier 退化成 rubric / checklist 逐项打分。把 2026 年 5-6 月八篇独立工作（Soft-RLVR / VeriGate / Eval-Skill / Dynamic Rubrics / PUM / Orch-RM / ELMES+ / MERIT）放到同一张设计表上，归出 5 个正交旋钮：切要求还是切轨迹、rubric 从哪来、item 分数锚在主观还是结果、怎么聚合、谁来打分。核心：rubric 构造（judge 侧）和 credit assignment（RL 侧）是同一个分解的两面。</p>
+    <p class="desc">当任务只满足部分要求、没有单一参考答案时，reward 从 binary verifier 退化成 rubric / checklist 逐项打分。把 2026 年 5-6 月八篇独立工作（Soft-RLVR / VeriGate / Eval-Skill / Dynamic Rubrics / PUM / Orch-RM / ELMES+ / MERIT）放到同一张设计表上，归出 5 个正交维度：切要求还是切轨迹、rubric 从哪来、item 分数锚在主观还是结果、怎么聚合、谁来打分。核心：rubric 构造（judge 侧）和 credit assignment（RL 侧）是同一个分解的两面。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-14</span>
       <span class="badge sources">8 sources</span>
@@ -502,7 +502,7 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B006 / 2026-06-21</span>
     </div>
     <h2>低精度训练的共同主线：损伤集中在分布的尖锐处</h2>
-    <p class="desc">2026 年 6 月六个互不隶属的团队（UFP4 / Nemotron 3 Ultra / ReQAT / TWLA / UltraQuant / ReSET）把 4-bit 精度推到 LLM 生命周期每一段。核心论点：低精度损伤集中在分布的尖锐处——网格几何不对称、low-entropy token、激活 outlier 是同一现象的三个投影，每个配方都在把稀缺的 bit / 训练信号 / scale 粒度往尖锐处分配。归出 4 个正交 knob（lifecycle 位置、量化张量、格式几何、尖锐再分配机制），并用 DeepSeek-V4 / Ideogram INT8 划边界。</p>
+    <p class="desc">2026 年 6 月六个互不隶属的团队（UFP4 / Nemotron 3 Ultra / ReQAT / TWLA / UltraQuant / ReSET）把 4-bit 精度推到 LLM 生命周期每一段。核心论点：低精度损伤集中在分布的尖锐处：网格几何不对称、low-entropy token、激活 outlier 是同一现象的三个投影，每个配方都在把稀缺的 bit / 训练信号 / scale 粒度往尖锐处分配。归出 4 个正交维度（lifecycle 位置、量化张量、格式几何、尖锐再分配机制），并用 DeepSeek-V4 / Ideogram INT8 界定边界。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-21</span>
       <span class="badge sources">8 sources</span>
@@ -515,10 +515,23 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B007 / 2026-06-28</span>
     </div>
     <h2>长程 credit assignment：奖励信号该在轨迹的哪一层附着</h2>
-    <p class="desc">2026 年 6 月七篇长程 agent RL 论文（HSD / SCPO / HiMPO / VIMPO / Progress Advantage / BiPACE + 多步 tool-use 失稳分析）和 GLM-5.2 官方技术博客从两端指向同一个问题：奖励信号到底该附着在轨迹的哪一层。核心论点：多数 post-GRPO 配方都在补 critic 去掉后留下的 per-step 反事实基线；GLM-5.2 在长程 compaction 下转向 critic-based PPO，说明当子轨迹数量和长度方差升高时，显式 critic 会重新变得划算。归出四个旋钮（附着粒度、反事实参照系、额外部件成本、时序方向），并用单步 RLVR、on-policy 蒸馏与 GLM-5.2 划边界。</p>
+    <p class="desc">2026 年 6 月七篇长程 agent RL 论文（HSD / SCPO / HiMPO / VIMPO / Progress Advantage / BiPACE + 多步 tool-use 失稳分析）和 GLM-5.2 官方技术博客从两端指向同一个问题：奖励信号到底该附着在轨迹的哪一层。核心论点：多数 post-GRPO 配方都在补 critic 去掉后留下的 per-step 反事实基线；GLM-5.2 在长程 compaction 下转向 critic-based PPO，说明当子轨迹数量和长度方差升高时，显式 critic 会重新变得划算。归出四个维度（附着粒度、反事实参照系、额外部件成本、时序方向），并用单步 RLVR、on-policy 蒸馏与 GLM-5.2 界定边界。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-28</span>
       <span class="badge sources">8 sources</span>
+      <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="agent-context-memory-governance/" data-domain="agentic-rl">
+    <div class="row1">
+      <span class="idx mono">B008 / 2026-07-05</span>
+    </div>
+    <h2>长程 agent 的上下文治理：记忆是一组带生命周期的对象</h2>
+    <p class="desc">汇总 Supersede / TraceRetain / VISTA / ECHO / Self-GC / AutoMem / AgenticSTS / DRIFTLENS / ContextNest 等 12 个信号，主线从扩窗口和摘要转向 context object lifecycle：当前性、选择性、源地址、审计。结论：长程 agent 的记忆系统需要 object store、policy layer、learning/audit layer，才能处理旧事实、噪声写入、source-addressability 和个性化漂移。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-07-05</span>
+      <span class="badge sources">12 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>

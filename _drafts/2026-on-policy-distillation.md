@@ -17,7 +17,7 @@
 | SFT      | 学会     | 明显退化（catastrophic forgetting） |
 | RL       | 学会     | 几乎不退化         |
 
-然后用这两个 teacher 各自做 OPD，看 student 的结果：
+然后用这两个 teacher 各自做 OPD，观察 student 的结果：
 
 | 路径                   | 任务表现             | 通用代码 benchmark   |
 |------------------------|----------------------|---------------------|
@@ -34,7 +34,7 @@ teacher 的"能力图像"（一个退化、一个保留）和 student 的"能力
 
 > 在所有能解新任务的策略中，policy gradient 隐式偏向其中"和当前策略 KL 最近"的那一个。
 
-SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向"距离当前策略最近的能解题策略"。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两个 setting 上验证了 KL distance 与 forgetting magnitude 的相关性。
+SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向"距离当前策略最近的能解题策略"。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。
 
 `[论文]` [Dong Nie 2026](#ref-nie2026)（独立研究者，arXiv:2605.22731）从 state distribution 的角度写了同一件事：
 
@@ -83,11 +83,11 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 
 实操结论：**把 student top-token 与 teacher top-token 的重叠率作为核心监控指标，KL 在降不算数**。overlap 持平、KL 在降、downstream 不动这三件事同时出现，判定训练进入伪收敛区。补救：先做一轮短的 off-policy distillation 把 prior 拉齐，再切回 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。
 
-## 五个正交 knob
+## 五个正交维度
 
-`[本文归纳]` 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个 knob 的不同取值组合。
+`[本文归纳]` 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个维度的不同取值组合。
 
-| Knob | 含义 | 主要取值 |
+| 维度 | 含义 | 主要取值 |
 |------|------|---------|
 | K1   | student 探索什么 state | 默认 student rollout / Uni-OPD data balancing / SDAR privileged context |
 | K2   | 每个 state 上给多少 token 的监督 | sampled-token / top-k / full-vocab |
@@ -95,21 +95,21 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | K4   | 什么时候相信 teacher | 直接接受 / Uni-OPD margin calibration / SDAR sigmoid gate |
 | K5   | OPD 在 pipeline 里的位置 | domain experts 后 consolidation / 与 RL 融合 / RL 的 gated 辅助 |
 
-这五个 knob 的取值分别对应外部源中的具体设计。
+这五个维度的取值分别对应外部源中的具体设计。
 
-**K1（state coverage）**。默认 student rollout 是 OPD 的标准设定。`[论文]` [Uni-OPD](#ref-hou2026)（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问"既不全对也不全错"的 informative state，避免 dense token signal 浪费在饱和或全错的 state 上。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）反向走，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己跑不到的区域，再压回 student 权重。
+**K1（state coverage）**。默认 student rollout 是 OPD 的标准设定。`[论文]` [Uni-OPD](#ref-hou2026)（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问"既不全对也不全错"的 informative state，防止 dense token signal 浪费在饱和或全错的 state 上。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）走到另一端，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己无法到达的区域，再蒸馏回 student 权重。
 
 **K2（signal density）**。三种粒度都是 reverse-KL 的不同估计：
 
 | 取值 | 估计性质 | 工程代价 | 默认采用方 |
 |------|---------|---------|----------|
-| sampled-token | 单样本无偏估计，方差大 | 便宜 | `[论文]` [GKD](#ref-gkd)（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；`[工程博客]` [Thinking Machines Lab](#ref-tml-opd) 工程化导读；`[tech report]` 小米 [MiMo-V2-Flash](#ref-mimo) |
+| sampled-token | 单样本无偏估计，方差大 | 成本低 | `[论文]` [GKD](#ref-gkd)（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；`[工程博客]` [Thinking Machines Lab](#ref-tml-opd) 工程化导读；`[tech report]` 小米 [MiMo-V2-Flash](#ref-mimo) |
 | top-k         | 截断到 teacher top-k 上的 reverse-KL | 中等 | `[论文]` [Revisiting OPD](#ref-fu2026)（CASIA SKL-MAIS + UCAS，Fu et al. 2026），自报在长 prefix 上 +19.8% 优于 sampled-token baseline |
 | full-vocab    | 零方差、零偏差 | 贵：teacher logits 要 FP4 量化 + hidden state cache 才装得下 10+ specialist | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) |
 
 **K3（signal source）**。经典 OPD 用 teacher logits（[GKD](#ref-gkd) 范式）。OPSD（On-Policy Self-Distillation）让 teacher 和 student 共享同一份权重，差别只在 teacher 多看了一份 ground-truth answer 作为 prompt 上下文。`[个人实验]` [@nrehiew_](#ref-nrehiew2026) 把 OPSD 的关键写成 teacher 与 student 之间的信息差：teacher 多拿一份答案上下文，参数量可以保持一致。`[论文]` [ROPD](#ref-fang2026)（中科大 + 腾讯，Fang et al. 2026）走得更远：teacher 只给文本答案，rubricator 生成 prompt-specific 的语义评判标准，verifier 用 rubric 给 rollout 打分作为 GRPO-style reward。论文自报 ~10× sample efficiency，黑盒 teacher 也支持。
 
-**K4（signal acceptance）**。`[论文]` [Uni-OPD](#ref-hou2026) 的 outcome-guided margin calibration 强行恢复"正确轨迹的 OPD return > 错误轨迹"这个顺序约束。`[论文]` [SDAR](#ref-sdar) 的 sigmoid gate `g_t = σ(β · sg(Δ_t))` 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap **多数情况为负**；privileged context 把 teacher 分布拉偏到了 student 跑不到的区域，只接受正 gap 等于做 overlap 对齐检测。
+**K4（signal acceptance）**。`[论文]` [Uni-OPD](#ref-hou2026) 的 outcome-guided margin calibration 显式恢复"正确轨迹的 OPD return > 错误轨迹"这个顺序约束。`[论文]` [SDAR](#ref-sdar) 的 sigmoid gate `g_t = σ(β · sg(Δ_t))` 更细：teacher 与 student log-prob gap 为正时放大、为负时压制。论文报告带 privileged context 的 teacher 在 student 实际采到的 token 上 gap **多数情况为负**；privileged context 把 teacher 分布拉偏到了 student 无法自主到达的区域，只接受正 gap 等于做 overlap 对齐检测。
 
 **K5（pipeline position）**。三种和 RL 共处的姿态：
 
@@ -119,18 +119,18 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | 与 RL 融合    | `[tech report]` [MiMo-V2-Flash](#ref-mimo) MOPD | dense token reverse-KL 和 sparse outcome reward 双轨叠加 |
 | RL 的 gated 辅助 | `[论文]` [SDAR](#ref-sdar) | 主干仍是 GRPO，OPSD 仅在 gate 通过时贡献梯度；自报 ALFWorld +9.4%、WebShop +10.2%、Search-QA +7.0% |
 
-`[本文归纳]` 五个 knob 彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，远不如当 5 维参数空间里的 10+ 个位点看清晰。
+`[本文归纳]` 五个维度彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，不如当 5 维参数空间里的 10+ 个位点看清楚。
 
 ## 开放问题
 
-`[本文归纳]` 理想 post-training 算法的设计 brief：**要 distillation 的密度、RL 的 unbiased、同时保持 on-policy 的几何性质**。三条同时拿到的算法目前是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias 然后被迫上 clipping。
+`[本文归纳]` 理想 post-training 算法的设计目标：**要 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质**。同时满足这三条的算法目前仍是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias，因此需要 clipping。
 
 围绕这个目标，两个延伸方向：
 
 1. **informative state 的结构化定义**。[Uni-OPD](#ref-hou2026) 用难度做代理（不全对也不全错），是经验启发式；RL 框架里它对应 group advantage variance > 0；OPD 框架里应该有一个更准的描述。这两个写法对应同一个量吗？
-2. **KL-tradeoff Pareto frontier 的可操作化**。把每种 post-training 方法画在 "capability gain vs KL move" 平面上目前是 conceptual layer。手头能拿到的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。
+2. **KL-tradeoff Pareto frontier 的可操作化**。把每种 post-training 方法画在 "capability gain vs KL move" 平面上目前是 conceptual layer。实际可采集的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。
 
-`[本文归纳]` 对手里已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式打开了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。**白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束**。
+`[本文归纳]` 对已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式提供了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。**白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束**。
 
 ## Reference
 

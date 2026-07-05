@@ -2,9 +2,9 @@
 
 <!-- domain: rubrics -->
 
-`[论文]` RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就没了。`[论文]` [Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 **11.1 分**。`[论文]` [VeriGate](#ref-verigate)（马里兰大学，Agrawal et al. 2026）从另一头切：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。
+`[论文]` RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就会消失。`[论文]` [Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 **11.1 分**。`[论文]` [VeriGate](#ref-verigate)（马里兰大学，Agrawal et al. 2026）从 RL 侧切入：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。
 
-`[本文归纳]` 2026 年上半年，一批互不引用的工作收敛到同一个动作：把一个标量 reward 摊成一组子信号，再聚合回去。**核心论点：rubric 构造（judge 侧把回答拆成要求条目）和 credit assignment（RL 侧把轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元**。这条线上的方案差异，落在五个正交旋钮上。
+`[本文归纳]` 2026 年上半年，一批互不引用的工作收敛到同一个动作：把一个标量 reward 拆成一组子信号，再重新聚合。**核心论点：rubric 构造（judge 侧把回答拆成要求条目）和 credit assignment（RL 侧把轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元**。这条线上的方案差异，落在五个正交维度上。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -12,21 +12,21 @@
 
 ## 触发条件：可验证性是一道谱
 
-`[论文]` 数学和代码处在可验证性谱的一端，正确性能自动判定，reward 退化成 0/1 就够。多要求的指令、开放式写作、教学对话处在另一端，一个回答可能满足三条要求、违反第二条，没有哪个布尔函数能一次判完。[Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把这种情况叫部分可验证（partially verifiable），处理办法是把 prompt 转成原子要求的 checklist，逐项判、给部分得分，把稀疏的全有全无监督换成稠密信号。
+`[论文]` 数学和代码处在可验证性谱的一端，正确性能自动判定，reward 退化成 0/1 就够。多要求的指令、开放式写作、教学对话处在另一端，一个回答可能满足三条要求、违反第二条，单个布尔函数很难一次判完。[Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把这种情况叫部分可验证（partially verifiable），处理办法是把 prompt 转成原子要求的 checklist，逐项判、给部分得分，把稀疏的全有全无监督换成稠密信号。
 
 `[论文]` 同样的退化在 RL 侧表现为梯度消失。[VeriGate](#ref-verigate)（马里兰大学，Agrawal et al. 2026）指出，GRPO 的组内优势靠采样轨迹之间的差异提供梯度，当 verifier 给一组轨迹打出相同分数时，优势归零、训练停滞。`[本文归纳]` 两侧描述的是同一件事：标量信号在难判定的任务上要么太粗（judge 给不出区分度），要么太稀（RL 没有梯度）。把信号拆细是两侧共同的出路。
 
 ## 一个分解，两侧失败
 
-`[本文归纳]` judge 侧和 RL 侧的修法在数学形式上重合。judge 侧把回答拆成要求条目逐条打分，RL 侧把轨迹拆成步骤逐步赋信用，两者都是先把一个标量摊成一组子分、再聚合成训练信号。一个 rubric 条目和一个 credit 单元是同一个对象在两侧的名字。
+`[本文归纳]` judge 侧和 RL 侧的方法在数学形式上重合。judge 侧把回答拆成要求条目逐条打分，RL 侧把轨迹拆成步骤逐步赋信用，两者都是先把一个标量拆成一组子分、再聚合成训练信号。一个 rubric 条目和一个 credit 单元是同一个对象在两侧的名字。
 
-`[论文]` [VeriGate](#ref-verigate) 的三段设计把这层对应落到三步：verifier 能区分轨迹时让它做主，退化时才启用过程监督；把 Process Reward Model 的步骤分转成 future-cumulated reward，给出延续敏感的信用；再转成 group-normalized token-level 优势，恢复梯度。在 MATH 上训 1.5B 和 7B 的 Qwen2.5-Instruct、六个推理基准评测，平均准确率分别提升约 **20%** 和 **12%**，零梯度失败显著减少。`[论文]` [Soft-RLVR](#ref-soft) 走的是要求轴的对应版本：checklist 逐项分直接当 RL reward，judge 的分解和训练的分解是同一步。
+`[论文]` [VeriGate](#ref-verigate) 的三段设计把这层对应落到三步：verifier 能区分轨迹时使用 outcome reward，退化时才启用过程监督；把 Process Reward Model 的步骤分转成 future-cumulated reward，给出延续敏感的信用；再转成 group-normalized token-level 优势，恢复梯度。在 MATH 上训 1.5B 和 7B 的 Qwen2.5-Instruct、六个推理基准评测，平均准确率分别提升约 **20%** 和 **12%**，零梯度失败显著减少。`[论文]` [Soft-RLVR](#ref-soft) 采用要求轴的对应版本：checklist 逐项分直接当 RL reward，judge 的分解和训练的分解是同一步。
 
 > 把回答按要求拆（judge 侧）和把轨迹按时间拆（RL 侧），是同一个稀疏信号问题的两条解法。
 
 ## 切要求，还是切轨迹
 
-`[本文归纳]` 第一个旋钮是切哪个维度。要求轴回答「这个回答好在哪几条」，时间轴回答「这条推理链从哪一步开始变好」。两轴独立，可同时取值。
+`[本文归纳]` 第一个维度是切分对象。要求轴回答「这个回答好在哪几条」，时间轴回答「这条推理链从哪一步开始变好」。两轴独立，可同时取值。
 
 | 切分维度 | 子信号单位 | 代表方法 | 适用条件 |
 |---|---|---|---|
@@ -37,13 +37,13 @@
 
 ## rubric 从哪来
 
-`[本文归纳]` 第二个旋钮是 rubric 的出处，从人手编写、到每条 query 在线生成、到离线演化成可复用 skill、到训练一个专门的 rubric 生成器，越往后端摊薄单次推理成本、越能跨 query 复用，代价是越依赖一次性离线投入。
+`[本文归纳]` 第二个维度是 rubric 的出处，从人手编写、到每条 query 在线生成、到离线演化成可复用 skill、到训练一个专门的 rubric 生成器，越往后端越能摊薄单次推理成本、越能跨 query 复用，代价是越依赖一次性离线投入。
 
 `[论文]` [Beyond Rubrics](#ref-evalskill)（浙大 + 小红书，Yue et al. 2026）正面对比前两档：每条 query 在线生成 criteria 会带来推理开销，还容易产出僵硬或对不齐的指引；它的 Eval-Skill 改成离线演化出可复用的评判 skill，每个 domain 只用 100 个 case 演化两阶段，生成后直接注入 judge context，在 RewardBench 2 上给 Qwen3-8B 带来 **+13.44%**、给 DeepSeek-V4-Flash 带来 **+18.51%**。`[论文]` [Dynamic Rubrics](#ref-wang2026)（University of Arizona，Wang & Blanco 2026）走到生成器那一档：先用免训练的方法在数据集和实例两个粒度自动生成 rubric，再用 meta-judge reward 迭代微调一个 rubric 生成器，微调后的 14B 生成器在 rubric 生成上超过更大的闭源模型。
 
 ## 把 item 分数锚在结果上
 
-`[本文归纳]` 第三个旋钮是每个子分锚在哪里。锚在 LLM 的主观判断（这一步看起来对不对）容易被 reward hacking，因为打分者和被打分者共享盲区；锚在下游结果（这一步是否真的提升解题率）把信号绑到可验证的终态上，更难被操纵。
+`[本文归纳]` 第三个维度是每个子分锚在哪里。锚在 LLM 的主观判断（这一步看起来对不对）容易被 reward hacking，因为打分者和被打分者共享盲区；锚在下游结果（这一步是否真的提升解题率）把信号绑到可验证的终态上，更难被操纵。
 
 `[论文]` [PUM](#ref-pum) 把 prefix 评估从局部步骤正确性改成 prefix gain，定义为用一组轻量 student 模型条件在该 prefix 上、测得的解题率提升量，是 outcome-grounded 的 prefix utility。`[论文]` [VeriGate](#ref-verigate) 把 PRM 步骤分转成 future-cumulated reward，称比直接优化聚合 PRM 分的方法更难被 reward hacking。`[本文归纳]` 两者指向同一条经验：主观步骤分提供密度，结果锚定提供抗操纵性，工程上需要在两者之间取位置。
 
@@ -59,11 +59,11 @@
 
 `[论文]` [Soft-RLVR](#ref-soft) 自己形式化了这个 trade-off，并给出 checklist 验证何时比 holistic 验证更可靠的条件；它的自验证变体 Soft-SVeRL 让 policy 兼任 verifier，容易因过宽松的自判把分数单调推高，需要显式稳定化才不至于发散。`[论文]` [ELMES+](#ref-elmes)（华东师大，Liu et al. 2026）报告 LLM judge 的打分方差远低于人类，但带 judge-specific 偏差，典型是 self-preference；它的 SceneGen 模块让评判标准和测试数据共同演化，用分数分布反推过严、过松或区分度弱的 rubric。`[论文]` [Orch-RM](#ref-orchrm)（Rutgers + Salesforce，Tsang et al. 2026）用多 agent 执行的中间产物构造胜负对训 Bradley-Terry reward model，自监督、无人工标注，token 效率提升至多 **10 倍**、MAS 测试时扩展准确率提升至多 **8%**，代价同样是标准由模型自生成。
 
-## 五个旋钮
+## 五个维度
 
-`[本文归纳]` 把八个方案反向归纳，差异落在五维空间，任一方案对应一个位点。每个旋钮都来自变体集合的实际取值，逐个对回方案核对过。
+`[本文归纳]` 把八个方案反向归纳，差异落在五维空间，任一方案对应一个位点。每个维度都来自变体集合的实际取值，逐个对回方案核对过。
 
-| 旋钮 | 取值范围 | 落点示例 |
+| 维度 | 取值范围 | 落点示例 |
 |---|---|---|
 | K1 切分维度 | 要求空间 ↔ 轨迹时间 | Soft-RLVR（要求）/ VeriGate（时间） |
 | K2 rubric 出处 | 人手 → 在线 → 可复用 skill → 生成器 | Eval-Skill（可复用）/ Dynamic Rubrics（生成器） |
@@ -71,7 +71,7 @@
 | K4 聚合方式 | 平均 partial credit / gate / BT pair / token 优势 | Soft-RLVR / VeriGate / Orch-RM |
 | K5 verifier 身份 | 外部独立 ↔ self-verify | Soft-RLVR（外部）/ Soft-SVeRL（自验） |
 
-`[本文归纳]` 五个旋钮彼此正交，挑任务时先定 K1（任务有没有可监督的中间步骤），再定 K3（有没有可测的下游结果决定能否结果锚定），K5 的自验证档要配 K4 的显式稳定化才安全。这组划分等更多方案进来再验证是否完备，出现切第三维或两轴塌成一轴就要修订。
+`[本文归纳]` 五个维度彼此正交，挑任务时先定 K1（任务有没有可监督的中间步骤），再定 K3（有没有可测的下游结果决定能否结果锚定），K5 的自验证档要配 K4 的显式稳定化才安全。这组划分需要随着更多方案进入继续验证；如果出现第三种切分方式，或要求轴与时间轴在新任务里合并，就要修订。
 
 ## Reference
 

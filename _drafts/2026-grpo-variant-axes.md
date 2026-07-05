@@ -2,7 +2,7 @@
 
 <!-- domain: agentic-rl -->
 
-`[本文归纳]` 2026 年再看 GRPO，一堆新名词容易让人误以为算法空间变碎了：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以压回一个问题：**更新信号到底由谁承载、在哪里归一化、和什么参照系比较**。这些旋钮在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
+`[本文归纳]` 2026 年再看 GRPO，一组新名词容易让人误以为算法空间变碎了：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 把 tool-use rollout 切到 segment。这组名字可以归入一个问题：**更新信号到底由谁承载、在哪里归一化、和什么参照系比较**。这些设计轴在内部可组合，在小 group、单一 carrier、agentic segment 这些边界上又会耦合。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -28,13 +28,13 @@
   <text x="493" y="166" class="tag">A4</text><text x="493" y="191" class="axis">carrier / group</text>
   <rect x="620" y="36" width="100" height="78" rx="4" class="box"/>
   <text x="638" y="66" class="tag">A5</text><text x="638" y="91" class="axis">credit</text>
-  <text x="48" y="236" class="small">Dr-GRPO / DAPO / CISPO / BPPO / CARL 是五个旋钮上的不同位点。</text>
+  <text x="48" y="236" class="small">Dr-GRPO / DAPO / CISPO / BPPO / CARL 是五个设计轴上的不同位点。</text>
 </svg>
 </figure>
 
-## 先把名字压回五个旋钮
+## 先把名字归入五个设计轴
 
-`[本文归纳]` 一个 GRPO-style 变体至少能被问五个问题。答不出来时，它更像某个轴上的实现细节。
+`[本文归纳]` 一个 GRPO-style 变体至少要回答五个问题。无法回答时，它更像某个轴上的实现细节。
 
 | 轴 | 问题 | 典型改法 | 代表 |
 |---|---|---|---|
@@ -44,21 +44,21 @@
 | A4 update carrier / group key | 哪些样本或 token 承载梯度 | full group、shortest correct/incorrect prefix、state-aligned group | BPPO / GiGPO / Tree-GRPO |
 | A5 credit granularity / reward pressure | reward 或 credit 落在哪个粒度 | trajectory、token、segment、overlong shaping | DAPO / CARL |
 
-`[论文]` [DAPO](#ref-yu2025)（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）是最好的入门切面，因为它在同一篇系统报告里把多个旋钮放进 ablation：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表本身说明：GRPO 更像一套可以局部替换的 update-signal 管线。
+`[论文]` [DAPO](#ref-yu2025)（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）适合作为入口，因为它在同一篇系统报告里把多个设计轴放进 ablation：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表本身说明：GRPO 更像一套可以局部替换的 update-signal 管线。
 
-`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 暴露出另一个旋钮：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不足以形成一篇论文结论，但足够说明很多新 GRPO 的主要动作落在 A1。
+`[tech report]` [Dr-GRPO pin](#ref-drgrpo) 暴露出另一个设计轴：原贴把 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不足以形成一篇论文结论，但足够说明很多新 GRPO 的主要动作落在 A1。
 
-## BPPO 是最干净的 A4 案例
+## BPPO 是边界最清楚的 A4 案例
 
-`[论文]` [BPPO](#ref-zhao2026)（TeleAI + 上海交通大学，Zhao et al. 2026）问的问题很窄：同一个 prompt group 里，是不是每条 completion 都提供同等有用的更新信号。它的 gradient-similarity 分析给出答案：same-class completions 的方向高度相似，correct-incorrect pair 更能提供区分信号。于是 BPPO 只拿最短 correct completion 和最短 incorrect completion 做 compact update unit，并且只更新 prefix。
+`[论文]` [BPPO](#ref-zhao2026)（TeleAI + 上海交通大学，Zhao et al. 2026）问题很聚焦：同一个 prompt group 里，是否每条 completion 都提供同等有用的更新信号。它的 gradient-similarity 分析给出答案：same-class completions 的方向高度相似，correct-incorrect pair 更能提供区分信号。于是 BPPO 只拿最短 correct completion 和最短 incorrect completion 做 compact update unit，并且只更新 prefix。
 
-`[论文]` 这个设计的价值在于独立性。[BPPO](#ref-zhao2026) 明确保留 full-group sampling、reward 和 group-relative advantage normalization，只改 update 作用在哪里。MATH setup 下，BPPO 报告 mean response length 降低 50.6%，训练 wall-clock speedup 到 6.08x；abstract 把 30-50% 长度下降放在 prefix-focused optimization 这条路径上。BPPO 的核心旋钮是 A4：**谁承载更新信号**。
+`[论文]` 这个设计的价值在于独立性。[BPPO](#ref-zhao2026) 明确保留 full-group sampling、reward 和 group-relative advantage normalization，只改 update 作用在哪里。MATH setup 下，BPPO 报告 mean response length 降低 50.6%，训练 wall-clock speedup 到 6.08x；abstract 把 30-50% 长度下降放在 prefix-focused optimization 这条路径上。BPPO 的核心设计轴是 A4：**谁承载更新信号**。
 
-`[本文归纳]` 这也是判断“真轴”的模板。一个轴要成立，最好像 BPPO 这样能固定其他组件，只移动一个旋钮，并给出对应可观测量：训练 token 变少、长度变短、速度变快，准确率仍可接近 GRPO。如果一个改法同时改 reward、clip、sample filtering 和 aggregation，它仍可能有效，但更难被当成 clean design axis。
+`[本文归纳]` 这也是判断“真轴”的模板。一个轴要成立，应当像 BPPO 这样能固定其他组件，只移动一个变量，并给出对应可观测量：训练 token 变少、长度变短、速度变快，准确率仍可接近 GRPO。如果一个改法同时改 reward、clip、sample filtering 和 aggregation，它仍可能有效，但更难被当成 clean design axis。
 
 ## DAPO / CISPO 解释长 CoT 的 clip 压力
 
-`[论文]` [DAPO](#ref-yu2025) 的 Clip-Higher 直接指向 A2。论文解释 upper clip 会限制 low-probability token 的 probability increase，而长 CoT 里的探索词往往本来就低概率。Clip-Higher 给这些 token 留出更大的上升空间；Dynamic Sampling 则把全对或全错的 prompt 过滤掉，避免 batch 被没有有效梯度的样本占满。
+`[论文]` [DAPO](#ref-yu2025) 的 Clip-Higher 直接指向 A2。论文解释 upper clip 会限制 low-probability token 的 probability increase，而长 CoT 里的探索词往往本来就低概率。Clip-Higher 给这些 token 留出更大的上升空间；Dynamic Sampling 则把全对或全错的 prompt 过滤掉，防止 batch 被没有有效梯度的样本占满。
 
 `[论文]` 同一篇 [DAPO](#ref-yu2025) 还把 A5 拉进来：sample-level loss 会让长 CoT 的影响被不合适地压平，token-level loss 让长序列按 token 数贡献梯度；Soft Overlong / Overlong Filtering 则把长度压力通过 reward shaping 或过滤表达出来。这些改法属于长推理训练动力学，比表层 reward 调整更底层。
 
@@ -76,7 +76,7 @@
 
 ## baseline/value source 是第三条主线
 
-`[tech report]` [ReMax 背后的故事](#ref-remax) 回到更早的 baseline 选择：ReMax 用 greedy decoding response 当 baseline，是为了解耦“采样随机性到 response”的偏差，也和当时 rollout 基础设施昂贵有关。到 GRPO，baseline 变成同 prompt group 的相对比较；到 CARL，value source 变成 segment-level critic。
+`[tech report]` [ReMax 背后的故事](#ref-remax) 回到更早的 baseline 选择：ReMax 用 greedy decoding response 当 baseline，目的在于解耦“采样随机性到 response”的偏差，也和当时 rollout 基础设施昂贵有关。到 GRPO，baseline 变成同 prompt group 的相对比较；到 CARL，value source 变成 segment-level critic。
 
 `[本文归纳]` 所以 A3 不能被 A1 吸收。normalization scale 问的是 advantage 怎么缩放，baseline/value source 问的是 advantage 和什么参照系比较。group mean、greedy response、segment critic 会带来不同方差、不同 bias，也会把 credit 的可解释边界推向不同位置。
 
@@ -98,13 +98,13 @@
 
 `[本文归纳]` “伪轴”指有效但暂时缺少独立坐标资格的改法。这里有两种不同的 disqualification，必须拆开看。
 
-`[本文归纳]` 第一关是**独立性**：它是否能被已有轴张成。BPPO 通过这关，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有把长度当独立旋钮直接优化，所以长度在这里更像 A4 的副产物，缺少新轴资格。
+`[本文归纳]` 第一关是**独立性**：它是否能被已有轴张成。BPPO 通过这关，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有把长度当独立变量直接优化，所以长度在这里更像 A4 的副产物，缺少新轴资格。
 
 `[本文归纳]` 第二关是**干净性**：效果有没有被转嫁。一个改法可以独立，却仍然不干净；它压住目标 proxy 的同时，可能把优化压力推到相邻 proxy。overlong shaping、length penalty、entropy trigger 这类改法常常落在这里。它们可能有效，但需要同时监控长度、正确率、entropy、tool-use rate 或其他相邻指标，验证优化压力停在目标 proxy 上。
 
-`[论文]` [BPPO](#ref-zhao2026) 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着长度不天然是一条独立轴。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。
+`[论文]` [BPPO](#ref-zhao2026) 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着长度不自动具备独立轴资格。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。
 
-`[本文归纳]` 更实用的读法是：看到一个 GRPO 新名词，先填这张表，再判断它的论文定位。如果某个名字只能填进一个格子，它是局部旋钮；如果它跨多个格子，需要看 ablation 是否能把格子拆开；如果它通过独立性但过不了干净性，就把它写成 pressure routing，保留新轴资格的判断。
+`[本文归纳]` 更实用的读法是：看到一个 GRPO 新名词，先填这张表，再判断它的论文定位。如果某个名字只能填进一个格子，它是局部设计轴；如果它跨多个格子，需要看 ablation 是否能把格子拆开；如果它通过独立性但过不了干净性，就把它写成 pressure routing，保留新轴资格的判断。
 
 | 新方法读法 | 应问的问题 |
 |---|---|
@@ -126,13 +126,13 @@
 | 方差大、同组 advantage 不稳 | A1 + A3 | 区分 normalization 问题和 baseline/value source 问题 |
 | reward shaping 看起来生效但副作用变多 | A5 的干净性 | 查相邻 proxy 是否承接了优化压力 |
 
-`[本文归纳]` 这样读，Dr-GRPO / DAPO / CISPO / BPPO / CARL / ReMax 不再是六个并列名字，而是同一组旋钮的不同取值。新论文如果只改一个旋钮，就按该轴吸收；如果同时改多个旋钮，就先要求拆 ablation；如果声称开了新轴，就要求给出独立性和干净性证据。
+`[本文归纳]` 这样读，Dr-GRPO / DAPO / CISPO / BPPO / CARL / ReMax 不再是六个并列名字，而是同一组设计轴的不同取值。新论文如果只改一个轴，就按该轴吸收；如果同时改多个轴，就先要求拆 ablation；如果声称开了新轴，就要求给出独立性和干净性证据。
 
 ## 可证伪问题
 
 `[本文归纳]` 这篇 brief 的主结论可以被三类实验推翻。第一，如果有主流 GRPO 变体无法映射到 A1-A5 任意一轴，五轴表不完备。第二，如果 BPPO 的收益在 random pair 或 same-class pair 上同样成立，A4 的 correct/incorrect contrast 解释就弱。第三，如果 CARL 的 segment critic 被 token-level PPO 完全追平，agentic 场景里的主因就要从“边界对齐 credit”转向其他机制。
 
-`[本文归纳]` 在这些反例出现前，把 GRPO 变体当成五个 update-signal 旋钮，比按论文名堆列表更有操作性：要省 token，先看 A4；要修长 CoT 探索，先看 A2 和 A1；要做 tool-use agent，先看 A4/A5 的 state 或 segment 边界；要解释方差和 bias，先看 A3。
+`[本文归纳]` 在这些反例出现前，把 GRPO 变体当成五个 update-signal 设计轴，比按论文名堆列表更有操作性：要省 token，先看 A4；要修长 CoT 探索，先看 A2 和 A1；要做 tool-use agent，先看 A4/A5 的 state 或 segment 边界；要解释方差和 bias，先看 A3。
 
 ## Reference
 

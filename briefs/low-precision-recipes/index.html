@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-06-28
+    <span class="sep">·</span> last update 2026-07-05
   </div>
 
   <h1 class="brief-title">低精度训练的共同主线：损伤集中在分布的尖锐处</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-06-28</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-07-05</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#training-infra" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">training-infra</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">low-precision-recipes</span></span>
@@ -480,7 +480,7 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: training-infra -->
 <p>2026 年 6 月，六个互不隶属的团队在同一个月里把 4-bit 数值精度推到了 LLM 生命周期的每一段。<span class="claim claim-paper">论文</span> <a href="#ref-ufp4">UFP4</a>（蚂蚁 Ling Team，Zhao et al. 2026）做 FP4 预训练；<span class="claim claim-tech">tech report</span> <a href="#ref-nemotron3">Nemotron 3 Ultra</a>（NVIDIA，2026）把 NVFP4 预训练用到 550B MoE 量产规模；<span class="claim claim-paper">论文</span> <a href="#ref-reqat">ReQAT</a>（Hanyang AIHA Lab，Lee et al. 2026）做 W4A4KV4 的量化感知训练；<span class="claim claim-paper">论文</span> <a href="#ref-twla">TWLA</a>（Houmo AI，Zhao et al. 2026）做训练后量化；<span class="claim claim-paper">论文</span> <a href="#ref-ultraquant">UltraQuant</a>（AMD，Chakrabarti et al. 2026）压 KV cache；<span class="claim claim-paper">论文</span> <a href="#ref-reset">ReSET</a>（Hanyang + Xenoscube，Lee et al. 2026）管 NVFP4 推理解码。</p>
-<p>把这六篇放到一起读，会发现它们调的是同一组旋钮、针对的是同一个失败模式。</p>
+<p>把这六篇放到一起读，会发现它们调整的是同一组维度、针对的是同一个失败模式。</p>
 <blockquote>
 <p><strong>核心论点：低精度省下的 bit，在分布的平坦主体上代价小，在尖锐的尾部上代价大。每个配方本质上都在做同一件事，把稀缺的 bit、训练信号或 scale 粒度往尖锐处分配。</strong></p>
 </blockquote>
@@ -498,8 +498,8 @@ footer.brief-foot a:hover { color: var(--text); }
     </marker>
   </defs>
   <rect x="0" y="0" width="760" height="430" rx="14" fill="url(#lpbg)"/>
-  <text x="380" y="36" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="19" font-weight="600" fill="#e8eef2">低精度配方：损伤集中在尖锐处，每个 recipe 把 bit 挪过去</text>
-  <text x="380" y="60" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12.5" fill="#8a96a0">同一组旋钮 · 把稀缺的 bit / 训练信号 / scale 粒度往分布的尖锐处分配</text>
+  <text x="380" y="36" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="19" font-weight="600" fill="#e8eef2">低精度配方：损伤集中在尖锐处，每个配方把 bit 挪过去</text>
+  <text x="380" y="60" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="12.5" fill="#8a96a0">同一组维度 · 把稀缺的 bit / 训练信号 / scale 粒度往分布的尖锐处分配</text>
   <line x1="140" y1="215" x2="140" y2="90" stroke="#2f3b46" stroke-width="1.5"/>
   <line x1="320" y1="215" x2="320" y2="148" stroke="#2f3b46" stroke-width="1.5"/>
   <line x1="480" y1="215" x2="480" y2="148" stroke="#2f3b46" stroke-width="1.5"/>
@@ -551,7 +551,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <text x="600" y="354" text-anchor="middle" font-size="11" fill="#b9c3cb">激活 outlier</text>
     <text x="600" y="374" text-anchor="middle" font-size="10.5" fill="#7d8893">TWLA · heavy-tail 钉住精度</text>
   </g>
-  <text x="380" y="414" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="10.5" fill="#5b6a76">平坦的高熵主体丢精度无感，尖锐的低熵尾部丢精度掉能力</text>
+  <text x="380" y="414" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" font-size="10.5" fill="#5b6a76">平坦的高熵主体丢精度影响很小，尖锐的低熵尾部丢精度会损能力</text>
 </svg>
 <p><em>图：六个 2026 年 6 月的低精度配方按生命周期位置铺开，底部三张卡片是同一个尖锐处在几何 / 语义 / 分布三层的投影。</em></p>
 <h2 id="同一个损伤-三种语言">同一个损伤，三种语言</h2>
@@ -585,7 +585,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-paper">论文</span> <a href="#ref-ufp4">UFP4</a> 把 NVIDIA/AMD 硬件用的 E2M1（FP4）格式拆开看：可表示值之间间距不等，量化时产生系统性的负向 rounding 误差，论文称之为 shrinkage bias。这个偏置逐层乘性累积，还被训练里常用的 Random Hadamard Transform 进一步放大，解释了既有 E2M1 配方的训练不稳定。问题落在格式的网格几何上。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-reqat">ReQAT</a> 看的是 token 分布：把 weight、activation、KV cache 全量化到 4-bit 后，失效集中在 low-entropy token 上。这些是数字、运算符这类精确符号，模型在这里几乎没有不确定性，量化噪声一旦改写就触发级联错误。问题落在分布最尖锐的那批 token 上。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-twla">TWLA</a> 看的是激活的形状：heavy-tailed 分布里少数 outlier 决定了量化范围，既有方法因此只能把激活留在高精度，限制端到端加速。问题落在分布的长尾上。</p>
-<p><span class="claim claim-self">本文归纳</span> 网格几何的不对称、low-entropy token、激活 outlier，是同一现象在三个层上的投影：损伤集中在分布的尖锐处。平坦的高熵主体丢精度几乎无感，尖锐的低熵尾部丢精度直接掉能力。把有限的精度预算挪到尖锐处，下一节的四组机制做的都是这件事。</p>
+<p><span class="claim claim-self">本文归纳</span> 网格几何的不对称、low-entropy token、激活 outlier，是同一现象在三个层上的投影：损伤集中在分布的尖锐处。平坦的高熵主体丢精度影响很小，尖锐的低熵尾部丢精度会直接损害能力。把有限的精度预算挪到尖锐处，下一节的四组机制做的都是这件事。</p>
 <h2 id="把精度预算挪到尖锐处的四种机制">把精度预算挪到尖锐处的四种机制</h2>
 <table>
 <thead>
@@ -609,7 +609,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <tr>
 <td>加细 scale 粒度</td>
 <td><a href="#ref-ultraquant">UltraQuant</a></td>
-<td>FP4 KV + FP8 query + UE8M0 group scale，吃 CDNA4 的 native scaled-MFMA</td>
+<td>FP4 KV + FP8 query + UE8M0 group scale，利用 CDNA4 的 native scaled-MFMA</td>
 </tr>
 <tr>
 <td>偏置训练信号</td>
@@ -618,15 +618,15 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-ufp4">UFP4</a> 的处理直接动格式：既然 E2M1 的网格不对称是病根，就换成均匀的 4-bit 网格。在 Dense 1.5B、MoE 7.9B、MoE 124B 三个规模上，均匀格式的 BF16-relative loss degradation 低于强 E2M1 基线。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-twla">TWLA</a> 不动格式动数据：用 Kronecker 结构的正交旋转把权重旋成三峰分布，配合三值量化，同一个旋转还顺手把激活的 outlier 在统计意义上摊平，于是激活也能降到 <strong>4-bit</strong>，权重压到 <strong>1.58-bit</strong>。这是训练后量化，不需要重训。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-ufp4">UFP4</a> 的处理直接动格式：既然 E2M1 的网格不对称是主要原因，就换成均匀的 4-bit 网格。在 Dense 1.5B、MoE 7.9B、MoE 124B 三个规模上，均匀格式的 BF16-relative loss degradation 低于强 E2M1 基线。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-twla">TWLA</a> 不动格式动数据：用 Kronecker 结构的正交旋转把权重旋成三峰分布，配合三值量化，同一个旋转还会在统计意义上摊平激活 outlier，于是激活也能降到 <strong>4-bit</strong>，权重压到 <strong>1.58-bit</strong>。这是训练后量化，不需要重训。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-ultraquant">UltraQuant</a> 的对象是 KV cache，尖锐处在长前缀被多轮复用时的驻留压力。它给 KV 用 FP4、query 用 FP8、group scale 用 UE8M0，在 AMD CDNA4 上 late-round 的 P50 首 token 延迟降到原来的 <strong>1/3.47</strong>（整体 2.3 倍），相对 FP8 KV 基线吞吐 <strong>1.63 倍</strong>。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-reqat">ReQAT</a> 既然知道损伤集中在 low-entropy token，就把训练信号往那里偏：Trace-Aligned QAT 反复在同一条 reasoning trace 上对齐关键的低熵决策，Selective Entropy Minimization 强化这些位置的置信。在同等训练预算下，它不只恢复、还超过了 BF16 微调精度，NVIDIA DGX Spark 上 <strong>3.9 倍</strong>、B200 上 <strong>3.1 倍</strong>吞吐。</p>
-<h2 id="格式几何本身就是个-knob">格式几何本身就是个 knob</h2>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-reqat">ReQAT</a> 既然知道损伤集中在 low-entropy token，就把训练信号往那里偏：Trace-Aligned QAT 反复在同一条 reasoning trace 上对齐关键的低熵决策，Selective Entropy Minimization 强化这些位置的置信。在同等训练预算下，它不仅恢复、还超过了 BF16 微调精度，NVIDIA DGX Spark 上 <strong>3.9 倍</strong>、B200 上 <strong>3.1 倍</strong>吞吐。</p>
+<h2 id="格式几何本身也是维度">格式几何本身也是维度</h2>
 <p>E2M1 长期被当成硬件给定的常量。<a href="#ref-ufp4">UFP4</a> 的贡献是把它变回一个可选项：在 4-bit 这个 bit 预算下，非均匀格式（指数位多、把分辨率堆在 0 附近）和均匀格式（INT4/E1M2，分辨率等距铺开）是两种取舍，前者对小值友好、对大值欠表示，后者反过来。LLM 权重和激活经过 Hadamard 旋转后接近高斯，尾部的大值恰恰是尖锐处，于是均匀网格在这个分布上反而吃亏更小。</p>
-<p>这条 knob 不限于训练。<span class="claim claim-paper">论文</span> <a href="#ref-reset">ReSET</a> 在推理解码端同样面对 NVFP4 的两个问题：reasoning 精度下降，以及 small-batch 自回归解码拿不到低精度本该带来的延迟收益。它按 token 级和 step 级 entropy 在线估计每一步的不确定性、自适应调解码温度，再配一个针对 small-M 的 NVFP4 CUDA-core kernel 补延迟。跨 reasoning benchmark 和模型规模，相对 NVFP4 基线精度提升至多约 <strong>2 点</strong>。entropy 在这里又一次成了判据：高熵步可以容忍更激进的采样，低熵步要收紧。</p>
-<p>工业量产规模也在押注这条线。<span class="claim claim-tech">tech report</span> <a href="#ref-nemotron3">Nemotron 3 Ultra</a> 是 550B total / 55B active 的 MoE Hybrid Mamba-Attention，20T token 预训练即用 NVFP4，后训练串 SFT、RL 和多教师在线蒸馏（MOPD）把低精度引入的精度差找回，自报相对公开 LLM 约 <strong>6 倍</strong>推理吞吐，checkpoint 和配方已开源。低精度预训练在 100B+ 规模从论文走到了量产 recipe。</p>
-<h2 id="四个正交-knob">四个正交 knob</h2>
+<p>这条维度不限于训练。<span class="claim claim-paper">论文</span> <a href="#ref-reset">ReSET</a> 在推理解码端同样面对 NVFP4 的两个问题：reasoning 精度下降，以及 small-batch 自回归解码没有获得低精度本该带来的延迟收益。它按 token 级和 step 级 entropy 在线估计每一步的不确定性、自适应调解码温度，再配一个针对 small-M 的 NVFP4 CUDA-core kernel 补延迟。跨 reasoning benchmark 和模型规模，相对 NVFP4 基线精度提升至多约 <strong>2 点</strong>。entropy 在这里又一次成了判据：高熵步可以容忍更激进的采样，低熵步要收紧。</p>
+<p>工业量产规模也在采用这条线。<span class="claim claim-tech">tech report</span> <a href="#ref-nemotron3">Nemotron 3 Ultra</a> 是 550B total / 55B active 的 MoE Hybrid Mamba-Attention，20T token 预训练即用 NVFP4，后训练串 SFT、RL 和多教师在线蒸馏（MOPD）把低精度引入的精度差找回，自报相对公开 LLM 约 <strong>6 倍</strong>推理吞吐，checkpoint 和配方已开源。低精度预训练在 100B+ 规模从论文走到了量产 recipe。</p>
+<h2 id="四个正交维度">四个正交维度</h2>
 <p><span class="claim claim-self">本文归纳</span> 把这六个方案放到一张表上，它们的差异落在四个彼此正交的维度上。任何一个 2026 的低精度配方，都对应四维空间里的一个具体位点。</p>
 <table>
 <thead>
@@ -683,16 +683,16 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p>K1 决定你在哪一段付精度的代价，也就决定了什么会先坏：预训练坏在 loss 不稳，QAT 坏在 reasoning 掉点，推理坏在 KV 驻留和解码延迟。K2 决定哪些张量进低精度，UFP4 把三个训练 matmul 全收进来（含梯度），UltraQuant 只动 KV。K3 是格式几何，UFP4 证明它可调。K4 是把 bit 挪到尖锐处的具体手法，旋转、group scale、token-selective 训练信号各占一种。</p>
-<p>把这六篇当六个独立技术看，不如放进四维参数空间里当六个位点，反而更清楚。表里还有大片空格，比如&quot;预训练 + 只 KV + ternary&quot;或&quot;QAT + 格式几何可调&quot;目前没人占，这些空格就是下一批工作的位置。</p>
+<p>K1 决定系统在哪一段付精度代价，也就决定了什么会先坏：预训练坏在 loss 不稳，QAT 坏在 reasoning 掉点，推理坏在 KV 驻留和解码延迟。K2 决定哪些张量进低精度，UFP4 把三个训练 matmul 全收进来（含梯度），UltraQuant 只动 KV。K3 是格式几何，UFP4 证明它可调。K4 是把 bit 挪到尖锐处的具体手法，旋转、group scale、token-selective 训练信号各占一种。</p>
+<p>把这六篇当六个独立技术看，不如放进四维参数空间里当六个位点。表里还有大片空格，比如&quot;预训练 + 只 KV + ternary&quot;或&quot;QAT + 格式几何可调&quot;目前没人占，这些空格就是下一批工作的位置。</p>
 <h2 id="边界-低精度之外的效率杠杆">边界：低精度之外的效率杠杆</h2>
-<p><span class="claim claim-tech">tech report</span> <a href="#ref-deepseekv4">DeepSeek-V4</a>（DeepSeek-AI，2026）是一个有用的对照。它是 1.6T total / 49B active 的 MoE，把上下文推到 100 万 token，相对前代单 token 推理 FLOPs 降到 <strong>27%</strong>、KV cache 降到 <strong>10%</strong>。这些效率的杠杆是 Compressed Sparse Attention、Heavily Compressed Attention 和注意力架构压缩，数值精度在这份报告里是次要项。效率有很多条路径，数值格式是其中一个 knob，注意力架构压缩是另一个。</p>
-<p>跨域也有同样的 knob 在转。<span class="claim claim-paper">论文</span> <a href="#ref-int8dit">Ideogram 4.0 的 fused INT8 GEMM</a>（Ideogram，Asaria et al. 2026）在图像 diffusion transformer 上做 W8A8，单 GEMM 比 bf16 快 <strong>2.8 到 4.2 倍</strong>，1024px 出图比 FP8 基线快约 <strong>9.5%</strong>，反量化输出与 bf16 余弦相似度 1.0、画质指标无可测退化。LLM 和图像 DiT 不共享架构，但共享&quot;低精度 kernel&quot;这个 knob，说明这条主线不限于语言模型。</p>
+<p><span class="claim claim-tech">tech report</span> <a href="#ref-deepseekv4">DeepSeek-V4</a>（DeepSeek-AI，2026）是一个有用的对照。它是 1.6T total / 49B active 的 MoE，把上下文推到 100 万 token，相对前代单 token 推理 FLOPs 降到 <strong>27%</strong>、KV cache 降到 <strong>10%</strong>。这些效率的杠杆是 Compressed Sparse Attention、Heavily Compressed Attention 和注意力架构压缩，数值精度在这份报告里是次要项。效率有很多条路径，数值格式是其中一个维度，注意力架构压缩是另一个。</p>
+<p>跨域也有同样的维度在转。<span class="claim claim-paper">论文</span> <a href="#ref-int8dit">Ideogram 4.0 的 fused INT8 GEMM</a>（Ideogram，Asaria et al. 2026）在图像 diffusion transformer 上做 W8A8，单 GEMM 比 bf16 快 <strong>2.8 到 4.2 倍</strong>，1024px 出图比 FP8 基线快约 <strong>9.5%</strong>，反量化输出与 bf16 余弦相似度 1.0、画质指标无可测退化。LLM 和图像 DiT 不共享架构，但共享&quot;低精度 kernel&quot;这个维度，说明这条主线不限于语言模型。</p>
 <h2 id="开放问题">开放问题</h2>
-<p><span class="claim claim-self">本文归纳</span> 三个口子还开着。</p>
-<p>其一，尖锐处目前有三种代理度量：网格几何的不对称、token 的 entropy、激活的 kurtosis。它们是同一个量的三个侧面，还是各管一段分布？如果能统一成一个可计算的 sharpness 指标，bit 分配就能从启发式变成优化目标。</p>
-<p>其二，K3（格式几何）和 K4（再分配机制）有耦合迹象。<a href="#ref-ufp4">UFP4</a> 换均匀格式后对 RHT 的依赖、<a href="#ref-twla">TWLA</a> 旋转后对格式的要求，提示&quot;先选格式还是先旋分布&quot;可能彼此牵制。四维正交是从这六篇里归纳出来的工作假设，耦合一旦坐实就要降维。</p>
-<p>其三，<a href="#ref-nemotron3">Nemotron 3 Ultra</a> 用 MOPD 在后训练找回低精度预训练的精度差，把低精度和蒸馏接到了一起。低精度引入的损伤和蒸馏要补的能力，是不是同一批尖锐处？如果是，预训练阶段的格式选择和后训练阶段的蒸馏配方应该联合设计。</p>
+<p><span class="claim claim-self">本文归纳</span> 三个问题仍然开放。</p>
+<p>其一，尖锐处目前有三种代理度量：网格几何的不对称、token 的 entropy、激活的 kurtosis。它们是同一个量的三个侧面，还是分别对应不同分布段？如果能统一成一个可计算的 sharpness 指标，bit 分配就能从启发式变成优化目标。</p>
+<p>其二，K3（格式几何）和 K4（再分配机制）有耦合迹象。<a href="#ref-ufp4">UFP4</a> 换均匀格式后对 RHT 的依赖、<a href="#ref-twla">TWLA</a> 旋转后对格式的要求，提示&quot;先选格式还是先旋分布&quot;可能彼此牵制。四维正交是从这六篇里归纳出来的工作假设，耦合一旦得到验证就要降维。</p>
+<p>其三，<a href="#ref-nemotron3">Nemotron 3 Ultra</a> 用 MOPD 在后训练找回低精度预训练的精度差，把低精度和蒸馏接到了一起。低精度引入的损伤和蒸馏要补的能力，是否落在同一批尖锐处？如果是，预训练阶段的格式选择和后训练阶段的蒸馏配方应该联合设计。</p>
 <h2 id="reference">Reference</h2>
 <ol class="ref-list">
 
@@ -708,7 +708,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
 <li><a id="ref-reset"></a> <strong>[ReSET: Accurate Latency-Critical NVFP4 Reasoning via Step-Aware Temperature Scaling]</strong> Sihwa Lee, Janghwan Lee, Jungwook Choi et al.，Hanyang University + Xenoscube，2026. <a href="https://arxiv.org/abs/2606.13233">arXiv:2606.13233</a>。本文用到它的 step-entropy 自适应调温 + small-M NVFP4 CUDA kernel。<span class="claim claim-paper">arxiv 论文</span></li>
 
-<li><a id="ref-int8dit"></a> <strong>[Realizing Native INT8 Compute for Diffusion Transformers on Consumer GPUs: A Fused INT8 GEMM Kernel for Ideogram 4.0]</strong> Ali Asaria, Tony Salomone, Deep Gandhi，Ideogram，2026. <a href="https://arxiv.org/abs/2606.14598">arXiv:2606.14598</a>。本文用作跨域对照：低精度 kernel 这个 knob 在图像 DiT 上同样成立。<span class="claim claim-paper">arxiv 论文</span></li>
+<li><a id="ref-int8dit"></a> <strong>[Realizing Native INT8 Compute for Diffusion Transformers on Consumer GPUs: A Fused INT8 GEMM Kernel for Ideogram 4.0]</strong> Ali Asaria, Tony Salomone, Deep Gandhi，Ideogram，2026. <a href="https://arxiv.org/abs/2606.14598">arXiv:2606.14598</a>。本文用作跨域对照：低精度 kernel 这个维度在图像 DiT 上同样成立。<span class="claim claim-paper">arxiv 论文</span></li>
 
 <li><a id="ref-deepseekv4"></a> <strong>[DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence]</strong> DeepSeek-AI，2026. <a href="https://arxiv.org/abs/2606.19348">arXiv:2606.19348</a>。本文用作边界对照：长上下文效率主要来自注意力架构压缩这一杠杆。<span class="claim claim-tech">tech report</span></li>
 
