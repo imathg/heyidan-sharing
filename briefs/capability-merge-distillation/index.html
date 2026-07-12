@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
+<title>用 OPD 给对齐模型增量加能力：组件已有先例，组合仍待验证 — brief · Yidan He</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --bg-card: #131922;
+  --bg-elev: #1a2230;
+  --bg-code: #0a1018;
+  --border: #2a3441;
+  --border-soft: #1f2733;
+  --text: #e6edf3;
+  --text-secondary: #8b97a4;
+  --text-tertiary: #5d6875;
+  --accent: #5fd0c8;
+  --accent-dim: rgba(95,208,200,0.10);
+  --accent-deep: #3aa89f;
+  --grid: rgba(95,208,200,0.035);
+  /* claim tag colors */
+  --c-paper:    #7ed4ff;   /* [论文]       — soft blue */
+  --c-tech:     #d2a35e;   /* [tech report] — amber */
+  --c-personal: #c193e0;   /* [个人实验]   — soft violet */
+  --c-self:     #87d27d;   /* [本文归纳]   — green */
+  --c-blog:     #d2a35e;   /* [工程博客]   — amber */
+  --nav-width: 260px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', 'Songti SC', 'Noto Serif SC', serif;
+  background: var(--bg);
+  background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
+  background-size: 24px 24px;
+  color: var(--text);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  padding-top: 49px;
+}
+/* ---------- Top nav (shared) ---------- */
+.topnav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(13,17,23,0.88);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.topnav-inner {
+  max-width: 1180px; margin: 0 auto;
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+}
+.topnav-brand {
+  font-size: 14px; font-weight: 600;
+  color: var(--text); text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.topnav-links { display: flex; gap: 22px; font-size: 13px; align-items: center; }
+.topnav-links a {
+  color: var(--text-secondary); text-decoration: none;
+  transition: color .12s, border-color .12s;
+  padding-bottom: 2px; border-bottom: 2px solid transparent;
+}
+.topnav-links a:hover { color: var(--text); }
+.topnav-links a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.mono, code, pre, .machine-bar, .breadcrumb, .toc, .ref-list .ref-num, .claim {
+  font-family: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', Menlo, Consolas, monospace;
+}
+
+/* ---------- Layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: var(--nav-width) minmax(0, 1fr);
+  max-width: 1180px;
+  margin: 0 auto;
+  gap: 0;
+}
+aside.toc {
+  position: sticky;
+  top: 49px;
+  align-self: start;
+  height: calc(100vh - 49px);
+  overflow-y: auto;
+  padding: 32px 22px 40px 28px;
+  border-right: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  background: rgba(13,17,23,0.6);
+}
+aside.toc .toc-label {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+aside.toc ol {
+  list-style: none;
+  padding: 0;
+  counter-reset: tocnum;
+}
+aside.toc li {
+  counter-increment: tocnum;
+  margin: 2px 0;
+}
+aside.toc a {
+  display: flex;
+  gap: 10px;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  border-radius: 2px;
+  transition: color .12s, background .12s, border-color .12s;
+  line-height: 1.45;
+}
+aside.toc a::before {
+  content: counter(tocnum, decimal-leading-zero);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  width: 22px;
+}
+aside.toc a:hover {
+  color: var(--text);
+  background: var(--bg-card);
+  border-left-color: var(--accent-deep);
+}
+aside.toc a.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+}
+aside.toc a.active::before { color: var(--accent); }
+
+main.article {
+  padding: 48px 56px 100px;
+  max-width: 820px;
+  min-width: 0;
+}
+
+/* ---------- Top metadata strip ---------- */
+.breadcrumb {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+}
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-deep);
+}
+.breadcrumb a:hover { color: var(--text); border-color: var(--text); }
+.breadcrumb .sep { color: var(--text-tertiary); margin: 0 6px; }
+
+.machine-bar {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  padding: 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 22px;
+  background: rgba(95,208,200,0.025);
+}
+.machine-bar .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 8px;
+  vertical-align: middle;
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+.machine-bar .sep { color: var(--border); margin: 0 8px; }
+
+/* ---------- Title ---------- */
+h1.brief-title {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  margin: 4px 0 16px;
+}
+.brief-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 30px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
+.brief-meta .item .v { color: var(--accent); }
+
+/* ---------- Body content ---------- */
+.body { font-size: 15px; }
+.body p { margin: 10px 0; }
+.body h1 { /* if frontmatter title leaks; usually suppressed */
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 36px 0 14px;
+}
+.body h2 {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 21px;
+  font-weight: 700;
+  margin: 44px 0 14px;
+  padding-top: 12px;
+  scroll-margin-top: 20px;
+  position: relative;
+}
+.body h2::before {
+  content: "§";
+  position: absolute;
+  left: -22px;
+  top: 14px;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 400;
+  font-family: 'JetBrains Mono', monospace;
+}
+.body h3 {
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+  font-size: 16.5px;
+  font-weight: 700;
+  margin: 28px 0 10px;
+  color: var(--text);
+}
+.body strong { color: #ffffff; font-weight: 700; }
+.body em { font-style: italic; color: var(--text); }
+.body a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-deep);
+  transition: color .12s, border-color .12s;
+}
+.body a:hover { color: var(--text); border-bottom-color: var(--text); }
+.body ul, .body ol {
+  padding-left: 22px;
+  margin: 10px 0;
+}
+.body li { margin: 4px 0; }
+.body blockquote {
+  border-left: 2px solid var(--accent-deep);
+  padding: 4px 14px 4px 16px;
+  margin: 14px 0;
+  background: var(--accent-dim);
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: 0 3px 3px 0;
+}
+.body blockquote strong { color: var(--text); }
+
+/* Inline ref anchors (no visual offset; just scroll target) */
+.body a[id^="ref-"] {
+  border: none;
+  text-decoration: none;
+}
+
+/* ---------- Code ---------- */
+.body code {
+  font-size: 12.5px;
+  background: var(--bg-code);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid var(--border-soft);
+}
+.body pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--accent-deep);
+  border-radius: 3px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 14px 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.body pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+/* ---------- Tables ---------- */
+.body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0 20px;
+  font-size: 13.5px;
+  font-family: 'Charter', 'Iowan Old Style', 'Source Serif Pro', 'Georgia', serif;
+}
+.body th {
+  background: var(--bg-card);
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent-deep);
+  color: var(--text);
+  font-size: 12.5px;
+}
+.body td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: top;
+  color: var(--text-secondary);
+}
+.body td strong { color: var(--text); }
+.body tr:hover td { background: rgba(95,208,200,0.025); }
+.body td code, .body th code { white-space: nowrap; font-size: 11.5px; }
+
+/* ---------- Claim tags ---------- */
+.claim {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  background: transparent;
+  margin-right: 4px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  line-height: 1.4;
+}
+.claim-paper    { color: var(--c-paper);    background: rgba(126,212,255,0.08); }
+.claim-tech     { color: var(--c-tech);     background: rgba(210,163,94,0.08); }
+.claim-personal { color: var(--c-personal); background: rgba(193,147,224,0.08); }
+.claim-self     { color: var(--c-self);     background: rgba(135,210,125,0.08); }
+.claim-blog     { color: var(--c-blog);     background: rgba(210,163,94,0.08); }
+
+/* Reference list */
+.body h2#reference, .body h2[id="reference"] {
+  margin-top: 56px;
+}
+.body .ref-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0;
+  counter-reset: refnum;
+  font-size: 13.5px;
+}
+.body .ref-list li {
+  counter-increment: refnum;
+  padding: 10px 0 10px 38px;
+  border-bottom: 1px solid var(--border-soft);
+  position: relative;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.body .ref-list li::before {
+  content: "[" counter(refnum, decimal-leading-zero) "]";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.body .ref-list li strong { color: var(--text); }
+.body .ref-list .claim { vertical-align: 0; }
+
+/* Anchor target highlight on jump */
+.body a[id]:target,
+.body .ref-list li:target {
+  background: var(--accent-dim);
+  border-radius: 3px;
+}
+
+/* ---------- Footer ---------- */
+footer.brief-foot {
+  margin-top: 64px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+footer.brief-foot a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-deep);
+}
+footer.brief-foot a:hover { color: var(--text); }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .topnav-inner { padding: 10px 16px; }
+  .topnav-links { gap: 14px; font-size: 12px; }
+  aside.toc {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 20px 18px;
+  }
+  aside.toc-mobile {
+    display: block;
+  }
+  main.article {
+    padding: 28px 18px 60px;
+  }
+  h1.brief-title { font-size: 24px; }
+  .body h2 { font-size: 18px; padding-left: 0; }
+  .body h2::before { display: none; }
+  .body table { font-size: 12.5px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a class="topnav-brand" href="../../">Yidan He</a>
+    <div class="topnav-links">
+      <a href="../../">Home</a>
+      <a href="../" class="active">前沿</a>
+      <a href="../../meta/">本站约定</a>
+      <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<div class="layout">
+
+<aside class="toc">
+  <div class="toc-label">Contents</div>
+  <ol id="toc-list">
+    <!-- populated by JS from H2 in main -->
+  </ol>
+</aside>
+
+<main class="article">
+
+  <div class="breadcrumb">
+    <a href="../../">Home</a>
+    <span class="sep">/</span>
+    <a href="../">前沿</a>
+    <span class="sep">/</span>
+    <span>capability-merge-distillation</span>
+  </div>
+
+  <div class="machine-bar">
+    <span class="dot"></span>auto-generated brief
+    <span class="sep">·</span> pipeline reduce
+    <span class="sep">·</span> 8 sources
+    <span class="sep">·</span> last update 2026-07-12
+  </div>
+
+  <h1 class="brief-title">用 OPD 给对齐模型增量加能力：组件已有先例，组合仍待验证</h1>
+  <div class="brief-meta">
+    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
+    <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
+    <span class="item"><span class="k">slug</span> <span class="v">capability-merge-distillation</span></span>
+  </div>
+
+  <article class="body" id="brief-body">
+<!-- domain: agentic-rl -->
+<p><span class="claim claim-tech">tech report</span> <a href="#ref-tml">Thinking Machines Lab</a>（Thinking Machines Lab，2025）将已经 post-trained 的 Qwen3-8B 作为学生，先 midtrain 注入一批新知识，再用注入前的自身作为 teacher 做 on-policy distillation，恢复退化的 instruction following。<span class="claim claim-paper">论文</span> <a href="#ref-camopd">CaMOPD</a>（快手，2026）进一步让 post-trained 的领域模型同时担任学生和 domain teacher，用其谱系上的通用旧版担任 general teacher，两个 teacher 按 prompt 分槽路由。<span class="claim claim-tech">tech report</span> <a href="#ref-qwen3">Qwen3</a>（Qwen Team，2025）的 strong-to-weak distillation 则是另一路：从 base 模型蒸出六个轻量模型，整条蒸馏管线替代四阶段 post-training。</p>
+<p>三者都在做「把能力蒸进一个模型」，但工程问题往往更具体：<strong>已有一个对齐良好的对话或指令模型，想为它增量加入一项新能力（新领域知识、新工具、新任务），同时保持已有的对齐和通用能力。这时应选择什么学生起点、如何防止旧能力退化，这套做法有没有文献支持？</strong> 对 2016 年至今相关文献的核验可归纳为一句需要严格限定范围的判断：</p>
+<blockquote>
+<p><strong>组件级全部有直接文献背书，完整组合没有任何单篇论文做过，最接近的只有两个先例，且各差一个维度。</strong></p>
+</blockquote>
+<p><span class="claim claim-self">本文归纳</span> 每个组件均有验证，完整组合仍缺少直接验证；风险集中在组件之间的交互，而这正是现有文献的空白。本文只讨论「学生起点范式 + 自蒸馏防遗忘」这一层；on-policy distillation 机制本身（on-policy 数据为何承担抗遗忘、KL 几何、high-probability overlap window）是正交的另一层，见姊妹篇《<a href="../on-policy-distillation/">OPD：on-policy 数据是抗遗忘的真正承担者</a>》。</p>
+<blockquote>
+<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
+</blockquote>
+<h2 id="问题的形状-一个学生起点轴-一个防遗忘轴">问题的形状：一个学生起点轴，一个防遗忘轴</h2>
+<p>将这个「给对齐模型加新能力」的工程问题拆开后，它包含两个正交的设计轴。</p>
+<p><strong>第一个轴：学生起点是 base 还是 post-trained。</strong> 从零开始的裸基座（只经过预训练、没有指令对齐），还是已经过通用后训练、甚至已经过领域后训练的模型。Qwen3 的 strong-to-weak 走前者，TML 和 CaMOPD 走后者。这个轴决定了蒸馏是&quot;从头造一个能力集&quot;还是&quot;往已有能力集上叠加&quot;。</p>
+<p><strong>第二个轴：防遗忘靠什么。</strong> 增量训练会把权重推离原分布、削弱旧能力（catastrophic forgetting），需要机制使其保持在原有能力分布附近。一种常见手法是保留一份模型自己的冻结旧版本，让它在训练中充当 teacher。下文将这套手法称为<strong>自蒸馏锚</strong>（self-distillation anchor）：锚是那个不再更新的旧版自身，蒸馏是让当前模型与其对齐。文献里没有统一叫法，这一名称仅用于本文讨论。自蒸馏锚的 teacher 可以是冻结的旧 checkpoint、学生参数的滑动平均（EMA），也可以是谱系上更早的祖先模型，形态选择本身就是一个设计点（见后文）。</p>
+<p>两个轴的四个象限中，证据最稀缺的一格是「post-trained 学生 × 自蒸馏锚防遗忘，同时用外部 teacher 注入新能力」。后面几节从证据最扎实的组件讨论到最稀薄的组合。</p>
+<h2 id="学生起点-文献里的学生最低也是-sft-后的模型">学生起点：文献里的学生最低也是 SFT 后的模型</h2>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-gkd">GKD</a>（Google DeepMind，Agarwal et al. 2024）是 on-policy distillation 的方法学起源，它把学生起点写成了硬前提：</p>
+<blockquote>
+<p>As opposed to a randomly initialized student, we assume access to a student that can generate sequences of adequate quality, which the teacher can provide feedback upon. In our experiments, we start from student models that have undergone supervised FT.</p>
+</blockquote>
+<p>机制上这是必然的：on-policy distillation 靠学生自己采样的 rollout 提供训练 state，teacher 在这些 state 上给 token 级反馈；学生必须已经能产出「足够好、teacher 能给出有意义反馈」的样本，随机初始化的裸基座采不出可监督的 rollout。因此「学生起点已具备基本能力」是这套方法可运行的前提。GKD 的官方参考实现 TRL GKDTrainer 将这一点体现得更具体：规范用例的学生是 instruction-tuned 的 Qwen2-0.5B-Instruct、teacher 是同族 Qwen2-1.5B-Instruct，被官方直接归类为 post-training method。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-minillm">MiniLLM</a>（清华 + 微软，Gu et al. 2024）是平行证据：学生先在指令数据上从预训练 checkpoint 做 SFT、取验证 loss 最低的那个再进蒸馏；防旧能力退化的机制是对预训练语料加一份 language modeling loss，作者报告&quot;adding the pre-training loss helps to preserve the abilities on canonical NLP tasks&quot;。注意它防遗忘用的是回放式的 LM loss，与自蒸馏锚属于两条不同路径。</p>
+<p>这条前提有一个需要区分的反例：<span class="claim claim-tech">tech report</span> <a href="#ref-qwen3">Qwen3</a> 的 strong-to-weak distillation 学生使用<strong>base 模型</strong>（报告 Figure 1：Base Models → Strong-to-Weak Distillation → 六个轻量模型），表面上推翻了「学生起点已具备基本能力」。但它处理的是另一类任务：整条蒸馏管线用来<strong>替代</strong>四阶段 post-training（&quot;This approach eliminates the necessity of performing an exhaustive four-stage process&quot;），目标是从强模型压出小模型（能力压缩），起点是未做后训练的初始模型，teacher 只有外部更强旗舰（Qwen3-32B / Qwen3-235B-A22B），全报告没有防遗忘机制，也没有冻结旧自身当 teacher 的设计。而且即便在 Qwen3 内部，进入 on-policy 阶段的学生也已经是 off-policy response distillation 的 SFT 式冷启动 checkpoint（&quot;laying a solid foundation&quot;），已脱离纯裸基座状态。</p>
+<p>因此，Qwen3 §4.7 那句常被引用的「on-policy distillation 优于直接 RL、约 1/10 GPU hours」需明确比较口径：它比较的是<strong>同一个 off-policy checkpoint 起点下</strong> RL 与 OPD 的差别（&quot;both starting from the same off-policy distilled 8B checkpoint&quot;），<strong>与 base-vs-post-trained 两种范式的对比无关</strong>，不能用于支持学生起点的选择。</p>
+<p>已核验的学生起点呈现为一条从 base 到 post-trained 的连续带：</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th>学生起点</th>
+<th>位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qwen3 strong-to-weak</td>
+<td>base（→ off-policy SFT 冷启动后进 on-policy）</td>
+<td>最靠 base 端</td>
+</tr>
+<tr>
+<td>GKD 实验</td>
+<td>任务级 supervised FT checkpoint</td>
+<td>任务 SFT</td>
+</tr>
+<tr>
+<td>TRL GKDTrainer 用例</td>
+<td>instruction-tuned 模型</td>
+<td>通用指令对齐</td>
+</tr>
+<tr>
+<td>MiniLLM</td>
+<td>指令数据 SFT 后 checkpoint</td>
+<td>通用指令对齐</td>
+</tr>
+<tr>
+<td>SDFT / Shenfeld 2026</td>
+<td>完整对齐模型（chat / instruct）</td>
+<td>最靠 post-trained 端</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> 「在已对齐模型上增量合能力」落在这条带最靠 post-trained 的一端：比 GKD 的任务级 SFT、比 TRL 的 instruction-tuned 更充分，因此满足 GKD 的方法学前提。学生起点是否 post-trained 在此并非需要权衡的选择题，而是已满足方法前提的条件。</p>
+<h2 id="自蒸馏锚-从离线软标签到-on-policy">自蒸馏锚：从离线软标签到 on-policy</h2>
+<p>用「冻结的旧自身」当 teacher 防遗忘，这个组件的文献先验可追溯到深度学习早期。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-lwf">Learning without Forgetting</a>（UIUC，Li &amp; Hoiem 2016）是奠基形态：更新网络前，先记录原网络在新任务数据上对旧任务的输出，再用显式的 knowledge distillation loss（Hinton 软标签）让更新后的网络逼近这些输出：</p>
+<blockquote>
+<p>First, we record responses on each new task image from the original network for outputs on the old tasks.</p>
+</blockquote>
+<p>关键性质是「uses only new task data」：不回放任何旧任务数据，只靠「更新前的自己」在新数据上的输出当锚，就能降低旧能力退化。这是自蒸馏锚组件的早期形态：2016 年它落在 CNN 视觉分类，对固定输入做离线软标签监督，没有学生自采样。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-sdft">SDFT</a>（浙江大学 + Sea AI Lab，Yang et al. 2024）把它搬到了 LLM：学生初始化是已对齐的 Llama-2-7b-chat（从无裸基座），由微调前的自身离线把任务数据改写成与其原始分布匹配的 distilled dataset，再用它引导微调：</p>
+<blockquote>
+<p>guiding fine-tuning with a distilled dataset generated by the model itself to match its original distribution.</p>
+</blockquote>
+<p>它显式针对 catastrophic forgetting、保持 helpfulness 与 safety alignment，是「post-trained 模型上增量训练 + 自蒸馏防退化」最直接的 LLM 先验。但它仍是<strong>离线</strong>形态：数据级改写加标准 NLL，没有学生 rollout、没有 teacher 逐 token logits/KL。（需区分同名缩写：SDFT 下有两篇完全不同的工作，Yang et al. 的 ACL 2024 是离线改写，Shenfeld et al. 的 2026 是 on-policy，机制完全不同。）</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-shenfeld">Shenfeld et al. 2026</a>（MIT + ETH Zurich，Shenfeld, Damani, Hübotter, Agrawal，2026）把自蒸馏锚正式接到 on-policy 上，标题就叫 Self-Distillation Enables Continual Learning：学生初始化是 post-trained 模型（主实验 Qwen2.5-7B-Instruct，推理实验用 Olmo-3-7B-Think），严格 on-policy（只从学生策略采样 rollout、最小化学生与 teacher 分布的 reverse KL），把 on-policy self-distillation 明确定位为&quot;a practical path to continual learning from demonstrations&quot;。</p>
+<p>三项工作构成一条清晰的形态演进：</p>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>年份</th>
+<th>自蒸馏锚形态</th>
+<th>采样</th>
+<th>领域</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LwF</td>
+<td>2016</td>
+<td>冻结旧网络软标签</td>
+<td>离线固定输入</td>
+<td>CNN 视觉分类</td>
+</tr>
+<tr>
+<td>SDFT (Yang et al.)</td>
+<td>2024</td>
+<td>微调前自身改写数据</td>
+<td>离线</td>
+<td>LLM 对齐保持</td>
+</tr>
+<tr>
+<td>Shenfeld et al.</td>
+<td>2026</td>
+<td>学生参数 EMA</td>
+<td>on-policy rollout</td>
+<td>LLM continual learning</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> 「冻结旧自身防遗忘」这个组件从 2016 到 2026 由离线软标签发展到 on-policy reverse KL，每一步都有文献支持。研究问题里的自蒸馏锚落在这条演进的最新端，组件层面有充分先验支撑。</p>
+<h2 id="两个最接近的先例-各差一个维度">两个最接近的先例，各差一个维度</h2>
+<p>「post-trained 学生 + 自蒸馏锚 + 外部 teacher 注入新能力」这个完整组合，没有单篇论文完整覆盖，但有两个先例各差一个维度。</p>
+<p><strong>先例一，顺序式、同方向：<span class="claim claim-tech">tech report</span> <a href="#ref-tml">Thinking Machines Lab</a>。</strong> 以已 post-trained 的 Qwen3-8B 为学生（博客明确&quot;We will start with Qwen3-8B, rather than the base model&quot;），先 midtrain 把内部文档知识注进去（内部 QA 18%→36%，代价是 IF-eval 85%→79%），再以 midtrain 前的 Qwen3-8B 自身为 teacher、在 Tulu3 prompts 上做 on-policy distillation，IF-eval 恢复到 83%、内部 QA 还反升到 41%。博客直接把&quot;用模型更早版本当 teacher 来 re-invoke 微调中丢失的能力&quot;背书为 continual learning 机制，建议在&quot;新数据微调 ↔ 蒸馏恢复&quot;之间交替。HuggingFaceH4 用 TRL GKDTrainer 复现过这个配方，数字接近（IFEval 83.4→79.5→82.8），算一个独立佐证。它差的一维是：注入靠 midtrain，恢复是事后的独立阶段，尚未做到训练中常驻的&quot;部分数据槽固定分给冻结旧版 teacher&quot;设计。</p>
+<p><strong>先例二，并发式、反方向：<span class="claim claim-paper">论文</span> <a href="#ref-camopd">CaMOPD</a>。</strong> post-trained 的领域特化模型同时当学生初始化和 domain teacher：用学生自身的冻结副本守住一个 prompt 数据槽（保住新获得的领域能力），原开源通用模型（学生谱系上的旧版本）当 general teacher 守另一槽（恢复被特化训练削弱的通用能力）；teacher 按 prompt 槽路由（10K 通用 prompts 走 general-recovery、10K held-out 领域 prompts 走 domain-preservation），学生自采 rollout + token 级 teacher log-prob 监督。原文一句话点破结构：</p>
+<blockquote>
+<p>the original open-source model serves as the general teacher, and the specialized model serves as both the student initialization and the domain teacher.</p>
+</blockquote>
+<p>它和研究问题的结构几乎完全同构（&quot;prompt 槽 × teacher 路由&quot;在一次训练里同时防两侧退化），只差方向相反：CaMOPD 冻结自身守的是<strong>新</strong>能力、谱系旧版恢复的是<strong>旧</strong>能力；研究问题里冻结自身守的是<strong>旧</strong>能力、外部 teacher 注入的是<strong>新</strong>能力。</p>
+<p>把两个先例和完整组合摆到一张表上，差距一目了然：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>TML</th>
+<th>CaMOPD</th>
+<th>研究问题的完整组合</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>学生起点</td>
+<td>post-trained ✓</td>
+<td>post-trained（领域特化）✓</td>
+<td>post-trained ✓</td>
+</tr>
+<tr>
+<td>新能力注入方式</td>
+<td>midtrain（非蒸馏）</td>
+<td>domain teacher 蒸馏</td>
+<td>外部 teacher 蒸馏</td>
+</tr>
+<tr>
+<td>自蒸馏锚防遗忘</td>
+<td>冻结旧自身 ✓</td>
+<td>冻结特化自身 ✓</td>
+<td>冻结旧自身 ✓</td>
+</tr>
+<tr>
+<td>teacher 是否多槽并发路由</td>
+<td>否（事后单阶段）</td>
+<td>是 ✓</td>
+<td>是</td>
+</tr>
+<tr>
+<td>冻结自身守的是</td>
+<td>旧能力</td>
+<td>新能力</td>
+<td>旧能力</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> 每一格单看都有先例，但没有一列整体等于最右一列（完整组合）。三层引用链分别覆盖方法学层（GKD/MiniLLM/Qwen3）、防遗忘先验层（LwF/SDFT/Shenfeld）和近似组合层（TML/CaMOPD）。组件因此齐备，组合却未被单篇验证。结论应限定为「组件级直接支持 + 两个近似先例」。尚待实验验证的是多槽 teacher 并发时的相互作用，例如注入和守成是否相互干扰、多 teacher 信号是否冲突。</p>
+<h2 id="teacher-形态按槽位角色选-不按全局统一选">teacher 形态按槽位角色选，不按全局统一选</h2>
+<p>自蒸馏锚的 teacher 具体取什么形态（冻结旧 checkpoint、EMA、还是谱系祖先），文献里有两组表面矛盾、但可按角色解释的证据。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-shenfeld">Shenfeld et al. 2026</a> 做过 teacher 形态的消融，结论是<strong>冻结模型当 teacher 虽然稳定，但效果稳定地较差</strong>（跟不上学生的学习进度），直接用当前学生又不稳，学生参数的 EMA 最好。TML 的成功案例则使用<strong>冻结的旧版自身</strong>当 teacher。同一件事（self-as-teacher）为何得到两个结论？</p>
+<p>关键在这两个 teacher 服务的<strong>槽位角色不同</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>槽位角色</th>
+<th>teacher 要不要跟踪学生进度</th>
+<th>该用的形态</th>
+<th>证据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>学新能力槽</td>
+<td>要（teacher 得带着学生一起往前）</td>
+<td>跟踪型：EMA / 当前学生</td>
+<td>Shenfeld 2026 消融：frozen &quot;consistently underperforms&quot;、EMA 最好</td>
+</tr>
+<tr>
+<td>守既有能力槽</td>
+<td>不要（要的正是一个不动的回拉目标）</td>
+<td>冻结锚：冻结旧版 / 谱系祖先</td>
+<td>TML 冻结旧版恢复成功；LwF/SDFT 冻结旧自身守成</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-self">本文归纳</span> Shenfeld 的「frozen 更差」针对的是<strong>学新技能的 teacher 槽</strong>：学新时 teacher 要跟着学生进步，冻结的旧版跟不上进度，效果较差；<strong>守既有能力的槽</strong>则不需要跟踪新进度，它需要固定锚维持既有能力，这解释了 TML 使用冻结旧版的成功。因此在多槽 teacher 路由的设计里，teacher 形态应按槽位分别选择：注入新能力的槽配跟踪型 teacher（EMA），守既有能力的槽配冻结锚。这条分工是跨 Shenfeld（只测了学新槽）、TML（只试了守成槽的冻结）、LwF/SDFT（守成槽冻结、离线）归纳出来的推论，目前还没有单篇在同一个「守成槽」上直接对比过冻结 vs EMA，因此它是一个可证伪的设计假设，尚未成为已验证的定论。</p>
+<h2 id="边界与开放问题">边界与开放问题</h2>
+<p><span class="claim claim-self">本文归纳</span> 明确这套做法的文献边界，比给出乐观结论更有用：</p>
+<p><strong>一个确定的空白（阴性结果）。</strong> 已核验文献中，没有工作直接对比过「从裸基座重新蒸馏」与「在 post-trained 模型上增量蒸馏」这两种范式的效果、成本、遗忘三轴。Qwen3 §4.7 比的是 RL 与 on-policy distillation（同一 off-policy 起点），属于另一类对照。这个空白需要受控实验填补。</p>
+<p><strong>待进一步核验的相关路线。</strong> 多 teacher 按样本或领域路由、将多个模型的能力合入一个已有 chat 模型这条路线，包括 FuseLLM / FuseChat / 一般 multi-teacher KD，以及尚未核验的 MOPD（arXiv 2606.30406）。目前仅确认 CaMOPD 一个先例，其余工作尚未逐项核验。CaMOPD 标题里的 Counteraction-Aware（多 teacher 信号相互抵消的处理机制）也尚未纳入核验范围；多槽 teacher 信号冲突正是这类设计的实际风险点，采用前应深入核验相应解法。</p>
+<p><strong>两个开放的设计问题。</strong> 一是守既有能力槽的 teacher 形态缺直接对比：冻结旧版、EMA、谱系祖先三选一，现有证据来自三篇不同 setting 的工作，不可直接互推（见「teacher 形态按槽位角色选」一节）。二是「新能力注入」和「旧能力守成」两个槽并发时的稳定边界：什么样的数据配比、什么样的 teacher 权重下二者不相互干扰，目前没有现成答案。</p>
+<p><span class="claim claim-self">本文归纳</span> 可操作的判断是：在对齐模型上增量合能力时，学生起点应为 post-trained；自蒸馏锚防遗忘有从 LwF 到 Shenfeld 的坚实先验，teacher 形态应按槽位角色分别选择。尚无现成背书、必须自行验证的是多槽并发的组件交互，这既是这套做法的风险所在，也是它相对已发表工作的新增验证点。</p>
+<h2 id="reference">Reference</h2>
+<ol class="ref-list">
+
+<li><a id="ref-tml"></a> <strong>[On-Policy Distillation]</strong> Thinking Machines Lab 博客，2025-10。<a href="https://thinkingmachines.ai/blog/on-policy-distillation/">thinkingmachines.ai/blog/on-policy-distillation</a>。本文用到它的 personalization/continual-learning 实验：post-trained Qwen3-8B 学生 + midtrain 注入 + 冻结旧自身当 teacher 恢复能力；HuggingFaceH4 用 TRL GKDTrainer 复现。<span class="claim claim-blog">工程博客</span></li>
+
+<li><a id="ref-camopd"></a> <strong>[CaMOPD: Counteraction-Aware Multi-Teacher On-Policy Distillation]</strong> 快手（Kuaishou），2026-05。<a href="https://arxiv.org/pdf/2605.27115">arXiv:2605.27115</a>。post-trained 学生同时作 domain teacher、谱系旧版作 general teacher、按 prompt 槽路由的 on-policy 多 teacher 蒸馏。单一近期 preprint，评审状态未知。<span class="claim claim-paper">arxiv 论文</span></li>
+
+<li><a id="ref-qwen3"></a> <strong>[Qwen3 Technical Report]</strong> Qwen Team（阿里），2025。<a href="https://arxiv.org/pdf/2505.09388">arXiv:2505.09388</a>。strong-to-weak distillation：base 学生、整条管线替代四阶段 post-training；§4.5 on-policy logits/KL 机制、§4.7 RL vs OPD 同 off-policy 起点效率对比。<span class="claim claim-tech">tech report</span></li>
+
+<li><a id="ref-gkd"></a> <strong>[On-Policy Distillation of Language Models: Learning from Self-Generated Mistakes (GKD)]</strong> Rishabh Agarwal, Nino Vieillard et al.，Google DeepMind，ICLR 2024（arXiv 2023-06）。<a href="https://arxiv.org/abs/2306.13649">arXiv:2306.13649</a>。on-policy distillation 方法学起源；学生起点已具备基本能力的硬前提；官方实现 TRL GKDTrainer（学生 Qwen2-0.5B-Instruct）。<span class="claim claim-paper">arxiv 论文 / 同行评审</span></li>
+
+<li><a id="ref-minillm"></a> <strong>[MiniLLM: Knowledge Distillation of Large Language Models]</strong> Yuxian Gu, Li Dong et al.，清华 + 微软，ICLR 2024（arXiv 2023-06）。<a href="https://arxiv.org/abs/2306.08543">arXiv:2306.08543</a>。SFT 后 checkpoint 为学生起点的 reverse-KL policy-gradient 蒸馏；防退化用 pre-training LM loss（另一条路径，非自蒸馏锚）。<span class="claim claim-paper">arxiv 论文 / 同行评审</span></li>
+
+<li><a id="ref-lwf"></a> <strong>[Learning without Forgetting]</strong> Zhizhong Li, Derek Hoiem，UIUC，ECCV 2016 / TPAMI 2017。<a href="https://arxiv.org/abs/1606.09282">arXiv:1606.09282</a>。自蒸馏锚的奠基先验：冻结原网络软标签、只用新任务数据保留旧能力。<span class="claim claim-paper">arxiv 论文 / 同行评审</span></li>
+
+<li><a id="ref-sdft"></a> <strong>[Self-Distillation Bridges Distribution Gap in Language Model Fine-Tuning (SDFT)]</strong> Zhaorui Yang et al.，浙江大学 + Sea AI Lab，ACL 2024。<a href="https://aclanthology.org/2024.acl-long.58/">aclanthology 2024.acl-long.58</a>，repo sail-sg/sdft。微调前自身离线改写数据、缓解 catastrophic forgetting；离线形态（无 on-policy）。与 Shenfeld 2026 同缩写不同篇。<span class="claim claim-paper">arxiv 论文 / 同行评审</span></li>
+
+<li><a id="ref-shenfeld"></a> <strong>[Self-Distillation Enables Continual Learning]</strong> Idan Shenfeld, Mehul Damani, Jonas Hübotter, Pulkit Agrawal，MIT + ETH Zurich，2026-01。<a href="https://arxiv.org/abs/2601.19897">arXiv:2601.19897</a>。on-policy self-distillation 定位为 continual learning 路径；teacher 形态消融（EMA 最好、frozen 一致更差、当前学生不稳）。与 ACL 2024 SDFT 不同篇。<span class="claim claim-paper">arxiv 论文</span></li>
+
+</ol>
+
+  </article>
+
+  <footer class="brief-foot">
+    <span>brief · auto-rendered · <a href="../">/briefs</a></span>
+    <span>source at <a href="https://github.com/imathg/heyidan-sharing">imathg/heyidan-sharing</a></span>
+  </footer>
+
+</main>
+
+</div>
+
+<script>
+(function () {
+  // Build TOC from H2 inside .body
+  var body = document.getElementById('brief-body');
+  var tocList = document.getElementById('toc-list');
+  if (!body || !tocList) return;
+  var headings = body.querySelectorAll('h2');
+  var entries = [];
+  headings.forEach(function (h, i) {
+    if (!h.id) h.id = 'h-' + i;
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent.replace(/^[\s§]+/, '');
+    li.appendChild(a);
+    tocList.appendChild(li);
+    entries.push({ id: h.id, link: a, el: h });
+  });
+  // Scroll spy
+  function onScroll() {
+    var top = window.scrollY + 80;
+    var current = null;
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].el.offsetTop <= top) current = entries[i];
+      else break;
+    }
+    entries.forEach(function (e) { e.link.classList.remove('active'); });
+    if (current) current.link.classList.add('active');
+  }
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>

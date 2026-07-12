@@ -2,9 +2,9 @@
 
 <!-- domain: agentic-rl -->
 
-2026 年 6 月底到 7 月初，agent 论文里出现了一组密集信号。`[论文]` [Supersede](#ref-supersede)（Vrin，Patel 2026）把长期会话里的旧事实更新定义成可训练环境；`[论文]` [TraceRetain](#ref-traceretain)（Independent Researcher，Reddy 2026）显示 memory retention 在 noisy write 压力下才拉开差异；`[论文]` [VISTA](#ref-vista)（CUHK + LIGHTSPEED，Xu et al. 2026）把 context 状态暴露成模型可见的 dashboard；`[论文]` [ECHO](#ref-echo)（北大 + 中科大 + 百度，Xie et al. 2026）在压缩后的 turn record 中保留 source index，用来回传训练 credit；`[论文]` [Self-GC](#ref-selfgc)（小红书，Hao et al. 2026）把 context 当成可 fold、mask、prune、recover 的对象集合；`[论文]` [AutoMem](#ref-automem)（Stanford，Wu et al. 2026）把 memory 管理当成可训练技能；`[论文]` [ContextNest](#ref-contextnest)（PromptOwl + Emory + IBM Research，Sulpovar et al. 2026）把 context governance 放到 retrieval 下层，负责版本、归属、完整性和审计。
+2026 年 6 月底到 7 月初，agent 论文出现一组密集信号。`[论文]` [Supersede](#ref-supersede)（Vrin，Patel 2026）将长期会话里的旧事实更新定义成可训练环境；`[论文]` [TraceRetain](#ref-traceretain)（Independent Researcher，Reddy 2026）显示 memory retention 在 noisy write 压力下才显现差异；`[论文]` [VISTA](#ref-vista)（CUHK + LIGHTSPEED，Xu et al. 2026）将 context 状态暴露成模型可见的 dashboard；`[论文]` [ECHO](#ref-echo)（北大 + 中科大 + 百度，Xie et al. 2026）在压缩后的 turn record 中保留 source index，用来回传训练 credit；`[论文]` [Self-GC](#ref-selfgc)（小红书，Hao et al. 2026）将 context 视为可 fold、mask、prune、recover 的对象集合；`[论文]` [AutoMem](#ref-automem)（Stanford，Wu et al. 2026）将 memory 管理视为可训练技能；`[论文]` [ContextNest](#ref-contextnest)（PromptOwl + Emory + IBM Research，Sulpovar et al. 2026）将 context governance 放到 retrieval 下层，负责版本、归属、完整性和审计。
 
-这些工作分属不同层次，有 benchmark，有强化学习（RL）环境，有系统层，也有知识库规范。`[本文归纳]` 它们共同指向一个转向：长程 agent 的上下文问题，已经从“怎么把更多文本塞进窗口”转向“哪些对象在什么时候可见、当前、可追溯、可训练”。摘要和向量库只覆盖其中一部分，记忆是一组带生命周期的对象。
+这些工作分属不同层次，包括 benchmark、强化学习（RL）环境、系统层和知识库规范。`[本文归纳]` 它们共同指向一个转向：长程 agent 的上下文问题，已经从「如何将更多文本放入窗口」转向「哪些对象在什么时候可见、当前、可追溯、可训练」。摘要和向量库只覆盖其中一部分，记忆是一组带生命周期的对象。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -87,7 +87,7 @@
 
 ## 从容量预算，到当前事实
 
-`[论文]` [ContextForge](#ref-contextforge)（Independent Researcher，Thomas 2026）沿着最直观的方向切入：大语言模型（LLM）是无状态系统，每次调用都靠 context window 接收外部知识。ContextForge 把窗口看成固定预算的执行工作区，每轮显式加载、使用、释放上下文，在 12 轮和 15 轮评测中保持相近准确率，同时减少 token 和延迟。
+`[论文]` [ContextForge](#ref-contextforge) 从最直接的方向切入：大语言模型（LLM）是无状态系统，每次调用都靠 context window 接收外部知识。ContextForge 将窗口视为固定预算的执行工作区，每轮显式加载、使用、释放上下文，在 12 轮和 15 轮评测中保持相近准确率，同时减少 token 和延迟。
 
 `[论文]` [Context Rot](#ref-contextrot)（上海交大 + 复旦 + SII + GAIR，Xia et al. 2026）把问题推进到退化层面。长搜索任务里，context 变长后，模型常见退化表现为直接放弃，或提前给出不确定答案。论文系统比较七种 context management 方法，并加上 rot-aware rejection sampling，说明“长”本身会改变模型的决策状态。
 
@@ -101,11 +101,11 @@
 | 退化层 | 累积上下文会让模型给出不确定或过早答案 | Context Rot 测到 give-up 和 premature answer |
 | 当前性层 | 多个事实版本共存时，模型要判断哪个生效 | Supersede 将 stale-vs-current 定义为训练目标 |
 
-`[本文归纳]` 第一层工程直觉是扩窗口或做摘要。这个直觉只能处理预算层。进入退化层和当前性层后，系统要维护对象状态：哪条信息已过期、哪条仍可用、哪个版本在某次回答时对 agent 可见。
+`[本文归纳]` 第一层工程直觉是扩窗口或做摘要。这一做法只能处理预算层。进入退化层和当前性层后，系统要维护对象状态：哪条信息已过期、哪条仍可用、哪个版本在某次回答时对 agent 可见。
 
 ## 四个约束：当前、选择、地址、审计
 
-`[本文归纳]` 这组论文反复出现四个约束。它们比“记忆容量”更像长程 agent 的核心指标。
+`[本文归纳]` 这些论文反复出现四个约束。相比「记忆容量」，它们更接近长程 agent 的核心指标。
 
 第一是当前性。`[论文]` [Supersede](#ref-supersede) 把当前事实和旧事实分开，奖励 agent 使用当前值，惩罚 stale value。`[论文]` [ContextNest](#ref-contextnest) 在知识库层也处理同一件事：retrieval 负责相关性，governance 先决定哪些 artifact 是 approved、current、attributable、integrity-verified。二者都说明，相关性高的旧事实仍然可能是错误输入。
 
@@ -124,7 +124,7 @@
 
 ## 谁来管理上下文
 
-`[本文归纳]` 这组工作还共享一条产品分歧：上下文管理到底由谁做。不同答案对应不同产品形态。
+`[本文归纳]` 这些工作还呈现一条产品分歧：上下文管理由谁负责。不同答案对应不同产品形态。
 
 `[论文]` [ContextForge](#ref-contextforge) 和 `[论文]` [TraceRetain](#ref-traceretain) 落在系统侧。前者用检索和合成管线复用上下文，后者用一组可解释特征给 memory entry 打分。模型使用结果，但管理策略主要由外部系统提供。
 
@@ -151,7 +151,7 @@
 
 ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounded policy context 时从这些 record 里选择，同时保留 selected source indices。这样成功结果的正向 credit 可以回到证据和选择动作。BrowseComp-Plus 上，ECHO 达到 43.4% held-out accuracy，高于 GRPO 的 28.9% 和 rolling-summary baseline SUPO 的 36.1%。
 
-`[本文归纳]` 这条思路把 context management 和 credit assignment 连接起来：压缩会改变训练信号寻找证据的路径。一个 summary 可能让模型答对当前问题，却让训练系统不知道该奖励哪段证据选择。source-addressable memory record 牺牲一些压缩率上限，换来可训练性和可审计性。
+`[本文归纳]` 这种思路将 context management 和 credit assignment 连接起来：压缩会改变训练信号追溯证据的路径。一个 summary 可能让模型答对当前问题，却让训练系统无法确定该奖励哪段证据选择。source-addressable memory record 牺牲一些压缩率上限，换来可训练性和可审计性。
 
 这也是 `[论文]` [Self-GC](#ref-selfgc) 强调 recoverable sidecar 的原因。fold、mask、prune 可以降低 active token；sidecar 保证被移出 active context 的对象仍可恢复。对 agent 来说，隐藏对象时仍保留定位和恢复路径；删除对象会切断 evidence path。
 
@@ -161,11 +161,11 @@ ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounde
 
 `[论文]` [DRIFTLENS](#ref-driftlens)（Amazon，Fang et al. 2026）给出另一类风险：记忆会改变推理轨迹。个性化系统会把用户属性、偏好和历史上下文注入后续 prompt。DRIFTLENS 比较无记忆轨迹和注入 user-attribute memory 后的轨迹，发现四个 LLM 在 10 类用户属性上都出现 medium-to-large reasoning drift；最终回答仍然流畅合理，漂移发生在价值权衡和推理步骤里。GRPO 和 DPO（Direct Preference Optimization）都能降低漂移，效果依赖模型和 reward 设计。
 
-`[本文归纳]` 这两篇把 memory 从单一 buffer 推向多对象系统。视觉 cue、事实版本、用户属性、tool evidence、file locator 是不同对象。每种对象有自己的保真要求：视觉对象要保留感知细节，事实对象要保留当前性，个性化对象要控制推理漂移，tool evidence 要保留 source address。把它们全压成一段自然语言摘要，会让不同约束互相覆盖。
+`[本文归纳]` 这两篇将 memory 从单一 buffer 扩展为多对象系统。视觉 cue、事实版本、用户属性、tool evidence、file locator 是不同对象。每种对象有自己的保真要求：视觉对象要保留感知细节，事实对象要保留当前性，个性化对象要控制推理漂移，tool evidence 要保留 source address。将它们全压成一段自然语言摘要，会让不同约束互相覆盖。
 
 ## 一张设计表
 
-`[本文归纳]` 这组方法可以归入四个设计维度。它们彼此可组合，每个系统都要在这些维度上取值。
+`[本文归纳]` 这些方法可以归入四个设计维度。它们彼此可组合，每个系统都需在这些维度上取值。
 
 | 维度 | 取值 | 代表工作 |
 |---|---|---|
@@ -174,13 +174,13 @@ ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounde
 | 保留保证 | 当前性、抗噪选择、source address、bounded visibility、模态保真、reasoning stability、audit reconstruction | Supersede、TraceRetain、ECHO、AgenticSTS、DMV-Bench、DRIFTLENS、ContextNest |
 | 反馈环 | inference reuse、diagnostic benchmark、RL reward、trajectory review、audit trace | ContextForge、Context Rot、Supersede、AutoMem、ContextNest |
 
-`[论文]` [AgenticSTS](#ref-agenticsts)（Alaya Lab + 上海交大 + 上海创智学院 + 南开 + 中科大，Cheng et al. 2026）在这张表里更像一个评测方法学样例。它把 memory 定义成“未来每个 decision 被允许看到什么”的 contract。每一步都从 typed retrieval 组装新 user message，跨决策原始 transcript 留在 prompt 之外。好处是 prompt 长度有界，memory/skill layer 能单独 ablate。论文在 Slay the Spire 2 中给出 298 条完成轨迹、condition tag、frozen snapshot、prompt record 和分析脚本。
+`[论文]` [AgenticSTS](#ref-agenticsts)（Alaya Lab + 上海交大 + 上海创智学院 + 南开 + 中科大，Cheng et al. 2026）在这张表中更像一个评测方法学样例。它将 memory 定义成「未来每个 decision 被允许看到什么」的 contract。每一步都从 typed retrieval 组装新 user message，跨决策原始 transcript 留在 prompt 之外。这样 prompt 长度有界，memory/skill layer 能单独 ablate。论文在 Slay the Spire 2 中给出 298 条完成轨迹、condition tag、frozen snapshot、prompt record 和分析脚本。
 
-`[本文归纳]` 这类 testbed 的价值主要来自实验变量化的 memory interface，小样本胜率属于附带读数。未来 agent memory 论文如果只报“加 memory 提升多少”，缺少对象可见性、层级 ablation 和版本复原说明，证据密度会偏低。
+`[本文归纳]` 这类 testbed 的价值主要来自实验变量化的 memory interface，小样本胜率属于附带读数。未来 agent memory 论文若只报告「加 memory 提升多少」，而缺少对象可见性、层级 ablation 和版本复原说明，证据密度会偏低。
 
 ## 对 agent 产品的含义
 
-`[本文归纳]` 如果把这组结论落到 coding agent、research agent 或个人知识库 agent 上，最直接的产品判断是：自动摘要适合做 token 预算工具，长期记忆还需要显式治理层。自动摘要可以降 token；当前性、选择性、源地址和审计需要由治理层单独承担。
+`[本文归纳]` 如果将这些结论用于 coding agent、research agent 或个人知识库 agent，最直接的产品判断是：自动摘要适合做 token 预算工具，长期记忆仍需要显式治理层。自动摘要可以降低 token；当前性、选择性、源地址和审计需由治理层单独承担。
 
 对应到架构上，可以分成三层：
 
@@ -190,9 +190,9 @@ ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounde
 | policy layer | 决定当前 step 看哪些对象，哪些 fold、mask、prune、retrieve | 当前性、选择性 |
 | learning/audit layer | 记录选择动作与结果，回传 credit，支持复盘 | 可训练、可追溯 |
 
-`[本文归纳]` 这三层可以和“长上下文模型”并行。长窗口减少了管理压力，但不会自动判断事实版本、噪声写入、视觉 cue 或个性化漂移。长窗口像更大的内存空间，context governance 像操作系统和文件系统。缺少后者时，容量增加会同时带来更多旧事实、更多 distractor 和更多不可审计状态。
+`[本文归纳]` 这三层可以与「长上下文模型」并行。长窗口减少了管理压力，但不会自动判断事实版本、噪声写入、视觉 cue 或个性化漂移。长窗口提供更大的内存空间，context governance 则提供类似操作系统和文件系统的管理能力。缺少后者时，容量增加会同时带来更多旧事实、更多 distractor 和更多不可审计状态。
 
-> **一句话收束：长程 agent 的记忆系统负责维护可见性、当前性、源地址和审计约束。摘要只解决 token 预算；治理层决定哪些对象在下一步真的有资格影响行动。**
+> **结论：长程 agent 的记忆系统负责维护可见性、当前性、源地址和审计约束。摘要只解决 token 预算；治理层决定哪些对象在下一步有资格影响行动。**
 
 ## Reference
 
