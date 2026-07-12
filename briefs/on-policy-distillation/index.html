@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 12 sources
-    <span class="sep">·</span> last update 2026-07-05
+    <span class="sep">·</span> last update 2026-07-12
   </div>
 
   <h1 class="brief-title">OPD：on-policy 数据是抗遗忘的真正承担者</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-05</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">12</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">on-policy-distillation</span></span>
@@ -480,12 +480,12 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-deepseek-v4">DeepSeek-V4</a>（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。<span class="claim claim-tech">tech report</span> <a href="#ref-mimo">MiMo-V2-Flash</a>（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，自报以 1/3 总参数对齐 Kimi-K2-Thinking。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a>（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。</p>
-<p><span class="claim claim-self">本文归纳</span> 这条线半年内从&quot;另一种 post-training 选项&quot;变成 frontier model consolidation 的常用组件。<strong>本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment</strong>。teacher 可以替换、可以退化、甚至可以是 student 自己；on-policy data 一旦失去，整条机制就退化为带噪声的 SFT。</p>
+<p><span class="claim claim-self">本文归纳</span> 近期实践已将 OPD 从「另一种 post-training 选项」变为前沿模型能力整合的常用组件。<strong>本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment</strong>。teacher 可以替换、可以退化、甚至可以是 student 自己；失去 on-policy data 后，整条机制会退化为带噪声的 SFT。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
 <h2 id="minimal-code-editing-实验">Minimal Code Editing 实验</h2>
-<p><span class="claim claim-personal">个人实验</span> 出处：<a href="#ref-nrehiew2026">@nrehiew_</a> 在 X 长文里设计的私人任务&quot;Minimal Code Editing&quot;：给定 buggy function，目标是只修 bug，并尽量少改其他代码。他先训两个 teacher：</p>
+<p><span class="claim claim-personal">个人实验</span> 出处：<a href="#ref-nrehiew2026">@nrehiew_</a> 在 X 长文里设计的个人实验任务「Minimal Code Editing」：给定 buggy function，目标是只修 bug，并尽量少改其他代码。他先训练两个 teacher：</p>
 <table>
 <thead>
 <tr>
@@ -532,13 +532,13 @@ footer.brief-foot a:hover { color: var(--text); }
 <blockquote>
 <p>即使 SFT teacher 自己在通用代码上已经退化，从它蒸出来的 OPD student 仍然不退化。</p>
 </blockquote>
-<p>teacher 的&quot;能力图像&quot;（一个退化、一个保留）和 student 的&quot;能力图像&quot;（两个都不退化、且都超过 RL teacher）出现错配。可解释的变量只剩一个：student 的 rollout 由 student 自己产生。</p>
+<p>teacher 的能力表现（一个退化、一个保留）和 student 的能力表现（均未退化，且都超过 RL teacher）出现错配。可解释的变量只剩一个：student 的 rollout 由 student 自己产生。</p>
 <h2 id="几何视角-on-policy-data-自带-kl-minimal-约束">几何视角：on-policy data 自带 KL-minimal 约束</h2>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-shenfeld2025">RL's Razor</a>（MIT Improbable AI，Shenfeld et al. 2025）给出几何机制：</p>
 <blockquote>
-<p>在所有能解新任务的策略中，policy gradient 隐式偏向其中&quot;和当前策略 KL 最近&quot;的那一个。</p>
+<p>在所有能够解决新任务的策略中，policy gradient 隐式偏向其中「和当前策略 KL 最近」的那一个。</p>
 </blockquote>
-<p>SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向&quot;距离当前策略最近的能解题策略&quot;。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。</p>
+<p>SFT 将模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 则将模型推向「距离当前策略最近的能解题策略」。抗遗忘来自 on-policy sampling 自带的几何性质：每一步 update 的目标都被限制在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-nie2026">Dong Nie 2026</a>（独立研究者，arXiv:2605.22731）从 state distribution 的角度写了同一件事：</p>
 <table>
 <thead>
@@ -562,9 +562,9 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> OPD 的 anti-forgetting 沿用了这条几何约束。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。</p>
+<p><span class="claim claim-self">本文归纳</span> OPD 的抗遗忘沿用了这条几何约束。teacher 提供 token-level credit assignment，student 训练时访问的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。</p>
 <h2 id="token-视角-高概率交集承担学习">Token 视角：高概率交集承担学习</h2>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a>（清华 THUNLP，Li et al. 2026）报告：OPD 真正承担学习的部分，是 student 高概率 token 与 teacher 高概率 token 的<strong>交集</strong>，这个集合上承载了 <strong>97-99% 的概率质量</strong>。词表绝大部分位置在 student 端就接近 0 概率，对 reverse-KL 的贡献趋零。具体实验在 R1-Distill-1.5B (student) + JustRL-1.5B / R1-Distill-7B (teacher) 这一组配置上得到：</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a>（清华 THUNLP，Li et al. 2026）报告：OPD 中主要承担学习的部分，是 student 高概率 token 与 teacher 高概率 token 的<strong>交集</strong>，这个集合上承载了 <strong>97-99% 的概率质量</strong>。词表绝大部分位置在 student 端就接近 0 概率，对 reverse-KL 的贡献趋零。具体实验在 R1-Distill-1.5B (student) + JustRL-1.5B / R1-Distill-7B (teacher) 这一组配置上得到：</p>
 <table>
 <thead>
 <tr>
@@ -605,14 +605,14 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> 这是同一个机制的两层投影。宏观说&quot;update 锁在 student 当前分布的 KL 邻域&quot;（<a href="#ref-shenfeld2025">RL's Razor</a>），微观说&quot;有效梯度集中在 student/teacher 高概率 token 的 overlap 上&quot;（<a href="#ref-li2026">Rethinking OPD</a>）。&quot;student 当前分布&quot;在 token level 就是 student 在自己访问的 state 上倾向产出的 high-probability token；&quot;和 teacher 一致的部分&quot;是这些 token 中也是 teacher 高概率的子集。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a> 的另一组实验：Qwen3-1.7B-Base 做 student，用 non-thinking teacher 和 GRPO 后的 thinking teacher 分别蒸馏，benchmark 不一定更强的 GRPO teacher 蒸馏效果反而更好，论文归因于它和 base student 的 thinking pattern 一致、初始 overlap 更高。</p>
-<p>由此推出 teacher 选型直觉：</p>
+<p><span class="claim claim-self">本文归纳</span> 这是同一个机制的两层投影。宏观层面，update 被限制在 student 当前分布的 KL 邻域（<a href="#ref-shenfeld2025">RL's Razor</a>）；微观层面，有效梯度集中在 student/teacher 高概率 token 的 overlap 上（<a href="#ref-li2026">Rethinking OPD</a>）。「student 当前分布」在 token level 就是 student 在自己访问的 state 上倾向产出的 high-probability token；「和 teacher 一致的部分」是这些 token 中也属于 teacher 高概率的子集。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a> 的另一组实验：Qwen3-1.7B-Base 做 student，用 non-thinking teacher 和 GRPO 后的 thinking teacher 分别蒸馏，基准表现未必更强的 GRPO teacher 蒸馏效果反而更好，论文归因于它和 base student 的 thinking pattern 一致、初始 overlap 更高。</p>
+<p>这给出一种 teacher 选型直觉：</p>
 <blockquote>
-<p>给定两个 teacher，benchmark 更弱但和 student thinking pattern 更兼容的，OPD 效果反而更好。</p>
+<p>在两个 teacher 中，基准表现稍弱但与 student thinking pattern 更兼容者，OPD 效果反而更好。</p>
 </blockquote>
 <h2 id="伪收敛的微观签名">伪收敛的微观签名</h2>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a> 的 failure mode 分析：per-token reverse-KL 持续下降、loss 看起来在收敛、downstream 不提升。机制是 reverse-KL 可以在很多形态下数值下降：student 把概率从一个错误的非 teacher token 挪到另一个错误的非 teacher token 上，per-token loss 仍然降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-li2026">Rethinking OPD</a> 的 failure mode 分析：per-token reverse-KL 持续下降，loss 数值收敛，downstream 却没有提升。机制是 reverse-KL 可以在很多形态下数值下降：student 将概率从一个错误的非 teacher token 移到另一个错误的非 teacher token 上，per-token loss 仍然下降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。</p>
 <p>监控诊断表（沿用 <a href="#ref-li2026">Rethinking OPD</a> 的 R1-Distill 配置阈值）：</p>
 <table>
 <thead>
@@ -625,7 +625,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </thead>
 <tbody>
 <tr>
-<td>真训出来</td>
+<td>有效收敛</td>
 <td>下降</td>
 <td>单调上升至 ≥97%</td>
 <td>上升</td>
@@ -634,13 +634,13 @@ footer.brief-foot a:hover { color: var(--text); }
 <td>伪收敛</td>
 <td>下降</td>
 <td>持平</td>
-<td>不动</td>
+<td>无提升</td>
 </tr>
 </tbody>
 </table>
-<p>实操结论：<strong>把 student top-token 与 teacher top-token 的重叠率作为核心监控指标，KL 在降不算数</strong>。overlap 持平、KL 在降、downstream 不动这三件事同时出现，判定训练进入伪收敛区。补救：先做一轮短的 off-policy distillation 把 prior 拉齐，再切回 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。</p>
+<p>实操结论：<strong>将 student top-token 与 teacher top-token 的重叠率作为核心监控指标，仅 KL 下降不足以判定训练有效。</strong> overlap 持平、KL 下降、downstream 无提升同时出现时，可判定训练进入伪收敛区。补救方式是先做一轮短暂的 off-policy distillation 以对齐 prior，再恢复 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。</p>
 <h2 id="五个正交维度">五个正交维度</h2>
-<p><span class="claim claim-self">本文归纳</span> 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个维度的不同取值组合。</p>
+<p><span class="claim claim-self">本文归纳</span> 将 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案归入 5 个维度的不同取值组合。</p>
 <table>
 <thead>
 <tr>
@@ -705,7 +705,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <tr>
 <td>full-vocab</td>
 <td>零方差、零偏差</td>
-<td>贵：teacher logits 要 FP4 量化 + hidden state cache 才装得下 10+ specialist</td>
+<td>成本高：teacher logits 需 FP4 量化 + hidden state cache 才能容纳 10+ specialist</td>
 <td><span class="claim claim-tech">tech report</span> <a href="#ref-deepseek-v4">DeepSeek-V4</a></td>
 </tr>
 </tbody>
@@ -739,15 +739,15 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> 五个维度彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，不如当 5 维参数空间里的 10+ 个位点看清楚。</p>
+<p><span class="claim claim-self">本文归纳</span> 五个维度彼此正交，任何一个 2026 工业方案都对应五维空间里的一个具体位点。相比将它们视为 10+ 个独立技术，将其理解为 5 维参数空间里的 10+ 个位点更清楚。</p>
 <h2 id="开放问题">开放问题</h2>
-<p><span class="claim claim-self">本文归纳</span> 理想 post-training 算法的设计目标：<strong>要 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质</strong>。同时满足这三条的算法目前仍是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias，因此需要 clipping。</p>
+<p><span class="claim claim-self">本文归纳</span> 理想 post-training 算法的设计目标是：<strong>兼具 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质</strong>。同时满足这三条的算法目前仍是 open problem。outcome reward 过于稀疏，PRM 训练不稳定，logit distillation 有 bias，因此需要 clipping。</p>
 <p>围绕这个目标，两个延伸方向：</p>
 <ol>
 <li><strong>informative state 的结构化定义</strong>。<a href="#ref-hou2026">Uni-OPD</a> 用难度做代理（不全对也不全错），是经验启发式；RL 框架里它对应 group advantage variance &gt; 0；OPD 框架里应该有一个更准的描述。这两个写法对应同一个量吗？</li>
 <li><strong>KL-tradeoff Pareto frontier 的可操作化</strong>。把每种 post-training 方法画在 &quot;capability gain vs KL move&quot; 平面上目前是 conceptual layer。实际可采集的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。</li>
 </ol>
-<p><span class="claim claim-self">本文归纳</span> 对已经有 verifier 或 rubric 资产的团队，<a href="#ref-fang2026">ROPD</a> 给出的范式提供了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。<strong>白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束</strong>。</p>
+<p><span class="claim claim-self">本文归纳</span> 对已经有 verifier 或 rubric 资产的团队，<a href="#ref-fang2026">ROPD</a> 给出的范式提供了一条额外路径：这些资产原本服务于 RL reward，原则上也可以充当 OPD 的 teacher 替代。<strong>在这条路径下，白盒对话 teacher 的规模不再是必要条件。</strong></p>
 <h2 id="reference">Reference</h2>
 <ol class="ref-list">
 

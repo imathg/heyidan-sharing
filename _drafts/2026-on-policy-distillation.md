@@ -4,13 +4,13 @@
 
 `[tech report]` [DeepSeek-V4](#ref-deepseek-v4)（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。`[tech report]` [MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，自报以 1/3 总参数对齐 Kimi-K2-Thinking。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
 
-`[本文归纳]` 这条线半年内从"另一种 post-training 选项"变成 frontier model consolidation 的常用组件。**本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment**。teacher 可以替换、可以退化、甚至可以是 student 自己；on-policy data 一旦失去，整条机制就退化为带噪声的 SFT。
+`[本文归纳]` 近期实践已将 OPD 从「另一种 post-training 选项」变为前沿模型能力整合的常用组件。**本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment**。teacher 可以替换、可以退化、甚至可以是 student 自己；失去 on-policy data 后，整条机制会退化为带噪声的 SFT。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
 ## Minimal Code Editing 实验
 
-`[个人实验]` 出处：[@nrehiew_](#ref-nrehiew2026) 在 X 长文里设计的私人任务"Minimal Code Editing"：给定 buggy function，目标是只修 bug，并尽量少改其他代码。他先训两个 teacher：
+`[个人实验]` 出处：[@nrehiew_](#ref-nrehiew2026) 在 X 长文里设计的个人实验任务「Minimal Code Editing」：给定 buggy function，目标是只修 bug，并尽量少改其他代码。他先训练两个 teacher：
 
 | Teacher  | 任务表现 | 通用代码 benchmark (LiveCodeBench) |
 |----------|----------|-------------------|
@@ -26,15 +26,15 @@
 
 > 即使 SFT teacher 自己在通用代码上已经退化，从它蒸出来的 OPD student 仍然不退化。
 
-teacher 的"能力图像"（一个退化、一个保留）和 student 的"能力图像"（两个都不退化、且都超过 RL teacher）出现错配。可解释的变量只剩一个：student 的 rollout 由 student 自己产生。
+teacher 的能力表现（一个退化、一个保留）和 student 的能力表现（均未退化，且都超过 RL teacher）出现错配。可解释的变量只剩一个：student 的 rollout 由 student 自己产生。
 
 ## 几何视角：on-policy data 自带 KL-minimal 约束
 
 `[论文]` [RL's Razor](#ref-shenfeld2025)（MIT Improbable AI，Shenfeld et al. 2025）给出几何机制：
 
-> 在所有能解新任务的策略中，policy gradient 隐式偏向其中"和当前策略 KL 最近"的那一个。
+> 在所有能够解决新任务的策略中，policy gradient 隐式偏向其中「和当前策略 KL 最近」的那一个。
 
-SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 把模型推向"距离当前策略最近的能解题策略"。anti-forgetting 来自 on-policy sampling 自带的几何性质，每一步 update 的目标都被锁在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。
+SFT 将模型拉向一个外部固定分布，这个分布可以离起点任意远；RL 则将模型推向「距离当前策略最近的能解题策略」。抗遗忘来自 on-policy sampling 自带的几何性质：每一步 update 的目标都被限制在距离当前策略最近的解集合里。该论文在 LLM 和机器人 foundation model 两类设置上验证了 KL distance 与 forgetting magnitude 的相关性。
 
 `[论文]` [Dong Nie 2026](#ref-nie2026)（独立研究者，arXiv:2605.22731）从 state distribution 的角度写了同一件事：
 
@@ -44,11 +44,11 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | RL   | 当前模型 induced |
 | OPD  | 当前模型 induced（student 端） |
 
-`[本文归纳]` OPD 的 anti-forgetting 沿用了这条几何约束。teacher 提供 token-level credit assignment，student 访问到的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。
+`[本文归纳]` OPD 的抗遗忘沿用了这条几何约束。teacher 提供 token-level credit assignment，student 训练时访问的 prefix（state distribution）由 student 自己产生。teacher 退化主要落在 teacher 自己 rollout 的分布上；student 训练时访问的是 student-induced prefix。
 
 ## Token 视角：高概率交集承担学习
 
-`[论文]` [Rethinking OPD](#ref-li2026)（清华 THUNLP，Li et al. 2026）报告：OPD 真正承担学习的部分，是 student 高概率 token 与 teacher 高概率 token 的**交集**，这个集合上承载了 **97-99% 的概率质量**。词表绝大部分位置在 student 端就接近 0 概率，对 reverse-KL 的贡献趋零。具体实验在 R1-Distill-1.5B (student) + JustRL-1.5B / R1-Distill-7B (teacher) 这一组配置上得到：
+`[论文]` [Rethinking OPD](#ref-li2026)（清华 THUNLP，Li et al. 2026）报告：OPD 中主要承担学习的部分，是 student 高概率 token 与 teacher 高概率 token 的**交集**，这个集合上承载了 **97-99% 的概率质量**。词表绝大部分位置在 student 端就接近 0 概率，对 reverse-KL 的贡献趋零。具体实验在 R1-Distill-1.5B (student) + JustRL-1.5B / R1-Distill-7B (teacher) 这一组配置上得到：
 
 | Teacher              | 整体强弱 | OPD 结果 |
 |----------------------|----------|----------|
@@ -62,30 +62,30 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | 只在 overlap     | 几乎等于完整 top-k OPD |
 | 只在 non-overlap | 几乎无效          |
 
-`[本文归纳]` 这是同一个机制的两层投影。宏观说"update 锁在 student 当前分布的 KL 邻域"（[RL's Razor](#ref-shenfeld2025)），微观说"有效梯度集中在 student/teacher 高概率 token 的 overlap 上"（[Rethinking OPD](#ref-li2026)）。"student 当前分布"在 token level 就是 student 在自己访问的 state 上倾向产出的 high-probability token；"和 teacher 一致的部分"是这些 token 中也是 teacher 高概率的子集。
+`[本文归纳]` 这是同一个机制的两层投影。宏观层面，update 被限制在 student 当前分布的 KL 邻域（[RL's Razor](#ref-shenfeld2025)）；微观层面，有效梯度集中在 student/teacher 高概率 token 的 overlap 上（[Rethinking OPD](#ref-li2026)）。「student 当前分布」在 token level 就是 student 在自己访问的 state 上倾向产出的 high-probability token；「和 teacher 一致的部分」是这些 token 中也属于 teacher 高概率的子集。
 
-`[论文]` [Rethinking OPD](#ref-li2026) 的另一组实验：Qwen3-1.7B-Base 做 student，用 non-thinking teacher 和 GRPO 后的 thinking teacher 分别蒸馏，benchmark 不一定更强的 GRPO teacher 蒸馏效果反而更好，论文归因于它和 base student 的 thinking pattern 一致、初始 overlap 更高。
+`[论文]` [Rethinking OPD](#ref-li2026) 的另一组实验：Qwen3-1.7B-Base 做 student，用 non-thinking teacher 和 GRPO 后的 thinking teacher 分别蒸馏，基准表现未必更强的 GRPO teacher 蒸馏效果反而更好，论文归因于它和 base student 的 thinking pattern 一致、初始 overlap 更高。
 
-由此推出 teacher 选型直觉：
+这给出一种 teacher 选型直觉：
 
-> 给定两个 teacher，benchmark 更弱但和 student thinking pattern 更兼容的，OPD 效果反而更好。
+> 在两个 teacher 中，基准表现稍弱但与 student thinking pattern 更兼容者，OPD 效果反而更好。
 
 ## 伪收敛的微观签名
 
-`[论文]` [Rethinking OPD](#ref-li2026) 的 failure mode 分析：per-token reverse-KL 持续下降、loss 看起来在收敛、downstream 不提升。机制是 reverse-KL 可以在很多形态下数值下降：student 把概率从一个错误的非 teacher token 挪到另一个错误的非 teacher token 上，per-token loss 仍然降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。
+`[论文]` [Rethinking OPD](#ref-li2026) 的 failure mode 分析：per-token reverse-KL 持续下降，loss 数值收敛，downstream 却没有提升。机制是 reverse-KL 可以在很多形态下数值下降：student 将概率从一个错误的非 teacher token 移到另一个错误的非 teacher token 上，per-token loss 仍然下降，overlap 完全不变。student 始终在 teacher 的低概率区重新分配自己的高概率。
 
 监控诊断表（沿用 [Rethinking OPD](#ref-li2026) 的 R1-Distill 配置阈值）：
 
 | 训练状态 | per-token reverse-KL | top-k overlap 占比 | downstream metric |
 |----------|---------------------|---------------------|-------------------|
-| 真训出来  | 下降                | 单调上升至 ≥97%     | 上升              |
-| 伪收敛    | 下降                | 持平                | 不动              |
+| 有效收敛  | 下降                | 单调上升至 ≥97%     | 上升              |
+| 伪收敛    | 下降                | 持平                | 无提升            |
 
-实操结论：**把 student top-token 与 teacher top-token 的重叠率作为核心监控指标，KL 在降不算数**。overlap 持平、KL 在降、downstream 不动这三件事同时出现，判定训练进入伪收敛区。补救：先做一轮短的 off-policy distillation 把 prior 拉齐，再切回 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。
+实操结论：**将 student top-token 与 teacher top-token 的重叠率作为核心监控指标，仅 KL 下降不足以判定训练有效。** overlap 持平、KL 下降、downstream 无提升同时出现时，可判定训练进入伪收敛区。补救方式是先做一轮短暂的 off-policy distillation 以对齐 prior，再恢复 OPD。该 failure mode 在 thinking pattern mismatch 的 teacher-student 组合上高频出现。
 
 ## 五个正交维度
 
-`[本文归纳]` 把 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案放到一张表上，归到 5 个维度的不同取值组合。
+`[本文归纳]` 将 sampled-token、top-k、full-vocab、OPSD、ROPD、SDAR、Uni-OPD、MOPD 等 10+ 个 2026 方案归入 5 个维度的不同取值组合。
 
 | 维度 | 含义 | 主要取值 |
 |------|------|---------|
@@ -105,7 +105,7 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 |------|---------|---------|----------|
 | sampled-token | 单样本无偏估计，方差大 | 成本低 | `[论文]` [GKD](#ref-gkd)（Google DeepMind，Agarwal et al. 2023，ICLR 2024）方法学起源；`[工程博客]` [Thinking Machines Lab](#ref-tml-opd) 工程化导读；`[tech report]` 小米 [MiMo-V2-Flash](#ref-mimo) |
 | top-k         | 截断到 teacher top-k 上的 reverse-KL | 中等 | `[论文]` [Revisiting OPD](#ref-fu2026)（CASIA SKL-MAIS + UCAS，Fu et al. 2026），自报在长 prefix 上 +19.8% 优于 sampled-token baseline |
-| full-vocab    | 零方差、零偏差 | 贵：teacher logits 要 FP4 量化 + hidden state cache 才装得下 10+ specialist | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) |
+| full-vocab    | 零方差、零偏差 | 成本高：teacher logits 需 FP4 量化 + hidden state cache 才能容纳 10+ specialist | `[tech report]` [DeepSeek-V4](#ref-deepseek-v4) |
 
 **K3（signal source）**。经典 OPD 用 teacher logits（[GKD](#ref-gkd) 范式）。OPSD（On-Policy Self-Distillation）让 teacher 和 student 共享同一份权重，差别只在 teacher 多看了一份 ground-truth answer 作为 prompt 上下文。`[个人实验]` [@nrehiew_](#ref-nrehiew2026) 把 OPSD 的关键写成 teacher 与 student 之间的信息差：teacher 多拿一份答案上下文，参数量可以保持一致。`[论文]` [ROPD](#ref-fang2026)（中科大 + 腾讯，Fang et al. 2026）走得更远：teacher 只给文本答案，rubricator 生成 prompt-specific 的语义评判标准，verifier 用 rubric 给 rollout 打分作为 GRPO-style reward。论文自报 ~10× sample efficiency，黑盒 teacher 也支持。
 
@@ -119,18 +119,18 @@ SFT 把模型拉向一个外部固定分布，这个分布可以离起点任意�
 | 与 RL 融合    | `[tech report]` [MiMo-V2-Flash](#ref-mimo) MOPD | dense token reverse-KL 和 sparse outcome reward 双轨叠加 |
 | RL 的 gated 辅助 | `[论文]` [SDAR](#ref-sdar) | 主干仍是 GRPO，OPSD 仅在 gate 通过时贡献梯度；自报 ALFWorld +9.4%、WebShop +10.2%、Search-QA +7.0% |
 
-`[本文归纳]` 五个维度彼此正交，任何一个 2026 工业方案都对应在五维空间里取一个具体位点。把它们当 10+ 个独立技术看，不如当 5 维参数空间里的 10+ 个位点看清楚。
+`[本文归纳]` 五个维度彼此正交，任何一个 2026 工业方案都对应五维空间里的一个具体位点。相比将它们视为 10+ 个独立技术，将其理解为 5 维参数空间里的 10+ 个位点更清楚。
 
 ## 开放问题
 
-`[本文归纳]` 理想 post-training 算法的设计目标：**要 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质**。同时满足这三条的算法目前仍是 open problem。outcome reward 太稀疏，PRM 训不稳，logit distillation 有 bias，因此需要 clipping。
+`[本文归纳]` 理想 post-training 算法的设计目标是：**兼具 distillation 的密度、RL 的无偏性，同时保持 on-policy 的几何性质**。同时满足这三条的算法目前仍是 open problem。outcome reward 过于稀疏，PRM 训练不稳定，logit distillation 有 bias，因此需要 clipping。
 
 围绕这个目标，两个延伸方向：
 
 1. **informative state 的结构化定义**。[Uni-OPD](#ref-hou2026) 用难度做代理（不全对也不全错），是经验启发式；RL 框架里它对应 group advantage variance > 0；OPD 框架里应该有一个更准的描述。这两个写法对应同一个量吗？
 2. **KL-tradeoff Pareto frontier 的可操作化**。把每种 post-training 方法画在 "capability gain vs KL move" 平面上目前是 conceptual layer。实际可采集的训练 metric 到该平面的映射、对应的离线评估流程，都是 open。
 
-`[本文归纳]` 对已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式提供了一条额外路径：这些资产本来是为 RL reward 服务的，原则上也可以充当 OPD 的 teacher 替代。**白盒对话 teacher 的规模约束，在这条路径下变成可绕过的工程约束**。
+`[本文归纳]` 对已经有 verifier 或 rubric 资产的团队，[ROPD](#ref-fang2026) 给出的范式提供了一条额外路径：这些资产原本服务于 RL reward，原则上也可以充当 OPD 的 teacher 替代。**在这条路径下，白盒对话 teacher 的规模不再是必要条件。**
 
 ## Reference
 

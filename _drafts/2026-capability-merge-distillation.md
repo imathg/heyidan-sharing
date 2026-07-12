@@ -2,25 +2,25 @@
 
 <!-- domain: agentic-rl -->
 
-`[tech report]` [Thinking Machines Lab](#ref-tml)（Thinking Machines Lab，2025）把已经 post-trained 的 Qwen3-8B 当学生，先 midtrain 注入一批新知识、再用注入前的自己当 teacher 做 on-policy distillation 把丢掉的 instruction following 拉回来。`[论文]` [CaMOPD](#ref-camopd)（快手，2026）更进一步，让 post-trained 的领域模型同时当学生和 domain teacher，用它谱系上的通用旧版当 general teacher，两个 teacher 按 prompt 分槽路由。`[tech report]` [Qwen3](#ref-qwen3)（Qwen Team，2025）的 strong-to-weak distillation 则是另一路：从 base 模型蒸出六个轻量模型，整条蒸馏管线替代四阶段 post-training。
+`[tech report]` [Thinking Machines Lab](#ref-tml)（Thinking Machines Lab，2025）将已经 post-trained 的 Qwen3-8B 作为学生，先 midtrain 注入一批新知识，再用注入前的自身作为 teacher 做 on-policy distillation，恢复退化的 instruction following。`[论文]` [CaMOPD](#ref-camopd)（快手，2026）进一步让 post-trained 的领域模型同时担任学生和 domain teacher，用其谱系上的通用旧版担任 general teacher，两个 teacher 按 prompt 分槽路由。`[tech report]` [Qwen3](#ref-qwen3)（Qwen Team，2025）的 strong-to-weak distillation 则是另一路：从 base 模型蒸出六个轻量模型，整条蒸馏管线替代四阶段 post-training。
 
-三者都在做"把能力蒸进一个模型"，但要回答的工程问题往往更具体：**已经有一个对齐良好的对话或指令模型，想给它增量加一项新能力（新领域知识、新工具、新任务），又不想动它已有的对齐和通用能力。这时该拿什么当学生起点，用什么防止旧能力退化，这套做法有没有文献背书？** 把 2016 年至今的相关文献摊开核对，结论是一句话概括得了、但每个词都要推敲的判断：
+三者都在做「把能力蒸进一个模型」，但工程问题往往更具体：**已有一个对齐良好的对话或指令模型，想为它增量加入一项新能力（新领域知识、新工具、新任务），同时保持已有的对齐和通用能力。这时应选择什么学生起点、如何防止旧能力退化，这套做法有没有文献支持？** 对 2016 年至今相关文献的核验可归纳为一句需要严格限定范围的判断：
 
 > **组件级全部有直接文献背书，完整组合没有任何单篇论文做过，最接近的只有两个先例，且各差一个维度。**
 
-`[本文归纳]` 换句话说，每块砖都验证过，整面墙还没人砌过：风险落在组件之间的交互上，而交互层恰好是现有文献的空白。本文只谈"学生起点范式 + 自蒸馏防遗忘"这一层；on-policy distillation 机制本身（on-policy 数据为何承重、KL 几何、high-probability overlap window）是正交的另一层，见姊妹篇《[OPD：on-policy 数据是抗遗忘的真正承担者](../on-policy-distillation/)》。
+`[本文归纳]` 每个组件均有验证，完整组合仍缺少直接验证；风险集中在组件之间的交互，而这正是现有文献的空白。本文只讨论「学生起点范式 + 自蒸馏防遗忘」这一层；on-policy distillation 机制本身（on-policy 数据为何承担抗遗忘、KL 几何、high-probability overlap window）是正交的另一层，见姊妹篇《[OPD：on-policy 数据是抗遗忘的真正承担者](../on-policy-distillation/)》。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
 ## 问题的形状：一个学生起点轴，一个防遗忘轴
 
-把这个"给对齐模型加新能力"的工程问题拆干净，它同时压着两个正交的设计轴。
+将这个「给对齐模型加新能力」的工程问题拆开后，它包含两个正交的设计轴。
 
 **第一个轴：学生起点是 base 还是 post-trained。** 从零开始的裸基座（只经过预训练、没有指令对齐），还是已经过通用后训练、甚至已经过领域后训练的模型。Qwen3 的 strong-to-weak 走前者，TML 和 CaMOPD 走后者。这个轴决定了蒸馏是"从头造一个能力集"还是"往已有能力集上叠加"。
 
-**第二个轴：防遗忘靠什么。** 增量训练会把权重推离原分布、抹掉旧能力（catastrophic forgetting），得有一个机制把它拉回来。一种常见手法是：保留一份模型自己的冻结旧版本，让它在训练中充当 teacher，把漂走的能力拉回原分布。本文把这套手法记作**自蒸馏锚**（self-distillation anchor）：锚是那个不再更新的旧版自己，蒸馏是让当前模型对齐它。文献里没有统一叫法，这个词是本文为讨论方便起的称呼。自蒸馏锚这个 teacher 可以是冻结的旧 checkpoint、可以是学生参数的滑动平均（EMA）、也可以是谱系上更早的祖先模型，形态选择本身就是一个设计点（见后文）。
+**第二个轴：防遗忘靠什么。** 增量训练会把权重推离原分布、削弱旧能力（catastrophic forgetting），需要机制使其保持在原有能力分布附近。一种常见手法是保留一份模型自己的冻结旧版本，让它在训练中充当 teacher。下文将这套手法称为**自蒸馏锚**（self-distillation anchor）：锚是那个不再更新的旧版自身，蒸馏是让当前模型与其对齐。文献里没有统一叫法，这一名称仅用于本文讨论。自蒸馏锚的 teacher 可以是冻结的旧 checkpoint、学生参数的滑动平均（EMA），也可以是谱系上更早的祖先模型，形态选择本身就是一个设计点（见后文）。
 
-两个轴四个象限里，最难的一格是"post-trained 学生 × 自蒸馏锚防遗忘、同时用外部 teacher 注入新能力"。后面几节从最扎实的组件往最稀薄的组合走。
+两个轴的四个象限中，证据最稀缺的一格是「post-trained 学生 × 自蒸馏锚防遗忘，同时用外部 teacher 注入新能力」。后面几节从证据最扎实的组件讨论到最稀薄的组合。
 
 ## 学生起点：文献里的学生最低也是 SFT 后的模型
 
@@ -28,15 +28,15 @@
 
 > As opposed to a randomly initialized student, we assume access to a student that can generate sequences of adequate quality, which the teacher can provide feedback upon. In our experiments, we start from student models that have undergone supervised FT.
 
-机制上这是必然的：on-policy distillation 靠学生自己采样的 rollout 提供训练 state，teacher 在这些 state 上给 token 级反馈；学生必须已经能产出"够好、teacher 能给出有意义反馈"的样本，随机初始化的裸基座采不出可监督的 rollout。所以"学生起点已具备基本能力"是这套方法能跑起来的前提。GKD 的官方参考实现 TRL GKDTrainer 把这一点体现得更具体：规范用例的学生是 instruction-tuned 的 Qwen2-0.5B-Instruct、teacher 是同族 Qwen2-1.5B-Instruct，被官方直接归类为 post-training method。
+机制上这是必然的：on-policy distillation 靠学生自己采样的 rollout 提供训练 state，teacher 在这些 state 上给 token 级反馈；学生必须已经能产出「足够好、teacher 能给出有意义反馈」的样本，随机初始化的裸基座采不出可监督的 rollout。因此「学生起点已具备基本能力」是这套方法可运行的前提。GKD 的官方参考实现 TRL GKDTrainer 将这一点体现得更具体：规范用例的学生是 instruction-tuned 的 Qwen2-0.5B-Instruct、teacher 是同族 Qwen2-1.5B-Instruct，被官方直接归类为 post-training method。
 
 `[论文]` [MiniLLM](#ref-minillm)（清华 + 微软，Gu et al. 2024）是平行证据：学生先在指令数据上从预训练 checkpoint 做 SFT、取验证 loss 最低的那个再进蒸馏；防旧能力退化的机制是对预训练语料加一份 language modeling loss，作者报告"adding the pre-training loss helps to preserve the abilities on canonical NLP tasks"。注意它防遗忘用的是回放式的 LM loss，与自蒸馏锚属于两条不同路径。
 
-这条前提要小心一个反例：`[tech report]` [Qwen3](#ref-qwen3) 的 strong-to-weak distillation 学生**确实是 base 模型**（报告 Figure 1：Base Models → Strong-to-Weak Distillation → 六个轻量模型），看似推翻了"学生起点已具备基本能力"。但拆开看它做的是另一件事：整条蒸馏管线用来**替代**四阶段 post-training（"This approach eliminates the necessity of performing an exhaustive four-stage process"），目标是从强模型压出小模型（能力压缩），起点是白纸、teacher 只有外部更强旗舰（Qwen3-32B / Qwen3-235B-A22B），全报告没有任何防遗忘机制、没有冻结旧自身当 teacher 的设计。而且即便在 Qwen3 内部，进入 on-policy 阶段的学生也已经是 off-policy response distillation 的 SFT 式冷启动 checkpoint（"laying a solid foundation"），已脱离纯裸基座状态。
+这条前提有一个需要区分的反例：`[tech report]` [Qwen3](#ref-qwen3) 的 strong-to-weak distillation 学生使用**base 模型**（报告 Figure 1：Base Models → Strong-to-Weak Distillation → 六个轻量模型），表面上推翻了「学生起点已具备基本能力」。但它处理的是另一类任务：整条蒸馏管线用来**替代**四阶段 post-training（"This approach eliminates the necessity of performing an exhaustive four-stage process"），目标是从强模型压出小模型（能力压缩），起点是未做后训练的初始模型，teacher 只有外部更强旗舰（Qwen3-32B / Qwen3-235B-A22B），全报告没有防遗忘机制，也没有冻结旧自身当 teacher 的设计。而且即便在 Qwen3 内部，进入 on-policy 阶段的学生也已经是 off-policy response distillation 的 SFT 式冷启动 checkpoint（"laying a solid foundation"），已脱离纯裸基座状态。
 
-因此 Qwen3 §4.7 那句常被引用的"on-policy distillation 优于直接 RL、约 1/10 GPU hours"必须钉清楚口径：它比的是**同一个 off-policy checkpoint 起点下** RL 与 OPD 的差别（"both starting from the same off-policy distilled 8B checkpoint"），**与 base-vs-post-trained 两种范式的对比无关**，不能挪用来论证学生起点该选谁。
+因此，Qwen3 §4.7 那句常被引用的「on-policy distillation 优于直接 RL、约 1/10 GPU hours」需明确比较口径：它比较的是**同一个 off-policy checkpoint 起点下** RL 与 OPD 的差别（"both starting from the same off-policy distilled 8B checkpoint"），**与 base-vs-post-trained 两种范式的对比无关**，不能用于支持学生起点的选择。
 
-把已核验的学生起点摊开，它呈现为一条从 base 到 post-trained 的连续带：
+已核验的学生起点呈现为一条从 base 到 post-trained 的连续带：
 
 | 系统 | 学生起点 | 位置 |
 |---|---|---|
@@ -46,27 +46,27 @@
 | MiniLLM | 指令数据 SFT 后 checkpoint | 通用指令对齐 |
 | SDFT / Shenfeld 2026 | 完整对齐模型（chat / instruct） | 最靠 post-trained 端 |
 
-`[本文归纳]` "在已对齐模型上增量合能力"落在这条带最靠 post-trained 的一端：比 GKD 的任务级 SFT、比 TRL 的 instruction-tuned 更充分，因此它满足 GKD 的方法学前提只多不少。学生起点该不该 post-trained 这个问题，文献给的答案是"你本来就站在前提的强端"，而非一道需要权衡的选择题。
+`[本文归纳]` 「在已对齐模型上增量合能力」落在这条带最靠 post-trained 的一端：比 GKD 的任务级 SFT、比 TRL 的 instruction-tuned 更充分，因此满足 GKD 的方法学前提。学生起点是否 post-trained 在此并非需要权衡的选择题，而是已满足方法前提的条件。
 
 ## 自蒸馏锚：从离线软标签到 on-policy
 
-用"冻结的旧自身"当 teacher 防遗忘，这个组件的文献先验一路能追到深度学习早期。
+用「冻结的旧自身」当 teacher 防遗忘，这个组件的文献先验可追溯到深度学习早期。
 
 `[论文]` [Learning without Forgetting](#ref-lwf)（UIUC，Li & Hoiem 2016）是奠基形态：更新网络前，先记录原网络在新任务数据上对旧任务的输出，再用显式的 knowledge distillation loss（Hinton 软标签）让更新后的网络逼近这些输出：
 
 > First, we record responses on each new task image from the original network for outputs on the old tasks.
 
-关键性质是"uses only new task data"：不回放任何旧任务数据，只靠"更新前的自己"在新数据上的输出当锚，就能压住旧能力的遗忘。这就是自蒸馏锚组件的最早骨架，形态上它 2016 年落在 CNN 视觉分类，对固定输入做离线软标签监督，没有学生自采样。
+关键性质是「uses only new task data」：不回放任何旧任务数据，只靠「更新前的自己」在新数据上的输出当锚，就能降低旧能力退化。这是自蒸馏锚组件的早期形态：2016 年它落在 CNN 视觉分类，对固定输入做离线软标签监督，没有学生自采样。
 
 `[论文]` [SDFT](#ref-sdft)（浙江大学 + Sea AI Lab，Yang et al. 2024）把它搬到了 LLM：学生初始化是已对齐的 Llama-2-7b-chat（从无裸基座），由微调前的自身离线把任务数据改写成与其原始分布匹配的 distilled dataset，再用它引导微调：
 
 > guiding fine-tuning with a distilled dataset generated by the model itself to match its original distribution.
 
-它显式针对 catastrophic forgetting、保住 helpfulness 与 safety alignment，是"post-trained 模型上增量训练 + 自蒸馏防退化"最直接的 LLM 先验。但它仍是**离线**形态：数据级改写加标准 NLL，没有学生 rollout、没有 teacher 逐 token logits/KL。（这里有个必须澄清的重名陷阱：SDFT 缩写下有两篇完全不同的工作，Yang et al. 的 ACL 2024 是离线改写，Shenfeld et al. 的 2026 是 on-policy，机制完全不同，引用时别混。）
+它显式针对 catastrophic forgetting、保持 helpfulness 与 safety alignment，是「post-trained 模型上增量训练 + 自蒸馏防退化」最直接的 LLM 先验。但它仍是**离线**形态：数据级改写加标准 NLL，没有学生 rollout、没有 teacher 逐 token logits/KL。（需区分同名缩写：SDFT 下有两篇完全不同的工作，Yang et al. 的 ACL 2024 是离线改写，Shenfeld et al. 的 2026 是 on-policy，机制完全不同。）
 
 `[论文]` [Shenfeld et al. 2026](#ref-shenfeld)（MIT + ETH Zurich，Shenfeld, Damani, Hübotter, Agrawal，2026）把自蒸馏锚正式接到 on-policy 上，标题就叫 Self-Distillation Enables Continual Learning：学生初始化是 post-trained 模型（主实验 Qwen2.5-7B-Instruct，推理实验用 Olmo-3-7B-Think），严格 on-policy（只从学生策略采样 rollout、最小化学生与 teacher 分布的 reverse KL），把 on-policy self-distillation 明确定位为"a practical path to continual learning from demonstrations"。
 
-三篇连起来是一条清晰的形态演进：
+三项工作构成一条清晰的形态演进：
 
 | 工作 | 年份 | 自蒸馏锚形态 | 采样 | 领域 |
 |---|---|---|---|---|
@@ -74,11 +74,11 @@
 | SDFT (Yang et al.) | 2024 | 微调前自身改写数据 | 离线 | LLM 对齐保持 |
 | Shenfeld et al. | 2026 | 学生参数 EMA | on-policy rollout | LLM continual learning |
 
-`[本文归纳]` "冻结旧自身防遗忘"这个组件从 2016 到 2026 从离线软标签一路走到 on-policy reverse KL，每一步都有背书。研究问题里的自蒸馏锚落在这条线的最新端，组件层面有充分先验支撑。
+`[本文归纳]` 「冻结旧自身防遗忘」这个组件从 2016 到 2026 由离线软标签发展到 on-policy reverse KL，每一步都有文献支持。研究问题里的自蒸馏锚落在这条演进的最新端，组件层面有充分先验支撑。
 
 ## 两个最接近的先例，各差一个维度
 
-组件都齐了，那"post-trained 学生 + 自蒸馏锚 + 外部 teacher 注入新能力"这个完整组合，有没有谁整体做过？没有单篇论文做全，但有两个先例已经贴到只差一个维度。
+「post-trained 学生 + 自蒸馏锚 + 外部 teacher 注入新能力」这个完整组合，没有单篇论文完整覆盖，但有两个先例各差一个维度。
 
 **先例一，顺序式、同方向：`[tech report]` [Thinking Machines Lab](#ref-tml)。** 以已 post-trained 的 Qwen3-8B 为学生（博客明确"We will start with Qwen3-8B, rather than the base model"），先 midtrain 把内部文档知识注进去（内部 QA 18%→36%，代价是 IF-eval 85%→79%），再以 midtrain 前的 Qwen3-8B 自身为 teacher、在 Tulu3 prompts 上做 on-policy distillation，IF-eval 恢复到 83%、内部 QA 还反升到 41%。博客直接把"用模型更早版本当 teacher 来 re-invoke 微调中丢失的能力"背书为 continual learning 机制，建议在"新数据微调 ↔ 蒸馏恢复"之间交替。HuggingFaceH4 用 TRL GKDTrainer 复现过这个配方，数字接近（IFEval 83.4→79.5→82.8），算一个独立佐证。它差的一维是：注入靠 midtrain，恢复是事后的独立阶段，尚未做到训练中常驻的"部分数据槽固定分给冻结旧版 teacher"设计。
 
@@ -98,13 +98,13 @@
 | teacher 是否多槽并发路由 | 否（事后单阶段） | 是 ✓ | 是 |
 | 冻结自身守的是 | 旧能力 | 新能力 | 旧能力 |
 
-`[本文归纳]` 每一格单看都有先例，但没有一列整体等于最右那一列（完整组合）。三层引用链在同一个目标上几乎不重叠地各切一刀：方法学层（GKD/MiniLLM/Qwen3）、防遗忘先验层（LwF/SDFT/Shenfeld）、近似组合层（TML/CaMOPD）。组件因此齐备，组合却没被单篇验证过。这句判断只能写成"组件级直接支持 + 两个近似先例"，写成"有论文完整验证过该组合"就是拔高。真正没人替你验证过的，是多槽 teacher 并发时的相互作用（注入和守成会不会互相拉扯、多 teacher 信号是否冲突），而那正是要自己实验补的地方。
+`[本文归纳]` 每一格单看都有先例，但没有一列整体等于最右一列（完整组合）。三层引用链分别覆盖方法学层（GKD/MiniLLM/Qwen3）、防遗忘先验层（LwF/SDFT/Shenfeld）和近似组合层（TML/CaMOPD）。组件因此齐备，组合却未被单篇验证。结论应限定为「组件级直接支持 + 两个近似先例」。尚待实验验证的是多槽 teacher 并发时的相互作用，例如注入和守成是否相互干扰、多 teacher 信号是否冲突。
 
 ## teacher 形态按槽位角色选，不按全局统一选
 
-自蒸馏锚的 teacher 具体取什么形态（冻结旧 checkpoint、EMA、还是谱系祖先），文献里有一处看似矛盾、拆开却很有用的证据。
+自蒸馏锚的 teacher 具体取什么形态（冻结旧 checkpoint、EMA、还是谱系祖先），文献里有两组表面矛盾、但可按角色解释的证据。
 
-`[论文]` [Shenfeld et al. 2026](#ref-shenfeld) 做过 teacher 形态的消融，结论是**冻结模型当 teacher 虽然稳定，但效果一致更差**（跟不上学生的学习进度），直接用当前学生又不稳，学生参数的 EMA 最好。可 TML 的成功案例用的恰恰是**冻结的旧版自身**当 teacher，效果很好。同一件事（self-as-teacher）两个结论，怎么调和？
+`[论文]` [Shenfeld et al. 2026](#ref-shenfeld) 做过 teacher 形态的消融，结论是**冻结模型当 teacher 虽然稳定，但效果稳定地较差**（跟不上学生的学习进度），直接用当前学生又不稳，学生参数的 EMA 最好。TML 的成功案例则使用**冻结的旧版自身**当 teacher。同一件事（self-as-teacher）为何得到两个结论？
 
 关键在这两个 teacher 服务的**槽位角色不同**：
 
@@ -113,19 +113,19 @@
 | 学新能力槽 | 要（teacher 得带着学生一起往前） | 跟踪型：EMA / 当前学生 | Shenfeld 2026 消融：frozen "consistently underperforms"、EMA 最好 |
 | 守既有能力槽 | 不要（要的正是一个不动的回拉目标） | 冻结锚：冻结旧版 / 谱系祖先 | TML 冻结旧版恢复成功；LwF/SDFT 冻结旧自身守成 |
 
-`[本文归纳]` Shenfeld 的"frozen 更差"针对的是**学新技能的 teacher 槽**：学新时 teacher 要跟着学生进步，冻结的旧版跟不上进度、效果差；而**守既有能力的槽**根本不需要跟踪新进度，它要的恰恰是一个不动的锚把漂走的能力拉回原点，这正是 TML 用冻结旧版成功的原因。所以在多槽 teacher 路由的设计里，teacher 形态应按槽位分开取：注入新能力的槽配跟踪型 teacher（EMA），守既有能力的槽配冻结锚。这条分工是跨 Shenfeld（只测了学新槽）、TML（只试了守成槽的冻结）、LwF/SDFT（守成槽冻结、离线）归纳出来的推论，目前还没有单篇在同一个"守成槽"上直接对比过冻结 vs EMA，因此它是一个可证伪的设计假设，尚未成为已验证的定论。
+`[本文归纳]` Shenfeld 的「frozen 更差」针对的是**学新技能的 teacher 槽**：学新时 teacher 要跟着学生进步，冻结的旧版跟不上进度，效果较差；**守既有能力的槽**则不需要跟踪新进度，它需要固定锚维持既有能力，这解释了 TML 使用冻结旧版的成功。因此在多槽 teacher 路由的设计里，teacher 形态应按槽位分别选择：注入新能力的槽配跟踪型 teacher（EMA），守既有能力的槽配冻结锚。这条分工是跨 Shenfeld（只测了学新槽）、TML（只试了守成槽的冻结）、LwF/SDFT（守成槽冻结、离线）归纳出来的推论，目前还没有单篇在同一个「守成槽」上直接对比过冻结 vs EMA，因此它是一个可证伪的设计假设，尚未成为已验证的定论。
 
 ## 边界与开放问题
 
-`[本文归纳]` 把这套做法的文献边界钉清楚，比乐观的结论更有用：
+`[本文归纳]` 明确这套做法的文献边界，比给出乐观结论更有用：
 
-**一个确定的空白（阴性结果）。** 遍历核验材料，没有任何工作直接对比过"从裸基座重新蒸馏"vs"在 post-trained 模型上增量蒸馏"这两种范式的效果、成本、遗忘三轴。Qwen3 §4.7 比的是 RL vs on-policy distillation（同一 off-policy 起点），属于另一类对照。这一格很可能得自己做受控实验补。
+**一个确定的空白（阴性结果）。** 已核验文献中，没有工作直接对比过「从裸基座重新蒸馏」与「在 post-trained 模型上增量蒸馏」这两种范式的效果、成本、遗忘三轴。Qwen3 §4.7 比的是 RL 与 on-policy distillation（同一 off-policy 起点），属于另一类对照。这个空白需要受控实验填补。
 
-**一条没走完的检索线。** 多 teacher 按样本或领域路由、把多个模型的能力合入一个已有 chat 模型这条线（FuseLLM / FuseChat / 一般 multi-teacher KD，以及检索命中但未核验的 MOPD, arXiv 2606.30406），本轮只有 CaMOPD 一个确认先例，其余未进核验（未核验不等于不存在，引用前要各自核实）。CaMOPD 标题里的 Counteraction-Aware（多 teacher 信号相互抵消的处理机制）也没进核验范围，而多槽 teacher 信号冲突恰恰是这类设计的实际风险点，它的解法是用这类设计前需要深读的部分。
+**待进一步核验的相关路线。** 多 teacher 按样本或领域路由、将多个模型的能力合入一个已有 chat 模型这条路线，包括 FuseLLM / FuseChat / 一般 multi-teacher KD，以及尚未核验的 MOPD（arXiv 2606.30406）。目前仅确认 CaMOPD 一个先例，其余工作尚未逐项核验。CaMOPD 标题里的 Counteraction-Aware（多 teacher 信号相互抵消的处理机制）也尚未纳入核验范围；多槽 teacher 信号冲突正是这类设计的实际风险点，采用前应深入核验相应解法。
 
-**两个开放的设计问题。** 一是守既有能力槽的 teacher 形态缺直接对比：冻结旧版、EMA、谱系祖先三选一，现有证据来自三篇不同 setting 的工作，不可直接互推（见"teacher 形态按槽位角色选"一节）。二是"新能力注入"和"旧能力守成"两个槽并发时的稳定边界：什么样的数据配比、什么样的 teacher 权重下两侧不互相塌陷，目前没有现成答案。
+**两个开放的设计问题。** 一是守既有能力槽的 teacher 形态缺直接对比：冻结旧版、EMA、谱系祖先三选一，现有证据来自三篇不同 setting 的工作，不可直接互推（见「teacher 形态按槽位角色选」一节）。二是「新能力注入」和「旧能力守成」两个槽并发时的稳定边界：什么样的数据配比、什么样的 teacher 权重下二者不相互干扰，目前没有现成答案。
 
-`[本文归纳]` 给出可操作的判断：想在对齐模型上增量合能力，学生起点该 post-trained（文献前提的强端，不用纠结），自蒸馏锚防遗忘有从 LwF 到 Shenfeld 的坚实先验，teacher 形态按槽位角色分开选。唯一没有现成背书、必须自己验证的，是多槽并发的组件交互，这既是这套做法的风险所在，也是它相对已发表工作真正往前走的那一步。
+`[本文归纳]` 可操作的判断是：在对齐模型上增量合能力时，学生起点应为 post-trained；自蒸馏锚防遗忘有从 LwF 到 Shenfeld 的坚实先验，teacher 形态应按槽位角色分别选择。尚无现成背书、必须自行验证的是多槽并发的组件交互，这既是这套做法的风险所在，也是它相对已发表工作的新增验证点。
 
 ## Reference
 
