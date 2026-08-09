@@ -46,7 +46,7 @@ harness 仓做的，就是把团队能力和团队知识打包成能安装、能
 
 这些仓和真正干活的 workspace 是分开的。像 AI Guest、rubrics、llm-mutate-factor，都是我自己不同项目的 workspace。每个项目的现场状态留在自己那边，harness 只把通用能力挂进去。
 
-<figure class="article-figure"><img src="assets/05-harness-workspace-isolation.png" alt="harness 仓、知识库与多个实际 workspace 各自独立"><figcaption>harness 仓、知识库与多个实际 workspace 各自独立</figcaption></figure>
+<figure class="article-figure figure-compact"><img src="assets/05-harness-workspace-isolation.png" alt="harness 仓、知识库与多个实际 workspace 各自独立"><figcaption>harness 仓、知识库与多个实际 workspace 各自独立</figcaption></figure>
 
 ## 设计理念
 
@@ -67,7 +67,7 @@ harness 仓做的，就是把团队能力和团队知识打包成能安装、能
 - **技能地图**：给 Agent 做长尾能力的渐进式发现。
 - **知识库 out**：把团队知识编译并挂载到 workspace。
 
-> 附件：[CLAUDE.md](assets/CLAUDE.md.txt)
+> 附件：[CLAUDE.md](attachment-viewer.html?file=CLAUDE.md.txt&title=CLAUDE.md)
 
 初始化的时候，宿主会生成各自的加载配置，适配 Claude Code、Codex 和 TRAE；但底下复用的还是同一套业务能力和 fido_cli 契约。入口可以不一样，业务能力没必要重做三遍。
 
@@ -151,7 +151,7 @@ AutoWiki 是一个通用的分层编译引擎，具体业务可以在上面加�
 
 在 AutoWiki 的基础上，我又把 source、activation、routine、compile、owner 这些约束，继续收进了 fido_wiki harness。
 
-> 附件：[HANDOFF_harness.md](assets/HANDOFF_harness.md.txt)
+> 附件：[HANDOFF_harness.md](attachment-viewer.html?file=HANDOFF_harness.md.txt&title=HANDOFF_harness.md)
 
 ## 技能与知识库的联动设计
 
@@ -179,7 +179,7 @@ Data Assets 里的业务解释，我会尽量挑可泛化的专家解读，不�
 
 <figure class="article-figure"><img src="assets/19-sql-runtime-history.png" alt="项目 reference 中的当前取数方式，与知识库中的历史版本取数逻辑"><figcaption>项目 reference 中的当前取数方式，与知识库中的历史版本取数逻辑</figcaption></figure>
 
-> 附件：[format-tables.md](assets/format-tables.md.txt)
+> 附件：[format-tables.md](attachment-viewer.html?file=format-tables.md.txt&title=format-tables.md)
 
 ## 实际 Agent 干活
 
@@ -225,10 +225,3 @@ workspace 里会挂上团队 KB 的编译产物。下游主要读的是 **知识
 这三条路径，其实分别在积累三件事：团队知道了什么、Agent 稳定下来会做什么、Agent 应该怎么和某个人协作。它们各归各的 owner，才能一起往前长。
 
 > 希望 Agent 挑战你？帮你提升认知？那么需要素材 + 指令。敬请期待我即将开源的 sameself harness。
-
-## 参考
-
-- [AutoWiki](https://code.byted.org/aweme/open_autoresearch_team/tree/main/autowiki?ref_type=heads)
-- [通用工具仓 work-tools](https://code.byted.org/heyidan/work-tools/tree/main)
-- [团队能力仓 fido_cc](https://code.byted.org/aweme/fido_cc)
-- [团队知识库 fido_wiki](https://code.byted.org/aweme/fido_wiki)【暂不开放，属于团队内部知识库】
