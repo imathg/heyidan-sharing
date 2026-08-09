@@ -1,0 +1,160 @@
+# Fido Workspace Agent 工作契约
+
+> 本文件是 Agent 的工作契约。能力范围见 [`skills/INDEX.md`](skills/INDEX.md)，CLI 参数见 `fido_cli --help` / `fido_cli <command> --help`。工具仓位置见 `.fido/config.yaml` 的 `repo_root`。
+
+## 目标
+
+研究员用自然语言描述目标、材料和判断；你负责发现并调用 skill、MCP、`fido_cli`，完成检查、执行、落档和结果汇报。
+
+- 命令、skill 名、平台 ID 和文件路径由你从 workspace 与 KB 中解析。
+- 可代执行的步骤由你直接完成；仅在需要研究判断、人工登录或权限确认时停下来。
+- 任务完成包括核验结果，以及把结果写回正确的 file-first 真相源。
+
+## 渐进式发现与执行
+
+每次会话内按以下顺序处理请求：
+
+1. **确认工作区并加载最小上下文**
+   - 从 cwd 上溯定位 `.fido/config.yaml`。不存在时不要手工拼目录；需要创建 workspace 就使用 `fido_cli init <绝对路径>`，完成后进入新 workspace。
+   - SessionStart hook 每 24 小时至多后台刷新一次共享 KB；随后静默读取 `kb/out/wiki/INDEX.md`。KB 缺失时继续处理简单任务；用户明确要求最新事实，或操作依赖当前 registry 时，先同步运行 `fido_cli kb ensure-fresh`，失败则说明正在使用旧快照。
+   - 若 `.fido/upgrade-pending.md` 存在，主动走 `/fido:upgrade-doc-reconcile` 收尾。
+   - 进入实验任务时先运行 `fido_cli status`；用户点名实验时再运行 `fido_cli show <exp-id>`，读取该实验的 proposal、最近日志 / 报告和最新 run。用户只说“继续”时，先从 `fido_cli list` 与文件状态定位未完成实验，仍有多个候选再询问。
+   - 用户提到模型、版本、项目、problem slug 或“上次那个”时，先查 `kb/out/wiki/`，再查 `experiments/`；仍无法定位时再询问用户。
+2. **按需发现能力**
+   - 先用宿主原生的 skill description 与 MCP tool schema 匹配意图：执行能力走 `/fido:<name>`，实验生命周期走 `/fido-exp:<name>`。
+   - 单项描述不足、任务跨能力，或宿主未提供原生 skill 发现时，读取 [`skills/INDEX.md`](skills/INDEX.md) 的相关场景 / family，再进入匹配的 skill。
+   - 匹配到 skill 后完整遵循其 `SKILL.md`。任务适合直接调用 CLI，或 skill 指向 CLI 时，先用 `fido_cli --help` / 子命令 `--help` 获取当前参数，再直接执行。
+   - skill 负责流程与边界，MCP / CLI 负责结构化执行。专用能力优先于通用 browser / shell；像素级 UI 操作仅在专用路径明确失败或 skill 明确要求时使用。
+   - TRAE 首次使用 project MCP 时，若工具未加载，提示用户在 `Settings > MCP` 启用 project-level MCP；启用后继续原任务。
+3. **主动完成**
+   - 默认自动执行范围内的读取、本地编辑、只读查询、检查、dry-run 和可逆操作；先探测再写入，失败时按 skill 的降级方案继续。
+   - 需要研究员输入的内容只有两类：会改变研究结论的决策，以及下方「需确认」中尚未获得授权的动作。
+4. **闭环**
+   - 实验变更同步写 `experiments/<id>/docs/实验日志.md`；评测结论写 `评测报告.md`；阶段性总判断写 `实验报告.md`。
+   - 汇报内容以结果、证据、落盘位置和仍需研究员判断的事项为主。
+
+## 实验生命周期协议
+
+本节定义推进顺序和完成标准。不要等研究员报 Stage 或 skill 名：根据 workspace 文件判断当前阶段，从断点接续，完成本阶段写回后再建议下一步。阶段可以按任务跳过，但不得跳过前置条件和完成信号。
+
+| Stage | Agent 应完成的工作 | 入口与完成信号 |
+|---|---|---|
+| 1. 项目切入 | 加载团队 KB、当前实验、backend 与最近运行状态，确认问题是否已有结论 | `kb/out/wiki/INDEX.md`、`fido_cli status/list/show`；形成可引用的上下文与待回答问题 |
+| 2. 方案讨论与实验初始化 | 对齐 baseline、可证伪假设、最小变更和成功门槛；全新想法新建，基于既有实验则迭代 | `/fido-exp:propose-exp`；分别调用 `fido_cli new` 或 `fido_cli iterate`，产出非空 `docs/proposal.md` 与合法 metadata |
+| 3. 可行性与代码落地 | 必要时取数 / 查数据、接入 backend，通过 `fido_cli backend materialize <exp-id>` 生成实验代码，把 proposal 的每项变更落实到配置或代码 | `/fido:data-query`、`/fido:backend-setup`、`/fido-exp:scaffold-code`；数据路径有效，`fido_cli show` 派生为 ready |
+| 4. 训练提交与监控 | 核对配置、代码快照和相对上一轮的更改记录；真实提交前取得授权，随后轮询并回填 run | `/fido-exp:submit-and-poll`；`runs/<run>/job_info.yaml`、状态 / 产物与 `docs/实验日志.md` 已更新 |
+| 5. 评测与对比 | 发起自动机评或登记外部评测，必要时做 run 间对比；不让结果只停留在聊天或外部表格 | `/fido-exp:machine-eval`、`run-eval`、`compare-runs`；eval ledger、`docs/评测报告.md` 与阶段性结论已更新 |
+| 6. 上线与在线观测 | 在明确授权下完成部署 / endpoint 调整，读取 AB、case 或 session 质量并登记结论 | `/fido:ark` 与 AB family skills；平台前后态已核验，AB 读数进入 ledger / 报告 |
+| 7. 收尾、共享与升格 | 补齐实验报告，生成个人 brief，校验 protocol；区分过程共享与长期知识升格 | `fido_cli archive`、`protocol draft/lint`、`docs sync`、`/fido-exp:promote-experiment`；每条链路按下方边界完成 |
+| 8. 迭代与多期管理 | 基于已有实验继续时创建 child，不复制旧 runs / code；回顾个人归档与团队结论，避免重复探索 | `fido_cli iterate`、`kb-personal/历史实验/`、`kb/out/wiki/`；团队知识合入后用 `fido_cli kb-pull` 复用 |
+
+生命周期内保持以下不变式：
+
+- `new` / `iterate` 只负责初始化文件结构；proposal、代码、run、评测和结论必须由对应阶段产生，不能用空占位冒充完成。
+- `state` 由 `code/` 与 runs 文件派生，不手写 `metadata.yaml::state`，不手改 `metadata.yaml::runs[]`。
+- 每轮训练前记录改动内容、改动原因和预期效果；每轮训练后更新实验日志，每次评测后更新评测报告，形成阶段判断后更新实验报告。
+- 完成本阶段不会自动进入下一阶段。真实训练 / 评测、平台写入、代码提交推送和团队升格各有权限关卡。
+
+### 推送与升格边界
+
+| 去向 | 用途 | 规则 |
+|---|---|---|
+| 实验训练代码 | 保存本次实验的训练代码 | clone 仓根 backend 使用 `exp/<id>` worktree，提交训练前保持 clean / committed；reference、本地 symlink 与 subpath backend 使用独立副本，由 metadata 血缘和 backend 运行快照追溯。`git commit` / `git push` 按权限门执行 |
+| team HDFS owner 桶 | 镜像实验过程文档、metadata 与 ledger，供团队看板读取 | 宿主的 `docs sync-hook` 对符合条件的编辑自动增量镜像；手动 `fido_cli docs sync` 是补推 / 全量修复，执行前确认范围 |
+| `kb-personal/历史实验/` | 保存个人实验 brief | `fido_cli archive` 本地生成，不等于进入团队知识库 |
+| `fido_wiki` | 沉淀经过 review 的长期团队知识 | `/fido-exp:promote-experiment` 准备 brief、reason 与可选 protocol patch，交维护者整合并走 PR；不要直接改 workspace 的 `kb/` 镜像 |
+| 团队周报分区 | 共享按周会日期组织的进度 | `/fido-exp:weekly-report` 校验实验链接后推送；它不替代实验文档同步或知识升格 |
+
+### 稳定路由锚点
+
+以下规则针对高频且容易混淆的意图；命中后进入对应 skill / tool schema，参数和流程按需读取。
+
+| 用户意图 | 第一入口 | 边界 |
+|---|---|---|
+| 新建 / 继续 / 落地 / 提交 / 对比 / 升格实验 | 对应 `/fido-exp:<name>` 生命周期 skill；具体链路见 `skills/INDEX.md` | 从生命周期 skill 启动，并完成实验文档闭环 |
+| 临时读取飞书文档 block、内嵌表或 sheet range | `/fido:feishu`：block → `read_doc_blocks`，内嵌表 → `read_embedded_tables`，独立 sheet → `read_sheet_range`；检查完整性字段 | 临时读取保持只读；专用能力明确失败后再使用 browser |
+| 把外部链接拉下来、留存或刷新快照 | KB-first 后 `fido_cli ingest` | 该入口用于持久化快照；临时结构化读取走上一行 |
+| HDFS / BN mount / `hdfs://` 路径 | `/fido:hdfs-ops` | 先识别存储介质，再选择 devbox 等执行环境 |
+| Ark endpoint / cm 查询、切换、切后等待 | `/fido:ark`：绑定 → `get_endpoint_binding`，模型 → `get_custom_model`，切后等待 → `wait_endpoint_stable`；写入按 skill 的受控 UI 流程 | 查询与轮询走专用工具；平台写入走受控 UI 流程 |
+| 外部 eval / AB 读数登记 | `/fido:record-results` | eval 台账自动聚合到机评榜；AB 进入独立台账 |
+| 整理实验四文档 / 推给团队 | `/fido:docs-normalize` 写入本地；日常编辑由 `docs sync-hook` 增量镜像，手动 `fido_cli docs sync` 用于补推 / 全量修复 | 落档、过程镜像与知识升格是三条不同链路 |
+| 升级当前 workspace | 在 workspace 内运行 `fido_cli upgrade`；若产生 pending，继续 `/fido:upgrade-doc-reconcile` | 只同步当前 workspace 契约与 project plugin；全局软件升级需离开 workspace 或显式使用 `--all` |
+
+## 真相源与落点
+
+| 内容 | 真相源 / 规则 |
+|---|---|
+| 团队事实 | `kb/out/wiki/INDEX.md` 入口下的编译产物；`kb/` 只读 |
+| 单个实验 | `experiments/<id>/`；配置在 `config/`，文字在 `docs/`，代码在 `code/`，运行产物在 `runs/`，协议读数在 `ledger/` |
+| 个人知识与 backend | `kb-personal/`；backend 本地实体在 `kb-personal/backends/<name>/` |
+| 外部材料 | 先查 `kb/` → `kb-personal/` → `raw/`；未命中、明确留存或 refresh 时自动 `fido_cli ingest <url>`，生成只增不改的 `raw/` 快照 |
+| 临时衍生物 | `.tmp/<exp>/<run>/`；可重生成的大文件和中间分析不混进实验文字真相源 |
+
+`metadata.yaml` 的 `runs[]` 由 CLI / runner 维护。交付材料写入 workspace 的正式目录；团队 wiki 仅在用户明确要求派生并进入维护者 review 时更新。
+
+## 权限边界
+
+### 默认自动执行
+
+- 读取与检索；workspace 内本地文件编辑；check / lint / dry-run；只读平台查询。
+- `fido_cli` 的本地、可逆操作，以及本机 WebUI 的启动、停止、重启和状态检查。
+- 当前请求已经明确授权的目标内动作直接执行。
+
+### 需确认
+
+以下动作需要明确授权；未获授权时，执行前说明目标、范围和副作用并等研究员确认：
+
+- 真正提交训练 / 评测任务并消耗资源。
+- 任意 repo 的 `git commit` / `git push`。
+- Agent 主动发起的团队可见写入：手动 `fido_cli docs sync`、`weekly submit`、`promote --apply`；宿主自动触发的 `docs sync-hook` 按上方生命周期协议执行。
+- 删除或解绑：`fido_cli rm`、`backend unregister`、`--force`、`rm -rf`。
+- 工具仓升级、对外分享 WebUI、ARK endpoint / cm / 副本 / 规格等平台写操作。
+- 写入 `~/.ark/`、shell profile 或其他用户级配置。
+
+用户已明确授权 endpoint / cm 调整且宿主具备浏览器控制时，由 Agent 代操作，并核验操作前状态、目标状态和回滚对象。
+
+### 严禁
+
+- 在对话、命令参数、终端输出、日志或 commit 中暴露 secret。
+- `git push --force` 到 `main` / `dev` / `release/*` 等共享分支。
+- 输出 `~/.fido_cli/secrets.yaml` 内容，或用 `--no-verify` 等方式跳过 hook（除非用户明确要求）。
+
+## 凭据发现
+
+- 凭据只从 `<ws>/fido.config.yaml` 发现；先用 `fido_cli atomic config show` 查看脱敏的存在性状态。
+- 不扫描 shell 配置、HOME 下的 env 文件或其他外部来源，不询问、接收或代写凭据明文。
+- `missing` 时只指出配置字段和获取方式，让用户自行填写；`present` 后立即运行对应能力的只读 smoke，把结果归为 `ok` / `unauthorized`，成功则继续原任务，鉴权失败则给登录或授权入口。Worker 不需要看到 secret。
+- 非敏感字段可用 `atomic config set`；凭据只允许用户手填、显式 `adopt`，或 `--from-env <ENV_NAME>`（argv 只传变量名）。
+
+## 工具管理边界
+
+- workspace 内的升级请求统一走 `fido_cli upgrade`，只作用于当前 workspace；用户明确要求全局升级时才使用 `fido_cli upgrade --all`。
+- `.claude/settings.json`、hooks、MCP 配置由工具渲染；`CLAUDE.md` / `AGENTS.md` 可个性化，双边更新走 `/fido:upgrade-doc-reconcile`。
+- `<ws>/skills/*.md` 是 upgrade 托管的只读导航；个人 skill 放 `.claude/skills/my-<name>/`，不要修改托管导航。
+- 实验删除统一走 `fido_cli rm`；worktree 模式的版本操作遵循 backend repo 边界，copy 模式不要假设存在 Git 分支。
+
+## companion_agent 个性化
+
+- **工作域**：companion_agent 面向陪伴类闲聊 AI Agent 的离线数据与训练样本构建，用 rubrics 替代易被 hack 的续聊 / 留存信号，产出 RL/SFT 冷启动和回归评测资产；本 workspace 的 `experiments/exp*` 均属这条线。
+- **个人基线与历史**：会话额外读 `~/context-infra/dist/persona_entry.md`；团队 KB 未命中或明确需要跨期背景时，再查 `kb-personal/个人知识库/INDEX.md`、`kb-personal/历史实验/companion_agent/`，需要时使用 context-infra / knowledge-base 的语义检索。
+- **个人实验 harness**：本仓 `experiment-manager` 是个人 harness 与团队契约的适配层；需要从分散或冲突历史重建时间线、血缘和证据边界时，直接使用原生 `research-harness:project-knowledge-recovery`，不维护 workspace 私有 archaeology 副本。个人 harness = context-infra 规则 + `experiment-manager` + `lab/raw/*handoff*.md` + `ledger/*.jsonl`；`lab/raw` 承担个人长程运行记忆，四文档仍是团队过程层契约。
+- **运行态落档 override（优先于上方闭环时机）**：运行中先写 `lab/raw/*handoff*.md`、`runs/run-*/job_info.yaml` / `result.yaml` 和 ledger；主线稳定、达到里程碑或需要团队可见时，再蒸馏到 `docs/`。
+- **实验恢复与落点**：进入实验时额外读 `lab/main_*.md`、各层 `raw/*handoff*.md` 和 ledger；L1/L2 原生稿留 `lab/`，handoff 与不可复跑证据留 `lab/**/raw/`，可重生成衍生物留 `.tmp/<exp>/`。结构化读数走 `/fido:record-results`，团队 protocol 走 `draft` / `lint`，个人归档与历史回补走 `experiment-manager`。
+- **本地能力路由**：推理资源腾挪、endpoint 挂 cm、切模型或更新 `infer_model_movable_resources.json` 时，先走 `.claude/skills/infer-resource-manager/SKILL.md`，平台操作仍由 `/fido:ark` 执行与核验。
+- **协作与表达偏好**：一个活跃工作流使用一个 worktree；Hot Capture / Project Journey 按 context-infra 规则触发。写作走 `COMMUNICATION.md` 与 `report`，保持专业中文，检查同义重复、概念先用后解释、逻辑矛盾、过程记录混入结论；离线分析只做观测归因，效果判断回到线上 AB，case 必须引用原文。用“前沿模型”“UA 偏好聚焦”和 `×`。
+
+### 远端环境
+
+| 机器 | resource_id | ssh alias | repo root | conda env | 状态 |
+|---|---|---|---|---|---|
+| yg | `91957` | `yg-91957` | `/home/tiger/format_toolbox` | `mcts2` | running |
+| lq | `49381` | `lq-49381` | `/root/share_work/format_toolbox` | `mcts` | 默认 stopped，按需启动 |
+
+```bash
+# yg
+source /home/tiger/miniconda3/etc/profile.d/conda.sh && conda activate mcts2 && cd /home/tiger/format_toolbox && export PYTHONPATH=$PWD
+# lq
+source /root/miniconda3/etc/profile.d/conda.sh && conda activate mcts && cd /root/share_work/format_toolbox && export PYTHONPATH=$PWD
+```
+
+远端执行优先 `/fido:devbox`；`run_rubrics` 的代码与产物诊断回到 `format_toolbox` checkout，并使用该仓 `.agents/skills/rubrics-remote-debug/SKILL.md`，本 workspace 不维护副本。`/mnt/bn`、`hdfs://`、`tos://` 先走 `/fido:hdfs-ops`，TQS 等内部服务只在远端通过 `/fido:data-query` 使用。

@@ -1,0 +1,305 @@
+# Format 项目数据表与业务 SQL
+
+> **这是 `data-query` skill 的项目专属层**（Format / Companion Agent）。
+> [`../SKILL.md`](../SKILL.md) 是通用取数机制，覆盖 aeolus / coral / dorado / manta / tqs 路由、TQS 批量导出、CLI 参数。该 reference 维护项目侧表名、字段和业务 SQL。
+>
+> **项目数据表替换**：整体替换该 reference，写入目标项目的表名、字段和 SQL；`../SKILL.md` 不动。
+
+## 主要数据表
+
+### aweme.dm_virtual_ai_avatar_chat_stats_di
+
+常用过滤条件：
+```sql
+WHERE date BETWEEN '{date_start}' AND '{date_end}'
+  AND biz_id = 'format'
+  AND (format_chat_id IS NOT NULL OR app_version IS NOT NULL)
+  AND session_id <> 'default'
+  AND message_method != 'auto_send'
+  AND msg_pair = 'ask -> answer'
+```
+
+关键字段：
+- `uid` / `author_id` — 用户标识
+- `req_id` — 请求 ID
+- `session_id` — 原始 session ID
+- `user_query_decrypt` — 用户消息（解密后）
+- `ai_response_decrypt` — AI 回复（解密后）
+- `input_time` — 时间戳
+- `msg_pair` — 消息对话类型，如 `'ask -> answer'`、`'opening -> opening'`
+- `message_method` — 用户的消息回复类型（`guide_question`/`user_input_text`/`format_digital_human`/`auto_send`）
+- `chat_query_category` — 对话主题
+- `model_debug_info` — JSON，核心调试信息（见下方详细结构）
+- `v2_third_tag_name` — 作者3级品类
+- `recommend_gender` / `city_level` / `user_activeness` — 用户画像
+- `is_follow` / `is_high_relation_follow` — 用户与作者关系
+- `config_key` — config_key
+- `enter_from` / `enter_method` — 来源埋点
+- `is_message_like` / `is_message_dislike` — 点赞/点踩
+- `origin_chat_history` — 输入给模型的原始历史聊天记录
+
+### model_debug_info 结构
+
+`model_debug_info` 是 JSON 字符串，包含丰富的调试信息。用 `get_json_object()` 提取。
+
+#### 实验分流（AB 实验）
+
+```sql
+-- 提取命中的 Libra AB 实验 ID 列表
+split(get_json_object(model_debug_info, '$.libra_ab_param.hit_libra_ab'), ',') AS hit_libra_ab
+
+-- 过滤命中特定实验的数据
+WHERE arrays_overlap(
+    split(get_json_object(model_debug_info, '$.libra_ab_param.hit_libra_ab'), ','),
+    array('10950489', '10950490', '10950491', '10950492')
+)
+
+-- 标记实验分组
+CASE
+    WHEN array_contains(hit_libra_ab, '10950489') THEN 'online'
+    WHEN array_contains(hit_libra_ab, '10950490') THEN 'exp1'
+    WHEN array_contains(hit_libra_ab, '10950491') THEN 'exp2'
+    WHEN array_contains(hit_libra_ab, '10950492') THEN 'exp3'
+END AS group_info
+```
+
+**v0 / 线上组用 endpoint_id 取**：线上对照组（v0）的实验 ID 常是空字典，靠 `hit_libra_ab` 做 `array_contains` 命中不到。这种组按线上模型的 endpoint_id 取更准。`remote_config` 本身是 JSON 字符串，要嵌套提取：
+
+```sql
+WHERE get_json_object(get_json_object(model_debug_info, '$.remote_config'), '$.endpoint_id')
+      = 'ep-20251205154636-7nssj'   -- 固定代表线上的 endpoint
+```
+
+`ep-20251205154636-7nssj` 是团队固定代表「线上模型」的部署点。资源紧张，这个 endpoint 申请到就一直占着；上线新 checkpoint 把模型资源腾挪到它后面，ID 不变。取 v0 跨实验都用这个固定 ID；ID 里的时间戳 / 随机串源自当初申请时刻，业务上按不透明常量处理。
+
+#### Prompts：完整对话上下文
+
+```sql
+-- 提取 system prompt
+get_json_object(model_debug_info, '$.prompts[0].content') AS system_message
+
+-- 提取完整 prompts JSON（包含 system + 多轮 user/assistant）
+get_json_object(model_debug_info, '$.prompts') AS prompts_json
+```
+
+`prompts` 是一个 JSON 数组，结构为 `[{role, content}, ...]`，包含：
+- `system`: 完整的系统 prompt（角色设定、语言风格、回复要求、安全策略等）
+- `assistant`/`user`: 多轮对话历史
+
+#### Memories（用户记忆）
+
+```sql
+-- 全局记忆（用户画像 JSON）
+get_json_object(model_debug_info, '$.memories.global_memory[*]') AS global_memory
+
+-- 情景记忆
+get_json_object(model_debug_info, '$.memories.episodic_memory[*]') AS episodic_memory
+```
+
+`global_memory` 包含：昵称、性别、出生年份、所在地、职业、社会关系、用户偏好、用户要求的记忆等。
+`episodic_memory` 包含：按时间记录的具体事件记忆。
+
+#### Skill 信息（技能命中）
+
+```sql
+-- 实验技能
+get_json_object(model_debug_info, '$.exper_skill_info') AS exper_skill_info
+get_json_object(exper_skill_info, '$.hit_skill_info.skill_id') AS hit_skill_id
+get_json_object(exper_skill_info, '$.hit_skill_info.skill_name') AS hit_skill_name
+
+-- 线上技能
+get_json_object(model_debug_info, '$.online_skill_info') AS online_skill_info
+```
+
+#### 其他常用字段
+
+```sql
+-- 知识库召回
+get_json_object(model_debug_info, '$.recall_knowledge') AS recall_knowledge
+get_json_object(model_debug_info, '$.used_knowledge') AS used_knowledge
+
+-- LLM 原始输出
+get_json_object(model_debug_info, '$.original_llm_output') AS original_llm_output
+
+-- Token 用量
+get_json_object(model_debug_info, '$.usage.prompt_tokens') AS prompt_tokens
+get_json_object(model_debug_info, '$.usage.completion_tokens') AS completion_tokens
+
+-- 多模态
+get_json_object(model_debug_info, '$.vqa_caption') AS vqa_caption  -- 图片描述
+
+-- 流量类型
+get_json_object(model_debug_info, '$.traffic_type') AS traffic_type  -- 'prod' 等
+
+-- Bot 信息
+get_json_object(model_debug_info, '$.bot_info.role_name') AS role_name
+get_json_object(model_debug_info, '$.bot_info.role_type') AS role_type
+```
+
+### 下游表
+
+#### dm_content_security.dwd_virtual_ai_avatar_chat_sess_di
+
+用开场白（`msg_pair = 'opening -> opening'`）重新切分 session，生成 `sess_id`。
+- `sess_id`: 聚合用户一天的所有 req，按开场白切分
+- `req_id`: 关联原表
+
+#### dm_content_security.dws_virtual_ai_avatar_chat_stats_di
+
+Session 级统计信息：
+- `n_turn`: 会话轮次
+- `most_topic` / `topic_freq`: 最常出现主题及占比
+- `most_bigram` / `bigram_freq`: 最常出现主题 bigram
+- `cross_bigram_top1`: 连续轮交叉对话主题
+- `q_in_1_5_freq` ~ `q_longer_20_freq`: query 长度分桶占比
+- `duplicate_q_top1` / `duplicate_q_freq`: 重复 query
+- `short_q_in_3turns_freq`: 连续3轮短 query 浓度
+
+#### dm_content_security.dwd_virtual_ai_avatar_chat_stats_ext_di
+
+对话宽表（join 了 sess 统计 + 单轮特征）：
+- 包含原表所有字段 + sess 统计 + `query_len_bin` / `resp_len_bin` / bigram
+
+> **字段名陷阱**
+> - 主表 `aweme.dm_virtual_ai_avatar_chat_stats_di` 的 session 字段叫 **`session_id`**（原始 session）
+> - 下游表 `dm_content_security.dws_virtual_ai_avatar_chat_stats_di` 才有 **`sess_id`**（按开场白重新切分的 session）
+> - 不要在主表 SQL 里用 `sess_id`，会报 `Column 'sess_id' not found`
+
+## 常用 SQL 模式
+
+### 1. 基础数据拉取
+
+```sql
+SELECT uid, author_id, req_id, input_time,
+    user_query_decrypt, ai_response_decrypt,
+    get_json_object(model_debug_info, '$.memories.global_memory[*]') AS global_memory,
+    chat_query_category
+FROM aweme.dm_virtual_ai_avatar_chat_stats_di
+WHERE date BETWEEN '{date_start}' AND '{date_end}'
+  AND biz_id = 'format' AND session_id <> 'default'
+  AND message_method != 'auto_send' AND msg_pair = 'ask -> answer'
+  AND user_query_decrypt IS NOT NULL AND ai_response_decrypt IS NOT NULL
+LIMIT {data_limit}
+```
+
+### 2. AB 实验数据过滤
+
+先从 `model_debug_info` 提取 `hit_libra_ab`，再用 `arrays_overlap` / `array_contains` 过滤和分组。线上对照组（v0）的实验 ID 常为空字典，`hit_libra_ab` 命中不到，改用 endpoint_id 取，见上文 §model_debug_info 结构 → 实验分流。
+
+```sql
+-- 提取 + 过滤
+split(get_json_object(model_debug_info, '$.libra_ab_param.hit_libra_ab'), ',') AS hit_libra_ab
+...
+WHERE arrays_overlap(hit_libra_ab, array('10950489', '10950490', ...))
+
+-- 分组
+CASE
+    WHEN array_contains(hit_libra_ab, '10950489') THEN 'online'
+    WHEN array_contains(hit_libra_ab, '10950490') THEN 'exp1'
+    ...
+END AS group_info
+```
+
+### 3. 会话拼接（stitched session）
+
+按 `(uid, author_id, date)` 分组，用时间间隔切分会话：
+
+```sql
+-- Step 1: 计算时间差
+lag(to_timestamp(input_time)) OVER (PARTITION BY uid, author_id, date ORDER BY to_timestamp(input_time)) AS prev_ts
+
+-- Step 2: 标记新会话
+CASE WHEN prev_ts IS NULL OR (unix_timestamp(ts) - unix_timestamp(prev_ts)) >= 7200 THEN 1 ELSE 0 END AS is_new_sess
+
+-- Step 3: 生成 stitched_sess_id
+concat(date, '-', cast(author_id as string), '-', cast(uid as string), '-',
+    cast(sum(is_new_sess) OVER (PARTITION BY uid, author_id, date ORDER BY ts) as string)
+) AS stitched_sess_id
+```
+
+### 4. 上下文聚合：context_messages_json
+
+将多轮对话展开为 `{pos, role, content}` 数组，排序后聚合为 JSON：
+
+```sql
+-- 展开 user/assistant 为独立行
+LATERAL VIEW explode(array(
+    named_struct('pos', ctx_turn_idx * 2 - 1, 'role', 'user', 'content', cast(ctx_user as string)),
+    named_struct('pos', ctx_turn_idx * 2, 'role', 'assistant', 'content', cast(ctx_assistant as string))
+)) exp AS m
+
+-- 聚合为 JSON
+to_json(sort_array(collect_list(named_struct('pos', m.pos, 'role', m.role, 'content', m.content)))) AS context_messages_json
+```
+
+优先使用 `model_debug_info.prompts`（完整在线 payload），fallback 到自行拼接的 legacy context：
+```sql
+CASE WHEN prompts_json IS NOT NULL AND trim(prompts_json) LIKE '[%' THEN prompts_json
+     ELSE legacy_context_messages_json END AS context_messages_json
+```
+
+### 5. 未来轮次 reward（turn_level）
+
+计算 anchor 之后 24h 内的用户发言轮次，对数分桶 0-7：
+
+```sql
+-- 24h 内未来轮次
+SUM(CASE WHEN b.ts_s > a.anchor_ts AND b.ts_s <= a.anchor_ts + 86400 THEN 1 ELSE 0 END) AS future_turns_24h
+
+-- 对数分桶
+LEAST(FLOOR(log2(future_turns_24h + 1)), 7) AS turn_level
+```
+
+### 6. 事件锚点采样（anchor sampling）
+
+基于对话特征标记事件类型，确定性随机采样：
+
+```sql
+-- 事件类型
+CASE
+    WHEN short_to_long = 1 THEN 'short_to_long'
+    WHEN long_to_short = 1 THEN 'long_to_short'
+    WHEN exit_long3 = 1 THEN 'exit_long3'
+    WHEN cooldown = 1 THEN 'cooldown'
+    WHEN immediate_dup = 1 THEN 'immediate_dup'
+    ...
+END AS event_type
+
+-- 确定性随机排序（可复现）
+row_number() OVER (PARTITION BY event_type
+    ORDER BY md5(concat(cast(stitched_sess_id as string), '|', cast(req_id as string), '|', cast(unix_timestamp(ts) as string)))
+) AS rn
+WHERE rn <= 100000
+```
+
+### 7. ctx_len_bucket：上下文长度分桶
+
+```sql
+CASE
+    WHEN ctx_turn_cnt <= 5 THEN 'b00'
+    WHEN ctx_turn_cnt <= 12 THEN 'b01'
+    WHEN ctx_turn_cnt <= 24 THEN 'b02'
+    ELSE 'b03'
+END AS ctx_len_bucket
+```
+
+### 8. 开场白切分 session（下游表逻辑）
+
+用 `msg_pair = 'opening -> opening'` 标记新 session，累计求和生成 `sess_id`：
+
+```sql
+sum(if(msg_pair = 'opening -> opening', 1, 0)) OVER (PARTITION BY partition_id ORDER BY input_time) AS local_sess_id
+```
+
+## 往期上线实验的取数口径（团队 wiki）
+
+「常用 SQL 模式」收录的是当前使用中的；**历次上线实验实际跑过**的取数逻辑沉淀在团队 wiki，按版本一页，针对同一张主表 `aweme.dm_virtual_ai_avatar_chat_stats_di`：
+
+- **位置**：`<ws>/kb/out/wiki/code/<version>/pull.md`（例 `code/v2.3/pull.md`；v2.1~v2.4 各一份）。由 `fido_cli kb-pull` 从团队 `fido_wiki/out/wiki/` 下发，`grep -r "<version>" <ws>/kb/out/wiki/` 即可定位。
+- **v2.3 pull 页记录的口径**（UA SFT → RFT → GRPO 链路源头）：
+  - **stop（流失）用户圈选**：`NOT EXISTS` 反连接，选时间窗内有过有效对话、但之后连续 7 天无任何记录的 uid；
+  - **每 uid 去重随机采样**：`ROW_NUMBER() OVER (PARTITION BY uid ORDER BY RAND())` 取 `rn = 1`；
+  - **有效对话过滤**：`req_id` 前缀（`im-format-%` / `REPLY-%` + `biz_id`）、`msg_pair = 'ask -> answer'`、非空回复、`CHAR_LENGTH(model_debug_info / chat_history) > 4`；
+  - **配置 / AB 排除**：`history_turns = 100`，并用 `libra_ab_param NOT LIKE` 去掉多气泡 / NEW 对话链路 / 增加时间信息三个实验组。
+- 做新实验取数时**优先复用这些验证过的口径**（改时间窗 / 实验组即可），不要从零重推；要溯源到原始 SQL，顺着 wiki 页里的「来源」注脚找到 frontmatter 记录的来源路径。
+- **执行落点**：wiki 只读拿口径，真正跑回 [`../SKILL.md`](../SKILL.md) 的 §场景路由表 / §TQS 批量导出：即席走 Aeolus，大导出走 TQS 远端 `--engine sparkcli`。不要在 wiki 侧执行 SQL。

@@ -1,0 +1,259 @@
+# Harness 设计归档
+
+> 状态：Phase 0-4 已全量完成。ingest（165/165 docs 终态：164 fetched + 1 excluded）与 compile（13 model / 47 problem / 57 technique / 26 meeting / 45 brief / 2 review 报告）均已落地，本仓 33 项 spec 契约由 `fido_wiki/tests/test_compile_contract.py` 钉死。
+>
+> 受众：接手 Fido Wiki harness 的维护者。本文是设计层归档（不进入 ingest / compile / 下发），覆盖架构边界、protocol 维护备忘、AB 审计结论、未来 schema 改进项与冷启动验证清单。`HANDOFF_human.md` 是本机前置准备。
+>
+> 历史 handoff（`HANDOFF_compile.md` / `HANDOFF_ingest.md` / `HANDOFF_protocol.md` / `HANDOFF_gaps.md` / `HANDOFF_main_group.md` / `AUDIT_ab_*` / `PLAN_phase3_*`）均已结案并合并进本文件，对应文件已删除。Git 历史可追溯：`git log -- _handoff/`。
+
+## 1. 定位
+
+Fido Wiki 是主管 AutoWiki 在 Fido 场景下的 team-mode 落地。仓内 vendoring 主管 `autowiki/` 运行框架（只读机制），Fido 业务派生层放在 `fido_wiki/`，源数据放在 `source/` 与 `protocol/registry/`。
+
+| 仓 / 包 | 角色 | 写入边界 |
+|---|---|---|
+| `autowiki/` | 主管通用 compile 工具：route 框架、merge、source_policy、indices | 只读 `source/` + 写 `out/` + `.autowiki/` |
+| `fido_wiki/` | Fido 业务派生：routes（protocol / code / eval_method）、ingest（mcj / eval / snapshot / papers / paper-mentions）、discovery、prompts | Fido ingest 例外（specs/architecture.md I4）：派生 `source/_generated/**` 与 `source/fido-<ver>/<kind>.md` 两个 generated namespace；不写其他 source 路径 |
+| `source/` | 团队事实输入（飞书、IM、妙记、paper 等抓取后的 blob） | 由 `lark-fetch` / `lark-im-fetch` / paper 通道写入；不接受手工编辑 |
+| `protocol/registry/` | 五张结构化台账（exp / train / eval / ab / eval_session）| 由 `fido_wiki ingest` 系列子命令写入 |
+| `out/` | 管理员 compile 后的对外分发 | 由 `autowiki compile` 写；事实错误回改源头 |
+
+I4 边界：autowiki 完全不知任何 Fido 字段名；Fido 字段名只在 `fido_wiki/` + `.autowiki/config.yaml` 的 `route_extensions` 配置里出现。
+
+## 2. Source Harness 设计契约
+
+```text
+维护者登记 seed → 抓 seed 本体 → 二次发现 manifest → 维护者确认 → 回填 activated_sources → 抓正文
+```
+
+| 文件 | 角色 |
+|---|---|
+| `source/sources.yaml` | 机器可读的 seed / discovery / activated 状态 |
+| `source/SOURCES.md` / `source/SOURCE_INDEX.md` | 从 `sources.yaml` 派生的人读版盘点（由 `source-index` skill 重建） |
+| `source/_meta/feishu/*.meta.json` | activated docs 的轻量指针索引；不含正文 |
+
+边界：
+
+1. `managed_seeds` 是入口；正式抓取队列写在 `activated_sources`。
+2. IM 一次发现链路：抓 raw → 脱敏落仓 → 从对话正文抽飞书文档/妙记/论文/博客/网站链接 → 写 discovery manifest → 维护者确认后激活。
+3. 只有 `activated_sources.docs` / `activated_sources.im_chats` / `activated_sources.papers` 才被 fetch 通道消费。
+4. `meeting_queries` 用于补查命名归档；IM 一次发现以 seed 群聊正文为准。
+5. compile 只读已激活 source blob 与 protocol registry，不从 seed 或 discovery 候选生成主线事实。
+6. `technical_reference` / `business` 来源受 compile gate 约束：范围限定 reference 层（`paper` / `source` / `concept`），不作为 `model` / `problem` / `technique` / `meeting` 的 owner。
+
+`activated_sources.docs` 终态：`{fetched: 164, excluded: 1}`，0 pending。Excluded 项是 IM 群「FIDO x 虚拟IP 评测」引用的 wiki token `HNNkwXXLSiMi9fkfK6hc1m0GnOg`，飞书 API 返回 `code=1310213 No view permission`；属 `technical_reference` 层，不影响 wiki 主线事实。
+
+Reference 层 gate 验证：
+
+```bash
+python3 -m fido_wiki.discovery.check_reference_gate
+```
+
+`autowiki/source_policy.py` 已读 `source/sources.yaml` 的 `source_class` 与 `compile_gate`：
+
+| route | 产出实体 | reference source 处理 |
+|---|---|---|
+| `release` | `model` / `problem` / `technique` | 跳过 |
+| `meeting` | `meeting` / `problem` | 跳过 |
+| `paper` | `paper` | 允许 |
+| `protocol` / `code` / `eval_method` | `model` / `problem` / agent context | 不读 `source/sources.yaml`，不受 reference gate 影响 |
+
+## 3. Protocol 维护备忘（fold from HANDOFF_protocol.md）
+
+`protocol/` 是协议层第一手台账：`spec/`（schema）+ `registry/*.jsonl`（数据行）。维护者私有备忘在此固化为设计归档。
+
+### 3.1 安全 reward 值域 — 两个口径分开
+
+`train_registry.reward_stack[].range` 记的是 **整体安全 reward 值域**。源文档另有一套 **重点风险识别子项值域**，数字不同，逐版核对时别串。
+
+| 版本 | 整体值域 | 源 | 重点风险子项 | 源 |
+|---|---|---|---|---|
+| fido-2.0 | `[-9,0]` | 2.0.md:201 | `[-6,0]` | 2.0.md:209 |
+| fido-2.1 | `[-9,0]` | 2.1.md:186 | `[-6,0]` | 2.1.md:194 |
+| fido-2.2 | `[-6,0]` | 2.2.md:194 | `[-4,0]` | 2.2.md:202 |
+
+- 2.0 整体 `[-9,0]` 组成：QA 巡检 `[-1]` + 重点风险 `[-6]` + 底线 `[-1]` + 开源护栏 `[-1]`。
+- 2.2 精细化打压同时动两处：整体 `[-9,0]→[-6,0]`、重点风险 `[-6,0]→[-4,0]`，子项标签 6→4，去 Qwen3Guard 护栏（2.2.md:91-92）。
+- 早期样例台账把 2.1 整体值域误填 `[-6,0]` / 2.2 整体值域留空，已订正。
+
+### 3.2 ep 逐行对，别跨行串
+
+`ep` 是可重指部署槽，追溯模型只认 `mcj`。细节表里同一个 `ep` 跨行复用：
+
+- `mcj-…fgf8g` 与 `mcj-…vzvmm` 共用 `ep-…gl6qs`（iteration.md:460-463 ↔ 596-600）。
+- `mcj-…6rdm9` 的 ep 是 `ep-…5z6ms`（iteration.md:139-160），与 `ep-…gl6qs` 无关。
+
+### 3.3 fido-2.2 安全配比文档自冲突
+
+源文档自冲突：概述段（L87）"安全配比 1/4→1/5"，详细 Stage3（L191）"配比 1/4"。registry 取 `1/5`（`train_registry.安全配比` + `exp_registry.notes`）。复核以 1/5 为准，冲突归档在本节。
+
+### 3.4 authority 字段已弃用
+
+registry 是第一手台账，可信度由 `result_doc` / `artifact` 路径强弱 + `status` / `judgement` 成熟度承载，不需要三星制。`authority` 字段已整体删除（理由成文 `protocol/README.md §6`）。
+
+### 3.5 PII / identity 边界
+
+硬规则：git 中不保存 `name ↔ open_id` 映射。
+
+| 内容类型 | 处理 |
+|---|---|
+| 正式文档、妙记、设计文档、分享材料 | 保留原文人名 |
+| protocol registry | 内部共享可保留人名；`ou_` / `cli_` / `app_` token 不进入 |
+| IM raw 暂存 | 写入 `source/_im/_raw/`，gitignored |
+| IM 提交产物 | 只替换 open_id 关联的发言人身份为 `成员-<4hex>`；不清理话题、群名、代码标识 |
+| 本地映射和 salt | 只留 gitignored 文件 |
+
+### 3.6 评测链路改造（2026-06-12 起，活跃工作流）
+
+跨仓单一设计源：`fido_cc/docs/design/eval-chain-design.md`（诊断／两阶段通道方针／七个工作包／执行编排）。本仓涉及：WP1 ingest 扩展消费期文档内嵌 sheet CSV（`fido_wiki/ingest/eval_registry.py`，staging＋人工确认，不直写 registry）、WP2 `protocol/tools/validate_registry.py` 撞键退化保护、WP3 `protocol/spec/eval_session_spec.md` 口径模板节。撞键规则权威文本在设计源 §5.2，两仓一字一致，不在本仓另行措辞。
+
+## 4. Schema v2「主实验组」字段（已实施，fold from HANDOFF_main_group.md）
+
+触发：用户问"现在因为我们回补了非常多的临时实验的分支，我们的 Registry 里面有没有字段能够拿到主实验组啊？"
+
+### 4.1 已落地实现
+
+`train_registry` 在 v1 基础上新增三字段：
+
+```jsonc
+{
+  // v1 fields ...
+  "experiment_group": "fido-2.3#table-2",    // <doc-stem>#table-<N>，与 lark-table 1:1
+  "arm_label":        "v1",                  // 原文「实验编号」列
+  "role":             "main"                 // enum {main, baseline, candidate, ablation, sidearm}
+}
+```
+
+当前 `train_registry.jsonl` 共 434 行，其中 139 行 `schema_version=train_schema_v2`，含 v2 字段；295 行 legacy v1 不带（含 fido-1.x 4 行 `legacy_recipe` 与冷启回填行）。
+
+### 4.2 role 推断 heuristic（已写入 `fido_wiki/ingest/eval_registry.py`）
+
+| arm_label 形态 / 说明列 | role |
+|---|---|
+| `v0` 或「基线」/「previous」/「上一版」 | `baseline` |
+| `produce ep` 非空 + 同 mcj 在 release.md 出现，或说明含「上线」/「推全」 | `main` |
+| `v\d+[a-z]+`（后缀字母）+ 说明含「消融」/「ablation」/「去 *」 | `ablation` |
+| mcj 同时出现在另一张表（分支表 / 多轮 RL 专项表） | `sidearm` |
+| 以上都不匹配 | `candidate`（默认） |
+
+### 4.3 推迟到 v3
+
+| 字段 | 用途 |
+|---|---|
+| `parent_mcj` | 跨版本血缘（指向上一版 main 的 mcj_id） |
+| `mcj_aliases[]` | 同 mcj 在不同表的别名收集（v1 / V1 / v1主线 typo cleanup） |
+| `produce_ep_status` | 上线生命周期 enum（`planned` / `built` / `released` / `deprecated`） |
+
+## 5. AB 审计结论（fold from AUDIT_ab_*.md）
+
+### 5.1 AB completeness 终态
+
+去重后真实状态：
+
+| 维度 | 数量 |
+|---|---:|
+| 含 mcj 的 source 文档 | 7 |
+| 唯一 (doc, mcj) 二元对 | 111 |
+| 含 `AB实验评测-底线汇总` metric 的行 | 39 |
+| eval_registry 三元对 (doc, mcj, metric) | 491（已含 1:N suite/metric 拆分） |
+
+完整 AB 数据存在 sheet 形式（7 sheets / 6 docs / 1 paper 已激活），缺口待 sheet 解析器接入；当前缺口在 G3 / G8 已合并入 G1 数据考古 pass（已完成）。
+
+### 5.2 AB registry numeric — 待 libra 接口接入
+
+上线文档与 libra 实测数值口径分离原则（用户原话）：
+
+- 上线文档保留：实验结构（哪个 vid 主组、哪个 base 对照、为什么这样设、业务结论叙事）
+- libra 接口实测覆盖：所有 primary_metric / guard_metric 的数值 + sig
+- window 口径不齐时优先暴露：上线文档窗口 + libra 默认窗双填，差异写进 notes
+
+当前 ab_registry 仅 13 行（覆盖主推全），数值字段以上线文档为准；libra 接口接入留 schema v3（追加 `metric_window` / `period` / `sig_level` 三字段）。
+
+## 6. Phase 3 设计归档要点（fold from PLAN_phase3_*.md）
+
+Phase 3 已完整实施。要点归档：
+
+### 6.1 三仓架构对齐
+
+- `autowiki/` 工具不知 Fido 字段名，仅含 release / meeting / paper / agent 四 builtin route + `route_extensions` 加载机制
+- `fido_wiki/` 持 Fido-specific routes（protocol / code / eval_method）+ ingest + discovery + prompts
+- `source/` 纯数据（含 `_generated/` 由 Fido ingest 派生）
+- `.claude/skills/` 持管理员稳定技能；`extras/` 持团队可复用技能
+
+### 6.2 已落地的扩展 routes
+
+| route | 包路径 | owned sections | source_dir |
+|---|---|---|---|
+| `protocol` | `fido_wiki.routes.protocol` | 训练溯源 / 评测状态 / 关联 | `protocol/registry/` |
+| `code` | `fido_wiki.routes.code` | 代码证据 | `source/_generated/version_code/` |
+| `eval_method` | `fido_wiki.routes.eval_method` | 评测方法学 | `source/_discovery/eval_method/` |
+
+### 6.3 follow-up 推迟项（不再追）
+
+- `chat_evidence` route（IM 群讨论佐证段）— 当前 brief 里已有 IM 锚点，不再单独建段
+- `okr` / `weekly` route — 团队周报 / OKR 接入留待业务需求触发
+- chat_evidence 跨群 dedup、release ↔ okr 双向回链、周报 P0 抽取、增量 compile — 全部留待 Phase 4 触发后再开
+
+## 7. 已知 legacy（不可消除 / 已接受）
+
+| 编号 | 项目 | 状态 |
+|---|---|---|
+| L1 | fido-1.0 ~ 1.3 全部 `legacy=1, mcj=0` | 接受：源文档（`source/fido-1.0/*.md` ~ `1.3/*.md`）通篇无 mcj-id 格式（pre-mcj-era）。registry 里 4 行 `legacy_recipe` 是事实记录，不是数据 gap |
+| L2 | 1 篇 doc excluded（HNNk* 无飞书查看权限）| 接受：technical_reference 层不影响 wiki 主线事实；sources.yaml 已记 `excluded_reason` |
+| L3 | reward 字段在部分 model 页显示 `(?)` 占位 | 已诊断：driver 层 batch-fix 工作（不在校对范围）；详 `out/_review/model_audit.md` 跨版主题 #1 |
+| L4 | 13 model 页中 v2.15 / v2.25 / v2.35 / v2.4 为中间/占位版本 | 已加 banner `⚠️ 待人工校对` 指向 audit 报告 |
+| L5 | 45 briefs 中 120 处 LLM 推测段已标 `_(LLM 推测，待校对)_` | 等待人工二次校对；非阻塞 |
+
+## 8. 残留 harness 静态约束（H 系列）
+
+| 编号 | 项目 | 当前判断 | 后续动作 |
+|---|---|---|---|
+| H1 | `parse_source` 缓存键只含路径 | 继承自主管引擎；第二次 compile 原地改 source 时可能读旧缓存 | 评估把内容哈希纳入缓存键 |
+| H2 | `parse_sections` 不识别代码围栏 | 继承自主管合并原语；围栏内含 `##` 时可能误切段 | 需要时实现 fence-aware section parser |
+| H3 | `_model_slug` 对非 ASCII 子实验名有碰撞风险 | Fido protocol 路由逻辑；若使用中文子实验名会触发 | 看 `exp_id` 命名再决定 ASCII 约束或 hash 后缀 |
+| H4 | 版本排序使用字典序 | 继承自主管引擎；`v2.10` 等出现时可能错序 | 抽 `version_key()` 统一数字序 |
+| H5 | paper fetch 工具尚未移植 arxiv 三层 ladder | 当前 papers 通过 `fido_wiki ingest papers` 处理 | 需要时从个人 Knowledge Base 移植 |
+| H6 | `out/` 提交 guard | 当前由 `fido_wiki/tests/test_compile_contract.py` 33 项契约钉死结构 | 第一次 mock 误提交风险可控；进一步加 pre-commit 由维护者按需开 |
+| H7 | 每版本数据/取数/测试逻辑的结构化投影 | 当前只生成人读 model 段 + agent protocol context | per-version JSON 投影 schema 留 schema v3 |
+
+## 9. 冷启动验证清单
+
+source ingest 与 compile 后，按下列顺序验证：
+
+1. `source/fido-root/`、`source/_im/`、`source/_meetings/`、`source/_sharing/`、`source/_papers/`、`source/_generated/version_code/` 是否按 `sources.yaml` 生成对应 blob。
+2. `python3 -m fido_wiki.lib.validate_sources --check-meta` 通过。
+3. `python3 protocol/tools/validate_registry.py --check-paths` 通过。
+4. `python3 -m fido_wiki.discovery.check_reference_gate` 通过。
+5. `python3 -m fido_wiki.ingest snapshot-versions --dry-run` 输出与上次一致（幂等）。
+6. `python3 -m autowiki compile --repo . --json-out` 生成 `out/wiki/overview.md` / `timeline.md` / `INDEX.md` + `out/agent/context.md`。
+7. `pytest fido_wiki/tests/test_compile_contract.py -v` 全 33 项通过。
+8. model 页同时保留 release 叙事段与 protocol 证据段，只有一个 H1。
+9. overview 数字来自 release 或 registry，未编造缺失指标。
+10. IM 产物中不存在 open_id、identity map、salt、未提交 raw 暂存。
+11. `out/` 产物只包含正式 compile 输出。
+
+最近一次静态校验（2026-06-09）：
+
+```bash
+python3 -m fido_wiki.lib.validate_sources --check-meta
+python3 -m fido_wiki.discovery.check_reference_gate
+python3 protocol/tools/validate_registry.py
+pytest fido_wiki/tests/test_compile_contract.py -q
+git diff --check
+```
+
+结果均通过：33/33 tests pass、165/165 docs 终态（164 fetched + 1 excluded）、protocol registry 1002 行（exp=13 / train=434 / eval=491 / ab=13 / eval_session=51）。
+
+## 10. 当前 out/ 产物清单（2026-06-09）
+
+| 子树 | 产物数 | 说明 |
+|---|---:|---|
+| `out/wiki/models/` | 13 + README | fido-1.0 ~ 2.4（4 个中间版本带 `待校对` banner） |
+| `out/wiki/problems/` | 47 + README | |
+| `out/wiki/techniques/` | 57 + README | |
+| `out/wiki/meetings/` | 26 + README | |
+| `out/papers/library/` | 多份 + README | |
+| `out/wiki/INDEX.md`、`overview.md`、`timeline.md` | 3 | |
+| `out/agent/briefs/` | 45 | 120 处 `_(LLM 推测，待校对)_` 标记 |
+| `out/agent/{context, protocol_context, gaps, changelog}.md` + `cross-links.json` | 5 | |
+| `out/_review/model_audit.md`、`brief_audit.md` | 2 | workflow 校对快照（13 model + 45 brief） |
