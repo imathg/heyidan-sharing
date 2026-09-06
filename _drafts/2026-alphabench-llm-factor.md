@@ -1,6 +1,7 @@
 # AlphaBench：LLM 做公式化因子挖掘，瓶颈在哪一环
 
 <!-- domain: hf-alpha-factor -->
+<!-- edition_date: 2026-06-11 -->
 
 `[论文]` [AlphaBench](#ref-alphabench)（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ [Qlib](#ref-qlib) 回测闭环，将「应如何用 LLM 设计因子挖掘 Agent」转化为生成 / 评估 / 搜索三个维度的量化评测。
 

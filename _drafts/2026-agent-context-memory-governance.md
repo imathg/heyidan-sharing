@@ -1,6 +1,7 @@
 # 长程 agent 的上下文治理：记忆是一组带生命周期的对象
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-05 -->
 
 2026 年 6 月底到 7 月初，agent 论文出现一组密集信号。`[论文]` [Supersede](#ref-supersede)（Vrin，Patel 2026）将长期会话里的旧事实更新定义成可训练环境；`[论文]` [TraceRetain](#ref-traceretain)（Independent Researcher，Reddy 2026）显示 memory retention 在 noisy write 压力下才显现差异；`[论文]` [VISTA](#ref-vista)（CUHK + LIGHTSPEED，Xu et al. 2026）将 context 状态暴露成模型可见的 dashboard；`[论文]` [ECHO](#ref-echo)（北大 + 中科大 + 百度，Xie et al. 2026）在压缩后的 turn record 中保留 source index，用来回传训练 credit；`[论文]` [Self-GC](#ref-selfgc)（小红书，Hao et al. 2026）将 context 视为可 fold、mask、prune、recover 的对象集合；`[论文]` [AutoMem](#ref-automem)（Stanford，Wu et al. 2026）将 memory 管理视为可训练技能；`[论文]` [ContextNest](#ref-contextnest)（PromptOwl + Emory + IBM Research，Sulpovar et al. 2026）将 context governance 放到 retrieval 下层，负责版本、归属、完整性和审计。
 

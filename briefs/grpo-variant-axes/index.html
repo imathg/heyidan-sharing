@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 7 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-05-29
   </div>
 
   <h1 class="brief-title">GRPO 变体的设计轴：谁在承载更新信号</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-05-29</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">7</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">grpo-variant-axes</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-05-29 -->
 <p><span class="claim claim-self">本文归纳</span> 2026 年再看 GRPO，一组新名词容易让人误以为算法空间变得零散：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 将 tool-use rollout 切到 segment。这些名称可统一归入一个问题：<strong>更新信号到底由谁承载、在哪里归一化、和什么参照系比较</strong>。这些设计轴可以组合，在小 group、单一 carrier、agentic segment 等边界条件下又会耦合。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
@@ -683,6 +684,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 这篇 brief 的主结论可以被三类实验证伪。第一，如果有主流 GRPO 变体无法映射到 A1-A5 任意一轴，五轴表不完备。第二，如果 BPPO 的收益在 random pair 或 same-class pair 上同样成立，A4 的 correct/incorrect contrast 解释就弱。第三，如果 CARL 的 segment critic 被 token-level PPO 完全追平，agentic 场景里的主因就要从「边界对齐 credit」转向其他机制。</p>
 <p><span class="claim claim-self">本文归纳</span> 在这些反例出现前，将 GRPO 变体视为五个 update-signal 设计轴，比按论文名罗列更能直接指导选型：要省 token，先看 A4；要改善长 CoT 探索，先看 A2 和 A1；要做 tool-use agent，先看 A4/A5 的 state 或 segment 边界；要解释方差和 bias，先看 A3。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-yu2025"></a> <strong>[DAPO: An Open-Source LLM Reinforcement Learning System at Scale]</strong> Qiying Yu et al.，ByteDance Seed / Institute for AI Industry Research (AIR), Tsinghua University / The University of Hong Kong / SIA-Lab，2025. <a href="https://arxiv.org/abs/2503.14476">arXiv:2503.14476</a> / <a href="https://dapo-sia.github.io/">Project</a>。本文用它定位 GRPO baseline、Clip-Higher、Dynamic Sampling、token-level loss 和 overlong shaping。<span class="claim claim-paper">论文</span></li>
@@ -700,6 +702,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-remax"></a> <strong>[ReMax 背后的故事]</strong> 李子牛，知乎长文，2026. <a href="https://zhuanlan.zhihu.com/p/1963218041199387877">Zhihu</a>。本文用它说明 greedy decoding baseline 的历史动机。<span class="claim claim-tech">tech report</span></li>
 
 </ol>
+
 
   </article>
 
@@ -745,6 +748,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

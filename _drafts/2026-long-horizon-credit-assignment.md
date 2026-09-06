@@ -1,6 +1,7 @@
 # 长程 credit assignment：奖励信号该在轨迹的哪一层附着
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-06-28 -->
 
 2026 年 6 月，七个互不隶属的团队分别改进 GRPO 给长程 agent 分配 credit 的方式。`[论文]` [HSD](#ref-hsd)（George Washington University，Li et al. 2026）将 token 级 credit 定位到失败与成功路径的分叉处；`[论文]` [SCPO](#ref-scpo)（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；`[论文]` [HiMPO](#ref-himpo)（中国联通，Yan et al. 2026）只为 memory 写入动作设置单独的 credit 通道；`[论文]` [VIMPO](#ref-vimpo)（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；`[论文]` [Progress Advantage](#ref-progress-advantage)（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比作为 step 信号；`[论文]` [BiPACE](#ref-bipace)（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse)（中科院自动化所，Hao et al. 2026）诊断这套训练为何失稳，以及外部监督如何改善它。
 

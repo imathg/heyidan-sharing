@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-14
   </div>
 
   <h1 class="brief-title">Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-14</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#rubrics" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">rubrics</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">rubric-reward-axes</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-06-14 -->
 <p><span class="claim claim-paper">论文</span> RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就会消失。<span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a>（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 <strong>11.1 分</strong>。<span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a>（马里兰大学，Agrawal et al. 2026）从 RL 侧切入：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。</p>
 <p><span class="claim claim-self">本文归纳</span> 2026 年上半年，多项相互独立的工作采用同一种做法：将一个标量 reward 拆成一组子信号，再重新聚合。<strong>核心论点：rubric 构造（judge 侧将回答拆成要求条目）和 credit assignment（RL 侧将轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元</strong>。这些方案的差异落在五个正交维度上。</p>
 <blockquote>
@@ -596,6 +597,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-self">本文归纳</span> 五个维度彼此正交，选型时先定 K1（任务是否有可监督的中间步骤），再定 K3（是否有可测的下游结果决定能否结果锚定）；K5 的自验证档需配合 K4 的显式稳定化。这组划分仍需随着更多方案进入继续验证；如果出现第三种切分方式，或要求轴与时间轴在新任务里合并，就要修订。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-soft"></a> <strong>[Soft-SVeRL: Self-Verified Reinforcement Learning with Soft Rewards]</strong> Saurabh Dash, Pierre Clavier, John Dang, Matthias Galle, Marzieh Fadaee, Ahmet Üstün, Beyza Ermis，Cohere Labs，2026. <a href="https://arxiv.org/abs/2605.28561">arXiv:2605.28561</a>。部分可验证任务的 checklist soft reward 与自验证 reward 通胀。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -615,6 +617,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-merit"></a> <strong>[MERIT: Matching Expertise via Rubric-Informed Training for Reviewer Assignment]</strong> Zixuan Yang, Yibo Zhao, Weicong Liu, Xiang Li，华东师范大学，2026. <a href="https://arxiv.org/abs/2605.27865">arXiv:2605.27865</a>。criterion 级专长匹配转成可扩展适配度监督。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -660,6 +663,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

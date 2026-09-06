@@ -1,6 +1,7 @@
 # OPD 稳定域：teacher 监督信号的失真路径与修复
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-19 -->
 
 `[本文归纳]` 2026 年上半年，OPD（on-policy distillation）研究的焦点从「如何纳入 post-training pipeline」转向「何时失效」。半年内至少十篇论文分别报告了一种失效路径：prefix 变长后 teacher 失去判别力、teacher-student 分布差过大导致优化失败、异步训练下 rollout 变旧、聚合目标造成长度捷径。这些结果共同指向同一个图景：
 

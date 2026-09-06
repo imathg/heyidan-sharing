@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 9 sources
-    <span class="sep">·</span> last update 2026-08-02
+    <span class="sep">·</span> edition 2026-08-02
   </div>
 
   <h1 class="brief-title">Agent RL 的轨迹证据：环境如何把执行过程变成训练信号</h1>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-08-02 -->
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-mei2026">SearchArt</a>（Huawei Cloud，Mei et al. 2026）在任务进入训练前同时核验问题、搜索轨迹与检索证据；<span class="claim claim-paper">论文</span> <a href="#ref-wang2026">CAST</a>（中国科学技术大学、南京大学、武汉大学、美团，Wang et al. 2026）用游戏 solver 的状态价值变化评价每次动作；<span class="claim claim-paper">论文</span> <a href="#ref-li2026graph">Graph Is the Verifier</a>（Singapore Management University 等，Li et al. 2026）让同一份代码图既提供调查工具，又核验 agent 引用的证据；<span class="claim claim-paper">论文</span> <a href="#ref-li2026tapo">TAPO</a>（北京大学、鹏城实验室，Li et al. 2026）将动作后的环境反馈重新用于 transition supervision；<span class="claim claim-paper">论文</span> <a href="#ref-wu2026">ClawTrack</a>（美团，Wu et al. 2026）区分结果分与过程分，并用过程分筛选训练轨迹；<span class="claim claim-tech">tech report</span> <a href="#ref-yang2026">Frontis-MA1</a>（Frontis.AI、Horizon Research、清华大学，Yang et al. 2026）用可执行环境连接任务构造、训练与长程搜索。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhu2026termigen">TermiGen</a>（UC Santa Barbara 等，Zhu et al. 2026）主动采集由错误、诊断和修复构成的恢复轨迹；<a href="#ref-fan2026skillsynth">SkillSynth</a>（腾讯混元，Fan et al. 2026）以 scenario / skill path 控制训练经历的覆盖范围。</p>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-raoof2026">OpenThoughts-Agent-RL-5K</a>（UC Berkeley、Stanford University 等，Raoof et al. 2026）的官方数据卡区分固定示范的 task-trajectory pair 与 online RL 使用的可执行任务包。</p>
@@ -667,6 +668,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 五个维度覆盖轨迹证据的载体、绑定、核验、训练位置和失败处理。完整的 Agent 数据分类还需描述任务来源、环境可重置性、scenario / skill path coverage 等采样轴。</p>
 <p><span class="claim claim-self">本文归纳</span> 五个维度依照信息产生的顺序衔接：证据载体及其动作绑定是起点，核验者及其噪声决定可信度，进入 admission、SFT、RL 或 filtering 的位置决定证据如何改变训练，失败类型则对应修复、拒绝、负向学习或诊断保留。缺少证据载体与动作绑定时，训练系统只能在轨迹末尾得到一个分数，后续优化无法还原执行过程。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-mei2026"></a> <strong>[SearchArt: Training Long-Horizon Search Agent with Scalable Synthetic and Verified Tasks]</strong> Lang Mei, Xiaohan Yu, Chong Chen, Liyan Liu, Xiangnan Chen, Jinchao Ma, Chao Feng, Li Huang, Siyu Mo, Sichen Kang, Yunkun Xu, Zhihan Yang, Zhujun Xue, Jingren Zhang, Qing He, Yingdi Huang, Hao Jiang, Ziao Ma, Zewei Pan, Minhao Sun, Zhuo Tao, Jinzhao Xiao, Gangtao Xin, Huanyao Zhang, Wenjian Zhang, Jiangshan Zhang, Guojie Zhu, Jiaxin Mao, Wentao Zhang，Huawei Cloud Post-Training Team，2026. <a href="https://arxiv.org/abs/2607.24850">arXiv:2607.24850</a>。用于任务合成、证据图、轨迹验证和多阶段训练闭环。<span class="claim claim-tech">tech report</span></li>
@@ -688,6 +690,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-fan2026skillsynth"></a> <strong>[Toward Scalable Terminal Task Synthesis via Skill Graphs]</strong> Zhiyuan Fan, Tinghao Yu, Yuanjun Cai, Jiangtao Guan, Yun Yang, Dingxin Hu, Jiang Zhou, Xing Wu, Zhuo Han, Feng Zhang, Lilin Wang，Hunyuan Team, Tencent，2026. <a href="https://arxiv.org/abs/2604.25727">arXiv:2604.25727</a>。用于 scenario-mediated skill graph、workflow path 采样，以及 scenario / skill coverage 这一独立设计轴。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -733,6 +736,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

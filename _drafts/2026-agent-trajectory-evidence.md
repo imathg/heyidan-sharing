@@ -1,5 +1,6 @@
 # Agent RL 的轨迹证据：环境如何把执行过程变成训练信号
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-08-02 -->
 
 `[tech report]` [SearchArt](#ref-mei2026)（Huawei Cloud，Mei et al. 2026）在任务进入训练前同时核验问题、搜索轨迹与检索证据；`[论文]` [CAST](#ref-wang2026)（中国科学技术大学、南京大学、武汉大学、美团，Wang et al. 2026）用游戏 solver 的状态价值变化评价每次动作；`[论文]` [Graph Is the Verifier](#ref-li2026graph)（Singapore Management University 等，Li et al. 2026）让同一份代码图既提供调查工具，又核验 agent 引用的证据；`[论文]` [TAPO](#ref-li2026tapo)（北京大学、鹏城实验室，Li et al. 2026）将动作后的环境反馈重新用于 transition supervision；`[论文]` [ClawTrack](#ref-wu2026)（美团，Wu et al. 2026）区分结果分与过程分，并用过程分筛选训练轨迹；`[tech report]` [Frontis-MA1](#ref-yang2026)（Frontis.AI、Horizon Research、清华大学，Yang et al. 2026）用可执行环境连接任务构造、训练与长程搜索。
 

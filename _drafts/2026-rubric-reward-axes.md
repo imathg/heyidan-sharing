@@ -1,6 +1,7 @@
 # Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆
 
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-06-14 -->
 
 `[论文]` RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就会消失。`[论文]` [Soft-RLVR](#ref-soft)（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 **11.1 分**。`[论文]` [VeriGate](#ref-verigate)（马里兰大学，Agrawal et al. 2026）从 RL 侧切入：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。
 

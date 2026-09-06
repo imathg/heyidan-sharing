@@ -184,7 +184,7 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <h2 id="claim-tags">Claim 出处标签</h2>
 
-<p>本站每篇技术文章的正文 claim 都带四档 tag 之一，标注这条 claim 的可信度等级。读者扫一眼 tag 即知是哪一类证据。</p>
+<p>标签说明主张来自哪类材料，或属于作者的跨源归纳，不是可信度排名。正文也可以直接交代来源，无需每段重复标签。判断能否用于当前问题，还要看实验条件、证据覆盖、反证与未知项。</p>
 
 <table>
   <thead>
@@ -200,15 +200,15 @@ footer a { color: var(--accent); text-decoration: none; }
     </tr>
     <tr>
       <td><code>[tech report]</code></td>
-      <td>工业系统自报数据、团队内部 wiki 调研、业界转述等无完整论文支撑、但有明确 release/出处的工业级 claim。</td>
+      <td>有公开出处的技术报告或工业系统自报结果。直接报告与间接转述须在引用中分清。</td>
     </tr>
     <tr>
       <td><code>[个人实验]</code></td>
-      <td>个人 X 长文 / 博客 / Substack 上单人 setup 的实验，无独立复现。</td>
+      <td>个人长文或博客报告的实验。是否独立复现、适用范围多大，按实际证据说明。</td>
     </tr>
     <tr>
       <td><code>[本文归纳]</code></td>
-      <td>本文作者在跨源 reduce 过程中得到的命题，没有单一外部源；可作为思路启发，不能作为决策依据。</td>
+      <td>作者综合多份材料得到的解释，不冒充单一来源的原结论。是否足以支持决策，取决于证据、成立条件和判断风险。</td>
     </tr>
   </tbody>
 </table>
@@ -219,7 +219,7 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <h3>为什么不用置信度数字</h3>
 
-<p>读者用 tag 反推出处类型一步到位，比"高 / 中 / 低"或百分比信息密度更高。同时把"是不是单人实验"、"是不是工业自报"这种关键边界条件直接刻在 tag 里，避免在正文里反复用否定句式打补丁。</p>
+<p>缺乏校验的置信度数字容易制造精确感。本站给出可追溯出处，并在影响结论的位置说明条件和限制；“未独立复现”或替代解释有实际依据时应保留，不能用一个标签省略。</p>
 
 <footer>
   <p>Source at <a href="https://github.com/imathg/heyidan-sharing">heyidan-sharing</a></p>

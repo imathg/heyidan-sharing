@@ -1,6 +1,7 @@
 # Verifier 决定上限：判官不可靠时，强化学习会受系统性偏差限制
 
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-07-12 -->
 
 `[论文]` 数学题能跑单元测试，代码能过编译器，这类任务的 reward 由程序计算；即使 policy 尝试利用奖励漏洞，运行无误的测试仍能提供可靠约束。医疗建议、科学写作、引用溯源、深度研究没有这样的程序化 verifier，主流做法是写一条带权重的 rubric，每条 criterion 交给一个 LLM 判官打分，判官的聚合分就是 reward。[Citation Verifier](#ref-pwc2026)（PricewaterhouseCoopers，Leung et al. 2026）指出了这条链路里容易被忽略的一步：**打分的判官本身就是 reward model，写 rubric 就是在定义被优化的目标**。
 

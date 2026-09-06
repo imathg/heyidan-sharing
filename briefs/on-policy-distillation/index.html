@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 12 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-05-27
   </div>
 
   <h1 class="brief-title">OPD：on-policy 数据是抗遗忘的真正承担者</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-05-27</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">12</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">on-policy-distillation</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-05-27 -->
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-deepseek-v4">DeepSeek-V4</a>（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。<span class="claim claim-tech">tech report</span> <a href="#ref-mimo">MiMo-V2-Flash</a>（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，自报以 1/3 总参数对齐 Kimi-K2-Thinking。<span class="claim claim-paper">论文</span> <a href="#ref-sdar">SDAR</a>（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。</p>
 <p><span class="claim claim-self">本文归纳</span> 近期实践已将 OPD 从「另一种 post-training 选项」变为前沿模型能力整合的常用组件。<strong>本文的核心论点：OPD 的抗遗忘能力主要由 student 自己生成的 on-policy data 承担；teacher 的 token-level 监督负责在这些 state 上提供 credit assignment</strong>。teacher 可以替换、可以退化、甚至可以是 student 自己；失去 on-policy data 后，整条机制会退化为带噪声的 SFT。</p>
 <blockquote>
@@ -749,6 +750,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </ol>
 <p><span class="claim claim-self">本文归纳</span> 对已经有 verifier 或 rubric 资产的团队，<a href="#ref-fang2026">ROPD</a> 给出的范式提供了一条额外路径：这些资产原本服务于 RL reward，原则上也可以充当 OPD 的 teacher 替代。<strong>在这条路径下，白盒对话 teacher 的规模不再是必要条件。</strong></p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-nrehiew2026"></a> <strong>[SFT, RL, and On-Policy Distillation Through a Distributional Lens]</strong> <a href="https://nrehiew.github.io/blog/sft_rl_opd">@nrehiew_</a> 个人 X 长文 / 博客长文，2026-05-10。本文 &quot;Minimal Code Editing&quot; 实验和 OPSD 信息差命题来自这里。<span class="claim claim-personal">个人实验 / X 长文</span></li>
@@ -776,6 +778,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-fang2026"></a> <strong>[Rubric-based On-Policy Distillation (ROPD)]</strong> Junfeng Fang, Mao Zheng et al.，中国科学技术大学 USTC + 腾讯，2026. <a href="https://arxiv.org/abs/2605.07396">arXiv:2605.07396</a>。Rubric-based teacher，黑盒 teacher 支持，自报 ~10× sample efficiency。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -821,6 +824,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

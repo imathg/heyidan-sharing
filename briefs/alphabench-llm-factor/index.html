@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 3 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-11
   </div>
 
   <h1 class="brief-title">AlphaBench：LLM 做公式化因子挖掘，瓶颈在哪一环</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-11</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">3</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#hf-alpha-factor" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">hf-alpha-factor</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">alphabench-llm-factor</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: hf-alpha-factor -->
+<!-- edition_date: 2026-06-11 -->
 <p><span class="claim claim-paper">论文</span> <a href="#ref-alphabench">AlphaBench</a>（香港城市大学 / 上海财经大学等）是首个面向公式化 alpha 因子挖掘（FAFM）的系统性 LLM 基准，用 CSI300（2020–2025 真实数据）+ <a href="#ref-qlib">Qlib</a> 回测闭环，将「应如何用 LLM 设计因子挖掘 Agent」转化为生成 / 评估 / 搜索三个维度的量化评测。</p>
 <p><span class="claim claim-self">本文归纳</span> AlphaBench 在评估维度给出一个明确限制：<strong>零样本下没有任何 LLM 能稳定判别因子优劣</strong>，但<strong>成对选择（pairwise）SFT 效果显著且可跨市场泛化</strong>。这两点直接决定了因子挖掘 Agent 的设计方式。</p>
 <blockquote>
@@ -527,6 +528,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </ol>
 <p><span class="claim claim-self">本文归纳</span> LLM 适合充当变异 / 杂交算子的候选生成器，回测承担最终约束。这是当前较稳妥的 LLM 量化因子挖掘路径：LLM 负责生成候选多样性，因子优劣交给 pairwise 微调模型或回测系统判定。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-alphabench"></a> <strong>[AlphaBench：面向公式化 alpha 因子挖掘（FAFM）的 LLM 基准]</strong> 香港城市大学 / 上海财经大学等，2026。CSI300（2020–2025）+ Qlib 回测闭环；生成 / 评估 / 搜索三维度；零样本判别力失效 + pairwise SFT 跨市场泛化的核心发现。<span class="claim claim-paper">论文</span></li>
@@ -536,6 +538,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-alphabench-explainer"></a> <strong>[哪款大模型更适合因子挖掘？]</strong> QuantML，知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042339790650077676">zhuanlan.zhihu.com/p/2042339790650077676</a>。本文对 AlphaBench 各项数据与落地建议的解读来自这篇公开解读。<code>[公开解读]</code></li>
 
 </ol>
+
 
   </article>
 
@@ -581,6 +584,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

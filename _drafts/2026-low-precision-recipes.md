@@ -1,6 +1,7 @@
 # 低精度训练的共同主线：损伤集中在分布的尖锐处
 
 <!-- domain: training-infra -->
+<!-- edition_date: 2026-06-21 -->
 
 2026 年 6 月，六个互不隶属的团队在同一个月里将 4-bit 数值精度推进到 LLM 生命周期的每一段。`[论文]` [UFP4](#ref-ufp4)（蚂蚁 Ling Team，Zhao et al. 2026）做 FP4 预训练；`[tech report]` [Nemotron 3 Ultra](#ref-nemotron3)（NVIDIA，2026）将 NVFP4 预训练用到 550B MoE 量产规模；`[论文]` [ReQAT](#ref-reqat)（Hanyang AIHA Lab，Lee et al. 2026）做 W4A4KV4 的量化感知训练；`[论文]` [TWLA](#ref-twla)（Houmo AI，Zhao et al. 2026）做训练后量化；`[论文]` [UltraQuant](#ref-ultraquant)（AMD，Chakrabarti et al. 2026）压缩 KV cache；`[论文]` [ReSET](#ref-reset)（Hanyang + Xenoscube，Lee et al. 2026）用于 NVFP4 推理解码。
 

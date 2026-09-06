@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 9 sources
-    <span class="sep">·</span> last update 2026-07-26
+    <span class="sep">·</span> edition 2026-07-26
   </div>
 
   <h1 class="brief-title">实时交互控制：把“何时行动”纳入模型与系统能力</h1>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: realtime-interactive-agent -->
+<!-- edition_date: 2026-07-26 -->
 <p><span class="claim claim-tech">tech report</span> 2026 年 5 月，Thinking Machines Lab（TML）公开 Interaction Models：模型以 200 ms 的微话轮（micro-turn）持续接收音频、视频和文本，在同一条时间线上保留停顿、重叠与打断。<span class="claim claim-paper">论文</span> 随后，JD.com 的 JoyAI-VL-Interaction 将这类能力用于开源视觉系统，模型每秒选择沉默、回应或委派。7 月的多篇论文分别考察了话轮可控性、多人对话信号、前后台分工、服务延迟和安全检查。</p>
 <p><span class="claim claim-self">本文归纳</span> 这些工作把实时交互明确成一个可以单独训练和评测的对象：agent 在每个决策时刻选择带时序约束的动作。回答内容是动作携带的信息；动作类型、触发时刻和执行延迟共同决定用户实际感受到的行为。按这个定义，训练、评测和部署可以放进同一张设计表。</p>
 <blockquote>
@@ -843,6 +844,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><strong>结论：实时交互 agent 的核心，是根据连续事件流反复作出控制决策。话轮状态决定当前有哪些动作可选，前后台分工决定任务由哪条路径完成，服务与安全栈决定动作能否在时间窗口内执行。</strong></p>
 </blockquote>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-skantze2021"></a> <strong>[Turn-taking in Conversational Systems and Human-Robot Interaction: A Review]</strong> Gabriel Skantze，KTH Royal Institute of Technology，2021. <a href="https://www.sciencedirect.com/science/article/pii/S088523082030111X">Computer Speech &amp; Language, 67:101178</a>。本文据此区分说话活动、话轮保持与让出、接过话轮、简短附和和用户打断，并界定 VAD 对话轮语义判断的能力边界。<code>[同行评审综述]</code></li>
@@ -864,6 +866,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-arnold2026"></a> <strong>[Modeling Turn-Taking with Distant Viewing: Investigating Silence Thresholds in Human and AI-Generated Discourse]</strong> Taylor Arnold, Nicolas Ballier, Artem Saloev，Data Science and Statistics, University of Richmond + ALTAE, Université Paris Cité，2026. <a href="https://arxiv.org/abs/2607.18076">arXiv:2607.18076</a>。本文据此讨论情景喜剧和合成播客停顿的跨场景分析设计，用来界定固定停顿阈值的适用边界。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -909,6 +912,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

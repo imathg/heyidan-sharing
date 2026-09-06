@@ -1,6 +1,7 @@
 # OPD：on-policy 数据是抗遗忘的真正承担者
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-05-27 -->
 
 `[tech report]` [DeepSeek-V4](#ref-deepseek-v4)（DeepSeek-AI，2026）把 post-training 写成两段：先通过 SFT 和 GRPO 独立培养 domain experts，再用 on-policy distillation 把不同 domain 的能力合并进单一模型。`[tech report]` [MiMo-V2-Flash](#ref-mimo)（小米 LLM-Core）用同样思路把多个 specialist 合并成单一 student，自报以 1/3 总参数对齐 Kimi-K2-Thinking。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）把 OPSD 接到 agent RL 上，去掉了推理时的 skill retrieval 依赖。
 

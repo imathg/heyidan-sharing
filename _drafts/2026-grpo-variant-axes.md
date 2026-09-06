@@ -1,6 +1,7 @@
 # GRPO 变体的设计轴：谁在承载更新信号
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-05-29 -->
 
 `[本文归纳]` 2026 年再看 GRPO，一组新名词容易让人误以为算法空间变得零散：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 将 tool-use rollout 切到 segment。这些名称可统一归入一个问题：**更新信号到底由谁承载、在哪里归一化、和什么参照系比较**。这些设计轴可以组合，在小 group、单一 carrier、agentic segment 等边界条件下又会耦合。
 

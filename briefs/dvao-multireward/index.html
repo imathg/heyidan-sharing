@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 3 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-11
   </div>
 
   <h1 class="brief-title">DVAO：多目标 RL 里按方差自适应的优势组合</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-11</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">3</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">dvao-multireward</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-06-11 -->
 <p><span class="claim claim-paper">论文</span> <a href="#ref-dvao">DVAO</a>（arXiv:2605.25604，阿里云团队，2026）处理 <a href="#ref-grpo">GRPO</a> 下的一类常见工程问题：多个互相冲突的奖励，比如数学推理的「答对」与「控制长度」、工具调用的「参数正确」与「JSON 格式合法」，都要标量化后再做 group-relative 优化。论文讨论直接合并为何失稳，以及如何稳定合并。</p>
 <p><span class="claim claim-self">本文归纳</span> 它用 GRPO 框架下的两条闭式命题，形式化说明了直接合并多个奖励信号时，重要目标会被弱信号或易满足目标淹没这一常见现象。</p>
 <blockquote>
@@ -535,6 +536,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </ol>
 <p><span class="claim claim-self">本文归纳</span> DVAO 将「按信号区分度分配训练权重」定义为连续、可证明有界的优势加权。它与按场景或样本切分、分开优化冲突信号的离散工程做法正交，两者可以叠加。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-dvao"></a> <strong>[DVAO: Dynamic Variance-adaptive Advantage Optimization for Multi-reward Reinforcement Learning]</strong> 阿里云团队，2026. <a href="https://arxiv.org/abs/2605.25604">arXiv:2605.25604</a>。RC 幅值爆炸（Prop 1）/ AC 目标孤立 / DVAO 组内方差自适应加权（Prop 2 有界 + Prop 3 隐式交叉正则）；verl G=16 实验。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -544,6 +546,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-dvao-explainer"></a> <strong>[LLM 多目标 RL 中，为什么简单的奖励相加会导致训练不收敛？]</strong> 0xC001（阿里巴巴 大模型算法专家），知乎专栏，2026. <a href="https://zhuanlan.zhihu.com/p/2042735452688580754">zhuanlan.zhihu.com/p/2042735452688580754</a>。本文对 DVAO 三条命题和实验的中文解读来自这篇公开解读。<code>[公开解读]</code></li>
 
 </ol>
+
 
   </article>
 
@@ -589,6 +592,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

@@ -1,6 +1,7 @@
 # 用 OPD 给领域后训练模型继续叠加能力：组件已有先例，组合仍待验证
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-12 -->
 
 `[tech report]` [Thinking Machines Lab](#ref-tml)（2025）以完成 post-training（后训练）的 Qwen3-8B 为学生，先通过 midtrain 注入一批新知识，再让注入前的自身作为 teacher，进行 on-policy distillation 以恢复退化的 instruction following。`[论文]` [CaMOPD](#ref-camopd)（快手，2026）让 post-trained 的领域模型同时担任学生和 domain teacher，并以其谱系上的通用旧版担任 general teacher；两个 teacher 按 prompt 分槽路由。`[论文]` [MOPD](#ref-mopd)（北大 + 小米，2026）是公开多 teacher on-policy distillation 中目前最强的结果：学生从通用 SFT checkpoint 初始化，多个领域 RL expert 按域路由充当 teacher，一次训练整合全部领域能力，并给出了第二轮迭代的做法。
 

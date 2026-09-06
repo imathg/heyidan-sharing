@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 7 sources
-    <span class="sep">·</span> last update 2026-08-16
+    <span class="sep">·</span> edition 2026-08-16
   </div>
 
   <h1 class="brief-title">Agent Skill 的七道可靠性门</h1>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: claude-code-ecosystem -->
+<!-- edition_date: 2026-08-16 -->
 <p>Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找对文档，模型照着执行，成功轨迹再回写成新版 Skill。但实际生效过程要长得多。</p>
 <p><span class="claim claim-paper">论文</span> 2026 年 8 月集中出现的几项工作分别暴露了这条链上的断点。相关 Skill 可能不值得执行；模型读懂了程序也可能跳步；层级委派会丢失原始授权；看似成功的轨迹可能把后门沉淀进下一版 Skill；即使任务最终通过，Skill 也可能带来巨大的验证和实现成本。</p>
 <p><span class="claim claim-self">本文归纳</span> 因此，Skill 是一段会生效的 policy：它改变计划、工具调用、检查项、停止条件和后续经验。可靠性问题需要沿着一条完整生效链逐层检查：</p>
@@ -660,6 +661,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 这六轴允许按风险调节门的重量。低成本、能回滚的纯读任务可以合并步骤；高成本或高副作用任务需要更强合同。哪个步骤可以跳过、哪条授权不可继承、哪种结果能改写下一版，都应当写成系统状态，并配套观测、测试与回滚入口。</p>
 <p><span class="claim claim-self">本文归纳</span> 可靠的 Skill 系统是一条能区分候选、权威和证据的晋升链。Skill 提供可复用策略；runtime 决定何时以及如何让它生效；原始请求限定权限；verifier 与配对运行判断增量；adoption gate 决定经验是否有资格进入下一版。这些 owner 分开后，Skill 才能从“偶尔有帮助的上下文”变成可维护的 Agent 能力。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-he2026"></a> <strong>[From Relevance to Execution Utility: Reward-Aware Dynamic Execution Gating for Skill-Based LLM Agents]</strong> Liang He, Jingbo Wen, Hongyu Gu, Hao Li, Haoyu Wang, Yixiong Chen, Kangning Cui, Xilu Wang；Tongji University、The University of Sydney、University of Science and Technology of China、Nankai University、Johns Hopkins University、City University of Hong Kong、University of Surrey；2026. <a href="https://arxiv.org/abs/2608.09168">arXiv:2608.09168</a>。用于 relevance–utility gap、配对 bundle 扰动与 execution gate 结果。[arXiv 论文]</li>
@@ -677,6 +679,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-luo2026"></a> <strong>[Query-Only Backdoor Attacks on Self-Evolving Skills via Trajectory Poisoning]</strong> Yuyang Luo, Haoran Wang, Kai Shu；Emory University；2026. <a href="https://arxiv.org/abs/2608.08303">arXiv:2608.08303</a>。用于 query-only trajectory poisoning、自演化 Skill 的 experience supply-chain 风险。[arXiv 论文]</li>
 
 </ol>
+
 
   </article>
 

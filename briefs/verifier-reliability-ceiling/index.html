@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-07-12
   </div>
 
   <h1 class="brief-title">Verifier 决定上限：判官不可靠时，强化学习会受系统性偏差限制</h1>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-07-12 -->
 <p><span class="claim claim-paper">论文</span> 数学题能跑单元测试，代码能过编译器，这类任务的 reward 由程序计算；即使 policy 尝试利用奖励漏洞，运行无误的测试仍能提供可靠约束。医疗建议、科学写作、引用溯源、深度研究没有这样的程序化 verifier，主流做法是写一条带权重的 rubric，每条 criterion 交给一个 LLM 判官打分，判官的聚合分就是 reward。<a href="#ref-pwc2026">Citation Verifier</a>（PricewaterhouseCoopers，Leung et al. 2026）指出了这条链路里容易被忽略的一步：<strong>打分的判官本身就是 reward model，写 rubric 就是在定义被优化的目标</strong>。</p>
 <p><span class="claim claim-self">本文归纳</span> 判官成为 reward 后，评测阶段的误差会成为训练阶段的根源：判官有多可靠，policy 的可优化上限就有多高。判官系统性判错的方向无法由训练自行纠正，反而会沿 reward 梯度将 policy 引向同样的偏差。当 reward 来自判官而非程序，判官的可靠性就成为整条优化链的上限，而这个上限可以提高。</p>
 <blockquote>
@@ -604,6 +605,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 用判官打分做 reward 的管线，这批工作指向三条可操作的判据。第一，选判官看 FPR、FNR、pass-rate drift 这些带方向的指标，因为强化学习优化的正是方向。第二，让判官输出逐组件、带 evidence 锚定的结构化信号，既可审计，又能把 GRPO 的梯度补回来。第三，要抬高上限本身，就用能与被评对象共进化的判官；静态判官通常三到五轮就撞上那条由自身噪声定义的天花板。</p>
 <p><span class="claim claim-self">本文归纳</span> 这些工作为「将 rubric 内化成模型自身能力」提供基础：rubric 本质上是在构建一个 process verifier，而 verifier 的可靠性可以用带方向的指标度量，可以借助结构化过程信号分解，也可以通过判官与被评对象共进化提高。判官可优化到的可靠程度，会限定任何以它为 reward 的系统可优化到的程度。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-pwc2026"></a> <strong>[Do You Need a Frontier Model as a Citation Verifier? Benchmarking Rubric LLMs for Deep-Research Source Attribution]</strong> Ethan Leung, Elias Lumer, Corey Feld, Austin Huber, Vamse Kumar Subbiah, Kevin Paul，Commercial Technology and Innovation Office, PricewaterhouseCoopers, U.S.，2026. <a href="https://arxiv.org/abs/2607.08700">arXiv:2607.08700</a>。核心结论：判官即 reward model；同 F1 的判官方向性偏差差异很大，而 RL 放大的正是方向性偏差；校准是用 rubric 做 reward 的前提。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -623,6 +625,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-agentlocate2026"></a> <strong>[Who Broke the System? Failure Localization in LLM-Based Multi-Agent Systems]</strong> Yufei Xia, Anjun Gao, Yueyang Quan, Zhuqing Liu, Minghong Fang，University of Louisville + University of North Texas，2026（COLM 2026）. <a href="https://arxiv.org/abs/2607.07989">arXiv:2607.07989</a>。AgentLocate，LLM 判官 + 多独立评估者置信度感知聚合 + 轻量微调，对应「多源聚合」调节维度。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -668,6 +671,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

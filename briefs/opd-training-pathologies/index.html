@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 13 sources
-    <span class="sep">·</span> last update 2026-07-19
+    <span class="sep">·</span> edition 2026-07-19
   </div>
 
   <h1 class="brief-title">OPD 稳定域：teacher 监督信号的失真路径与修复</h1>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-19 -->
 <p><span class="claim claim-self">本文归纳</span> 2026 年上半年，OPD（on-policy distillation）研究的焦点从「如何纳入 post-training pipeline」转向「何时失效」。半年内至少十篇论文分别报告了一种失效路径：prefix 变长后 teacher 失去判别力、teacher-student 分布差过大导致优化失败、异步训练下 rollout 变旧、聚合目标造成长度捷径。这些结果共同指向同一个图景：</p>
 <blockquote>
 <p><code>[本文归纳]</code> OPD 的 token 级监督只在有限区域内可靠，区域的边界由 teacher 判别力的覆盖范围决定。prefix 变长、分布差拉大、rollout 变旧，是 student 状态离开这个区域的三种方式。各家修复方案的目标高度一致：将训练拉回这个区域，或在区域边缘修复监督信号本身。</p>
@@ -631,6 +632,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <h2 id="边界与未决问题">边界与未决问题</h2>
 <p><span class="claim claim-self">本文归纳</span> 三点边界。其一，稳定域目前还没有统一、可测的指标：各家用的 proxy 各不相同（teacher confidence、KL 信赖域、staleness 步数、drift gate），尚无对照实验说明哪一量适合作为统一度量。其二，三类修复之间的组合效应尚无人测量：限域、重加权、信号替换在同一训练里叠加后是否仍然相互独立，现有论文只分别测量各自的方案。其三，量化数字来自不同 setup（模型规模、benchmark、训练预算各异），横向比较只能在方向一致的粒度上进行，具体数值要结合各论文的实验条件解读。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-liu2026"></a> <strong>[Your Teacher Can't Help You Here: Combating Supervision Fidelity Decay in On-Policy Distillation]</strong> Yanjiang Liu, Jie Lou, Xinyan Guan, Yuqiu Ji, Hongyu Lin, Ben He, Xianpei Han, Le Sun, Xing Yu, Yaojie Lu，中国科学院软件研究所中文信息处理实验室 + 中国科学院大学 + 小红书，2026. <a href="https://arxiv.org/abs/2605.30833">arXiv:2605.30833</a>。用于支撑：SFD 命名与长生成增益数据。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -660,6 +662,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-nrehiew2026"></a> <strong>[@nrehiew_ 关于 OPD teacher 选择的 X 推文]</strong> <a href="https://x.com/nrehiew_/status/2072318210788245649">原推</a>，2026-07。观点：teacher 应选同族模型，否则分布距离过大。<span class="claim claim-personal">个人实验 / X 推文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -705,6 +708,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

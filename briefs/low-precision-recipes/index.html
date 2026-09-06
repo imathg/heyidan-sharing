@@ -466,12 +466,12 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-21
   </div>
 
   <h1 class="brief-title">低精度训练的共同主线：损伤集中在分布的尖锐处</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-21</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#training-infra" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">training-infra</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">low-precision-recipes</span></span>
@@ -479,6 +479,7 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: training-infra -->
+<!-- edition_date: 2026-06-21 -->
 <p>2026 年 6 月，六个互不隶属的团队在同一个月里将 4-bit 数值精度推进到 LLM 生命周期的每一段。<span class="claim claim-paper">论文</span> <a href="#ref-ufp4">UFP4</a>（蚂蚁 Ling Team，Zhao et al. 2026）做 FP4 预训练；<span class="claim claim-tech">tech report</span> <a href="#ref-nemotron3">Nemotron 3 Ultra</a>（NVIDIA，2026）将 NVFP4 预训练用到 550B MoE 量产规模；<span class="claim claim-paper">论文</span> <a href="#ref-reqat">ReQAT</a>（Hanyang AIHA Lab，Lee et al. 2026）做 W4A4KV4 的量化感知训练；<span class="claim claim-paper">论文</span> <a href="#ref-twla">TWLA</a>（Houmo AI，Zhao et al. 2026）做训练后量化；<span class="claim claim-paper">论文</span> <a href="#ref-ultraquant">UltraQuant</a>（AMD，Chakrabarti et al. 2026）压缩 KV cache；<span class="claim claim-paper">论文</span> <a href="#ref-reset">ReSET</a>（Hanyang + Xenoscube，Lee et al. 2026）用于 NVFP4 推理解码。</p>
 <p>这六篇分别覆盖 LLM 生命周期的不同阶段，却共同调整同一组维度、针对同一种失败模式。</p>
 <blockquote>
@@ -694,6 +695,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p>其二，K3（格式几何）和 K4（再分配机制）有耦合迹象。<a href="#ref-ufp4">UFP4</a> 换均匀格式后对 RHT 的依赖、<a href="#ref-twla">TWLA</a> 旋转后对格式的要求，提示「先选格式还是先旋分布」可能相互影响。四维正交是从这六篇里归纳出来的工作假设，耦合一旦得到验证就要降维。</p>
 <p>其三，<a href="#ref-nemotron3">Nemotron 3 Ultra</a> 用 MOPD 在后训练恢复低精度预训练的精度差，将低精度和蒸馏联系起来。低精度引入的损伤和蒸馏要补的能力，是否落在同一批尖锐处？如果是，预训练阶段的格式选择和后训练阶段的蒸馏配方应联合设计。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-ufp4"></a> <strong>[Rethinking Shrinkage Bias in LLM FP4 Pretraining: Geometric Origin, Systemic Impact, and UFP4 Recipe]</strong> Qian Zhao, Kunlong Chen, Changxin Tian et al.，蚂蚁集团 Ling Team，2026. <a href="https://arxiv.org/abs/2606.20381">arXiv:2606.20381</a>。本文用到它的 shrinkage bias 几何成因，以及均匀 4-bit 格式 + RHT + 梯度 stochastic rounding 的配方。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -713,6 +715,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-deepseekv4"></a> <strong>[DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence]</strong> DeepSeek-AI，2026. <a href="https://arxiv.org/abs/2606.19348">arXiv:2606.19348</a>。本文用作边界对照：长上下文效率主要来自注意力架构压缩这一杠杆。<span class="claim claim-tech">tech report</span></li>
 
 </ol>
+
 
   </article>
 
@@ -758,6 +761,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

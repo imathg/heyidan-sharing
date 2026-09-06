@@ -466,7 +466,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 7 sources
-    <span class="sep">·</span> last update 2026-08-23
+    <span class="sep">·</span> edition 2026-08-23
   </div>
 
   <h1 class="brief-title">全双工 Agent 评测：交互状态、时间边界与失败归因</h1>
@@ -479,12 +479,13 @@ footer.brief-foot a:hover { color: var(--text); }
 
   <article class="body" id="brief-body">
 <!-- domain: realtime-interactive-agent -->
+<!-- edition_date: 2026-08-23 -->
 <p><span class="claim claim-self">本文归纳</span> 把下文五类失效机制串进同一条时间线，可以构造一条合成错误链。服务端日志记下一段转写文本、一条完整生成、一次打断和一个成功终态。</p>
 <p><span class="claim claim-self">本文归纳</span> 沿用户侧时间线看，系统输入只保留转写，遗漏语气里的犹豫。回答播放到一半时，用户打断并追问前面两个选项里的第二个。系统按“整段回复都已共享”的假设理解指代，用户只能重复问题，日志中的任务终态仍记为成功。</p>
 <p><span class="claim claim-self">本文归纳</span> 两组记录都可能忠实于各自的观察面，提交时钟的错位却会导向不同归因。同一段内容在输入、生成、播放、打断和下一轮反应上各有生效时间，generation clock 记录生成进度，其余时钟分别记录内容何时进入对应状态。</p>
 <p><span class="claim claim-self">本文归纳</span> 这条错误链是基于五类来源机制构造的分析样例。责任可能落在四个不同位置：声音线索遗漏在模型输入之外；尚未播放的半句被写入共同上下文；打断重置了声学或对话状态；成功终态掩盖了中间的纠正轮次。评测的主问题是：在每个播放切点上，系统实际取得了什么输入、内容播放到哪里、打断后哪些状态延续、下一轮反应暴露了什么局部后果。四者对齐，失败才能归因到正确的接口和 owner。</p>
 <blockquote>
-<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../meta/#claim-tags">本站约定</a>。</p>
+<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
 <h2 id="1-全双工链路的状态与时钟">1. 全双工链路的状态与时钟</h2>
 <p><span class="claim claim-self">本文归纳</span> 一次全双工交互至少包含九类关键事件与状态提交点。capture clock 记录原始音频进入系统；evidence 层记录转写、韵律、情绪与时序切点中实际进入模型输入的部分；generation clock 记录服务端逐 token 生成的进度，生成内容何时写入 dialogue state 需要另行记录；音频经排队与网络到达客户端后，playback clock 记录它越过播放边界的时刻；已生成或已入队、却在越过边界前被丢弃的内容记入 cancellation；用户在播放中途开口触发 interruption；打断之后还有 state inheritance，KV cache、声学状态与对话状态各自决定保留或重置；下一轮用户反应则提供局部后果。若日志只按 turn 聚合，这些事件会被压进同一个结果。</p>
@@ -813,6 +814,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 证据链还在两个地方断掉。其一，reaction 会混入人格、任务难度、环境噪声和用户策略：礼貌性继续、系统错误导致的打断和用户目标的自然变化携带完全不同的方向信息，使用前必须分开计数；而 FACA 的实验在 simulator 上完成，方向信息能否迁移到真实语音用户仍待验证。其二，七个来源之间留有一段因果空白：VoiceChat-TTS 与 X2Streaming-TTS 证明了可保留的生成状态与声学状态，PACE 证明了播放边界对上下文一致性的作用，DuplexWorld 与 FACA 在更长 horizon 上观察任务与下一轮后果；哪类低层 continuity 改善能稳定转成更少的纠正、更高的任务成功或更自然的话轮，仍缺统一的端到端消融。分层验收能保留这段因果缺口，汇总分数会把它重新压平。</p>
 <p><span class="claim claim-self">本文归纳</span> 近期更实用的完成标准因此是让三本账能回放、能对齐、能做单层反事实。系统取得了什么输入、哪些内容越过了播放边界、下一轮暴露了什么反应，三条证据链闭合之后，“体验不好”才会变成一处能定位、能复现的失败；而从“能定位的失败”到“被证明的体验提升”，还隔着一层现有来源都没有跨过的用户证据。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-miller2026"></a> <strong>[Do Audio Language Models Use Paralinguistic Evidence? Counterfactual Audits for Response Evaluation]</strong> Kevin Miller, Arjun Chandra, Venkatesh Saligrama；Boston University；2026. <a href="https://arxiv.org/abs/2608.06718">arXiv:2608.06718</a>。用于固定 transcript 的副语言反事实、native 与 contrastive judge 诊断。[arXiv 论文]</li>
@@ -830,6 +832,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-wen2026"></a> <strong>[X2Streaming-TTS: Causal Token-Level Text-to-Speech from Streaming Text with Speech-State Inheritance]</strong> Rime Wen, Zehan Liu, Shawn Qin, Lights Shi, Roy Gan, Hao Wang, Qian Wang；X Square Robot；2026. <a href="https://arxiv.org/abs/2608.18661">arXiv:2608.18661</a>。用于 causal commitment、speech-state inheritance 与严格 token-level TTS 延迟结果。[arXiv 论文]</li>
 
 </ol>
+
 
   </article>
 

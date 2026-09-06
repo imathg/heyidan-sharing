@@ -1,5 +1,6 @@
 # Agent Skill 的七道可靠性门
 <!-- domain: claude-code-ecosystem -->
+<!-- edition_date: 2026-08-16 -->
 
 Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找对文档，模型照着执行，成功轨迹再回写成新版 Skill。但实际生效过程要长得多。
 

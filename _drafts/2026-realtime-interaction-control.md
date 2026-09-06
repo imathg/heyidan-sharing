@@ -1,6 +1,7 @@
 # 实时交互控制：把“何时行动”纳入模型与系统能力
 
 <!-- domain: realtime-interactive-agent -->
+<!-- edition_date: 2026-07-26 -->
 
 `[tech report]` 2026 年 5 月，Thinking Machines Lab（TML）公开 Interaction Models：模型以 200 ms 的微话轮（micro-turn）持续接收音频、视频和文本，在同一条时间线上保留停顿、重叠与打断。`[论文]` 随后，JD.com 的 JoyAI-VL-Interaction 将这类能力用于开源视觉系统，模型每秒选择沉默、回应或委派。7 月的多篇论文分别考察了话轮可控性、多人对话信号、前后台分工、服务延迟和安全检查。
 
