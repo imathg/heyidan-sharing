@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>GRPO 变体的设计轴：谁在承载更新信号 — brief · Yidan He</title>
+<title>GRPO 变体比较：归一化、裁剪与轨迹信用分配 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -475,7 +475,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="sep">·</span> edition 2026-05-29
   </div>
 
-  <h1 class="brief-title">GRPO 变体的设计轴：谁在承载更新信号</h1>
+  <h1 class="brief-title">GRPO 变体比较：归一化、裁剪与轨迹信用分配</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-05-29</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">7</span></span>
@@ -562,7 +562,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-yu2025">DAPO</a>（ByteDance Seed + AIR Tsinghua + HKU + SIA-Lab，Yu et al. 2025）适合作为入口，因为它在同一篇系统报告的消融实验中检查了多条设计轴：Naive GRPO 在 AIME 2024 上是 30，逐步加入 Overlong Filtering、Clip-Higher、Soft Overlong、Token-level loss、Dynamic Sampling 后到 50。这个表说明，GRPO 更像一套可以逐项替换的 update-signal 管线。</p>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-drgrpo">Dr-GRPO pin</a> 展示了另一个设计轴：原贴将 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不足以形成一篇论文结论，但足以说明许多新 GRPO 的主要改动落在 A1。</p>
-<h2 id="bppo-是边界最清楚的-a4-案例">BPPO 是边界最清楚的 A4 案例</h2>
+<p><a id="bppo-是边界最清楚的-a4-案例"></a></p>
+<h2 id="bppo-保留组内采样-只更新正负样本的短前缀">BPPO：保留组内采样，只更新正负样本的短前缀</h2>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a>（TeleAI + 上海交通大学，Zhao et al. 2026）问题很聚焦：同一个 prompt group 里，是否每条 completion 都提供同等有用的更新信号。它的 gradient-similarity 分析给出答案：same-class completions 的方向高度相似，correct-incorrect pair 更能提供区分信号。于是 BPPO 只拿最短 correct completion 和最短 incorrect completion 做 compact update unit，并且只更新 prefix。</p>
 <p><span class="claim claim-paper">论文</span> 这个设计的价值在于独立性。<a href="#ref-zhao2026">BPPO</a> 明确保留 full-group sampling、reward 和 group-relative advantage normalization，只改 update 的作用位置。MATH setup 下，BPPO 报告 mean response length 降低 50.6%，训练 wall-clock speedup 达到 6.08x；abstract 将 30-50% 的长度下降归于 prefix-focused optimization。BPPO 的核心设计轴是 A4：<strong>谁承载更新信号</strong>。</p>
 <p><span class="claim claim-self">本文归纳</span> 这也是判断独立设计轴的判据。一个轴应当像 BPPO 一样固定其他组件，只移动一个变量，并给出对应可观测量：训练 token 变少、长度变短、速度变快，准确率仍可接近 GRPO。如果一个改法同时改 reward、clip、sample filtering 和 aggregation，它仍可能有效，但更难被视为独立设计轴。</p>
@@ -575,10 +576,12 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-longhorizon">Long-horizon GRPO 综述</a> 将 agentic GRPO 的关键变化归为「什么样本进入同一个 group 比较」。Vanilla GRPO / Search-R1 / RAGEN-StarPO 仍按同 prompt 的完整 trajectory 分组；GiGPO 换成 episode + anchor-state；HGPO 要求 context-consistent；Tree-GRPO 比较 sibling branches；ARPO / AEPO 将预算集中到高熵 tool-use 点。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-kumar2026">CARL</a>（Microsoft AI，Kumar et al. 2026）把这个迁移写得更结构化。它指出 trajectory-level reward 无法隔离一次成功 episode 里哪个工具调用真正有用，也无法惩罚不必要调用；因此把 rollout 按自然工具边界拆成 segment，用 critic 学每个 segment 对最终正确率的增减。7B setup 上，GRPO 到 PPO 是 +4.0 EM，PPO 到 CARL 还有 +6.7 EM；Tier2 easy questions 上，CARL tool-use rate 38.6%，GRPO 是 87.5%，同时 CARL EM 更高。</p>
 <p><span class="claim claim-self">本文归纳</span> 这说明 A4 和 A5 在 agentic 场景联系紧密：group key 迁到 state 或 branch，credit 粒度也随之从 trajectory 迁到 segment。它们仍可分开讨论，但边界不像 BPPO 那样清晰。agent 任务的比较单位是「同一个可决策局面」，而非单条 prompt。</p>
-<h2 id="baseline-value-source-是第三条主线">baseline/value source 是第三条主线</h2>
+<p><a id="baseline-value-source-是第三条主线"></a></p>
+<h2 id="优势基线-与组均值-贪心回答还是-critic-比较">优势基线：与组均值、贪心回答还是 critic 比较</h2>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-remax">ReMax 背后的故事</a> 讨论更早期的 baseline 选择：ReMax 用 greedy decoding response 当 baseline，目的在于解耦「采样随机性到 response」的偏差，也和当时 rollout 基础设施成本高有关。到 GRPO，baseline 变成同 prompt group 的相对比较；到 CARL，value source 变成 segment-level critic。</p>
 <p><span class="claim claim-self">本文归纳</span> A3 应作为独立轴保留。normalization scale 问的是 advantage 如何缩放，baseline/value source 问的是 advantage 与什么参照系比较。group mean、greedy response、segment critic 会带来不同方差、不同 bias，也会将 credit 的可解释边界推向不同位置。</p>
-<h2 id="退化角-小-group-会让-a1-a3-a4-数值重合">退化角：小 group 会让 A1 / A3 / A4 数值重合</h2>
+<p><a id="退化角-小-group-会让-a1-a3-a4-数值重合"></a></p>
+<h2 id="小-group-下-归一化-基线与更新样本会相互影响">小 group 下，归一化、基线与更新样本会相互影响</h2>
 <p><span class="claim claim-self">本文归纳</span> group size 属于关键结构超参数。GRPO 的「relative」来自同 prompt group 内的对比；当有效 group 变小，A1 normalization、A3 baseline、A4 update carrier 会一起退化。极端到 <code>G = 1</code> 时，group mean 不再提供相对参照，std normalization 失去稳定意义，full-group update carrier 也只剩一个样本。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a> 之所以是清晰的单变量案例，是因为它保留 full-group advantage normalization，只将 carrier 换成最短 correct / incorrect prefix。<span class="claim claim-tech">tech report</span> <a href="#ref-drgrpo">Dr-GRPO pin</a> 单列是因为它直接作用于 A1：去掉 group std normalization 和 response length normalization。两者结合可解释这个退化角：当 group 的相对比较变弱，baseline、normalization、carrier 不再像五轴表中那样清楚分离。</p>
 <table>
@@ -612,8 +615,9 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><span class="claim claim-self">本文归纳</span> 这就是「边界上耦合」的具体含义。五轴表适合阅读算法差异；退化角提醒工程实现时不要将各轴视为完全正交。一个方案若同时调整 group size、去标准化和 carrier，表面是三项改动，实际可能都在处理同一个退化点。</p>
-<h2 id="伪轴的判据-独立性和干净性">伪轴的判据：独立性和干净性</h2>
-<p><span class="claim claim-self">本文归纳</span> 「伪轴」指有效但暂时不具备独立坐标资格的改法。这里有两种不同的 disqualification，需要分开讨论。</p>
+<p><a id="伪轴的判据-独立性和干净性"></a></p>
+<h2 id="区分独立改动与多组件耦合-检查收益是否伴随副作用">区分独立改动与多组件耦合，检查收益是否伴随副作用</h2>
+<p><span class="claim claim-self">本文归纳</span> 一个改法有效，不代表它引入了独立的优化变量，也不代表它没有副作用。阅读消融结果时，需要分开检查这两件事。</p>
 <p><span class="claim claim-self">本文归纳</span> 第一关是<strong>独立性</strong>：它是否能由已有轴张成。BPPO 满足这一条件，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有将长度作为独立变量直接优化，因此长度在这里属于 A4 的副产物，尚不构成新的设计轴。</p>
 <p><span class="claim claim-self">本文归纳</span> 第二关是<strong>干净性</strong>：效果是否被转嫁。一个改法可以独立，却仍然不干净；它降低目标 proxy 的同时，可能将优化压力转移到相邻 proxy。overlong shaping、length penalty、entropy trigger 这类改法常常落在这里。它们可能有效，但需要同时监控长度、正确率、entropy、tool-use rate 或其他相邻指标，验证优化压力是否仍停留在目标 proxy 上。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-zhao2026">BPPO</a> 在这里提供了一个反例参照：不显式加 length penalty，也能让平均长度下降 30-50%。这意味着长度不自动具备独立轴资格。长度可能是 reward pressure 的目标，也可能是 update carrier 的副产物，还可能是 clip/normalization 对探索 token 的间接影响。</p>

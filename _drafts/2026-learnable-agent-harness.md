@@ -1,14 +1,18 @@
-# 可学习 Agent Harness：从固定工作流到运行时控制面
+# Agent Harness 如何学习：状态读写策略与运行代码演化
 <!-- domain: claude-code-ecosystem -->
 <!-- edition_date: 2026-08-09 -->
+<!-- revised_date: 2026-09-06 -->
+<!-- revision_note: 区分两类学习对象，撤回固定流程与安全能力的错误对应；新策略checkpoint仍需评测后上线。 -->
 
-`[本文归纳]` Agent Harness 正在经历一次职责迁移。早期 Harness 主要回答“按什么步骤调用模型和工具”，新的研究开始让它回答五个运行时问题：当前什么状态有效，模型提出的动作何时生效，结果由什么证据确认，失败应修复哪一层，以及哪些运行经验可以更新下一版系统。
+`[本文归纳]` 让 Agent 从运行经验中改进，有两种不同的做法：训练模型更好地使用已有的状态读写接口，或者修改 Harness 中负责核验、修复和上下文组装的代码。前者改变既有动作的选择，后者会改变整个执行系统的行为。本文比较这两类学习对象，并说明它们分别需要什么反馈和验证。
 
-这里的**运行时控制面**，指模型外负责状态、动作生效与核验的执行层。模型可以提出计划、工具调用和状态更新；控制面决定这些 proposal 能否进入权威状态、能否产生外部副作用，以及执行结果如何回写。固定 workflow 是控制面的一种策略，控制面本身还可以由规则、训练策略或可演化程序实现。
+这里的 **Harness** 指模型外负责状态、工具执行与结果核验的程序。例如，模型声称任务完成后，Harness 检查实际产物；工具返回新状态后，Harness 决定怎样保存它、怎样处理旧记录。下文把这些职责称为“运行时控制面”。固定工作流、可训练策略和候选代码修改都可以作用于这一层，并不对应安全能力由弱到强的必然次序。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
-## 1. 从“怎么跑”到“什么算真的发生了”
+<a id="1-从“怎么跑”到“什么算真的发生了”"></a>
+
+## 1. 区分模型提案、实际执行与结果确认
 
 `[个人实验]` [Harness Engineering for Self-Improvement](#ref-weng2026)（Lilian Weng 个人博客，Weng 2026）把 Harness 的范围扩展到 prompt 之外：它组织规划、工具与动作、上下文、持久化工件、评测、权限和状态。文章将优化对象依次列为 `prompt → structured context → workflow → harness code → optimizer code`。优化对象越往后，越接近模型外的完整执行程序。
 
@@ -68,7 +72,7 @@
 <rect x="30" y="78" width="198" height="60" rx="8" fill="#0f2532" stroke="#38bdf8" stroke-width="1.5"/>
 <text x="42" y="99" fill="#e2e8f0" font-size="13" font-weight="600">Runtime Policy</text>
 <text x="42" y="114" fill="#7dd3fc" font-size="10.5">read · update · consolidate</text>
-<text x="42" y="129" fill="#7dd3fc" font-size="10.5">高频选择既有动作 · 下一轮直接生效</text>
+<text x="42" y="129" fill="#7dd3fc" font-size="10.5">已验策略 · 逐步选择既有动作</text>
 <!-- Model (neutral) -->
 <rect x="241" y="84" width="110" height="52" rx="8" fill="#131c2c" stroke="#94a3b8" stroke-width="1.5"/>
 <text x="296" y="105" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">Model</text>
@@ -110,7 +114,7 @@
 <text x="657" y="506" text-anchor="middle" fill="#fcd34d" font-size="10.5">frozen eval · replay</text>
 <text x="657" y="519" text-anchor="middle" fill="#fcd34d" font-size="10.5">通过后晋升 · 失败 rollback</text>
 <!-- footer -->
-<text x="30" y="604" fill="#8194a8" font-size="10.5">反馈先成为可追溯证据；policy 直接学习选择，program 经过行为门后才改变控制面。</text>
+<text x="30" y="604" fill="#8194a8" font-size="10.5">反馈先成为证据；新策略 checkpoint 与程序候选均经评测后上线。</text>
 </svg>
 <figcaption>实线表示单次运行的生效链；虚线表示 receipt 回写权威状态、runtime policy 与候选 Harness program 的学习路径。</figcaption>
 </figure>
@@ -149,21 +153,23 @@
 
 `[论文]` 程序演化需要语义合并，参数平均并不适用。两个本地有效的修改可能同时编辑同一控制路径，也可能分别加强和移除同一 verifier。EvolveNet 因此把共同 base、适用范围、行为变化和 adoption gate 一起交给 aggregator。论文在五类设置上报告改进，但每种 aggregation rule 只有一个 seed，且 data locality 本身不提供隐私保证。
 
-`[本文归纳]` 这两类学习对象需要分开。runtime policy 学的是既有接口上的选择，例如何时读取状态、何时 probe、何时 consolidate；Harness evolution 学的是接口背后的程序，例如 verifier、repair rule 和 context builder。前者可以在线高频调整，后者会改变执行语义，更适合先作为候选版本接受回归验证，再受控晋升。
+`[本文归纳]` 这两类学习对象需要分开。runtime policy 学的是既有接口上的选择，例如何时读取状态、何时 probe、何时 consolidate；Harness evolution 学的是接口背后的程序，例如 verifier、repair rule 和 context builder。已上线策略可以逐步选择既有动作；重新训练得到的 policy checkpoint 仍需评测后上线。程序演化改变执行语义，也应以候选版本接受回归验证，再受控晋升。
 
-## 5. 五个旋钮描述了同一片设计空间
+<a id="5-五个旋钮描述了同一片设计空间"></a>
 
-`[本文归纳]` 九个来源归纳出一组围绕模型外执行控制的五轴坐标，覆盖它如何形成、运行和更新；完整 Agent 架构还包含模型、环境与多 Agent 协议等其他维度。
+## 5. 对照状态、提交、核验、修复与学习对象
 
-| 旋钮 | 固定 Harness | 可学习 runtime policy | 可演化 Harness program |
-|---|---|---|---|
-| 状态 owner | transcript 或固定 store | BPE、Oracle-conditioned state | 新 schema 或 state operator 的候选版本 |
-| 提交语义 | tool call 直接执行 | proposal 后 probe、certificate、commit | commit rule 代码经 gate 晋升 |
-| 核验单位 | outcome score | action、observation diff、artifact | program delta 的行为回归 |
-| 修复粒度 | 整轮重跑或固定分支 | targeted probe、局部 subtask repair | scope-typed patch 与 rollback |
-| 学习对象 | prompt、workflow | read / update / consolidate / act policy | Harness code、aggregator rule |
+`[本文归纳]` 下表比较两类学习实际改变的对象。固定程序同样可以保留版本、先核验再提交，也可以做局部修复；是否学习与检查强度是两个不同选择。
 
-`[本文归纳]` 五轴里最容易混读的是“状态 owner”和“学习对象”。把更多历史塞进 prompt 会增加可见信息量；能否作为 current 状态仍由外部版本、来源和有效性合同决定。policy 可以优化选择，权威状态则由经过 admission 的 observation 形成。
+| 对照项 | 学习状态使用策略 | 演化 Harness 程序 |
+|---|---|---|
+| 改变什么 | 既有接口下，何时读取、更新或整合状态 | 实现接口的代码，如 context builder、核验或修复规则 |
+| 状态接口 | EvoHarness-RL 使用 BPE，学习调用时机 | EvolveNet 提交带适用范围的程序修改 |
+| 核验对象 | 策略执行的任务结果与状态访问成本 | 程序修改在任务中的行为变化与合并冲突 |
+| 更新方式 | 训练得到新的 policy checkpoint | 本地演化后汇聚候选，接受行为验证 |
+| 不会自动获得什么 | 状态事实的真实性、工具权限或可靠提交语义 | 跨环境有效性、隐私保证或安全的代码合并 |
+
+`[本文归纳]` 学习对象与状态权威要分开。把更多历史塞进 prompt 会增加可见信息量；能否作为 current 状态仍由外部版本、来源和有效性合同决定。policy 可以优化选择，权威状态则由经过 admission 的 observation 形成。
 
 `[本文归纳]` “提交语义”决定系统风险。低副作用的搜索可以允许模型直接调用，再以超时和重试策略处理；删除、发送、支付、发布等动作需要更强的 proposal、readback、certificate 或人工 gate。同一个 Agent 可以按工具风险采用分级提交语义。
 

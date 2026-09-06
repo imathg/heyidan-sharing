@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>全双工 Agent 评测：交互状态、时间边界与失败归因 — brief · Yidan He</title>
+<title>全双工语音 Agent 评测：输入、播放与打断状态如何对齐 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -475,7 +475,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="sep">·</span> edition 2026-08-23
   </div>
 
-  <h1 class="brief-title">全双工 Agent 评测：交互状态、时间边界与失败归因</h1>
+  <h1 class="brief-title">全双工语音 Agent 评测：输入、播放与打断状态如何对齐</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-08-23</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">7</span></span>
@@ -487,10 +487,10 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: realtime-interactive-agent -->
 <!-- edition_date: 2026-08-23 -->
-<p><span class="claim claim-self">本文归纳</span> 把下文五类失效机制串进同一条时间线，可以构造一条合成错误链。服务端日志记下一段转写文本、一条完整生成、一次打断和一个成功终态。</p>
-<p><span class="claim claim-self">本文归纳</span> 沿用户侧时间线看，系统输入只保留转写，遗漏语气里的犹豫。回答播放到一半时，用户打断并追问前面两个选项里的第二个。系统按“整段回复都已共享”的假设理解指代，用户只能重复问题，日志中的任务终态仍记为成功。</p>
-<p><span class="claim claim-self">本文归纳</span> 两组记录都可能忠实于各自的观察面，提交时钟的错位却会导向不同归因。同一段内容在输入、生成、播放、打断和下一轮反应上各有生效时间，generation clock 记录生成进度，其余时钟分别记录内容何时进入对应状态。</p>
-<p><span class="claim claim-self">本文归纳</span> 这条错误链是基于五类来源机制构造的分析样例。责任可能落在四个不同位置：声音线索遗漏在模型输入之外；尚未播放的半句被写入共同上下文；打断重置了声学或对话状态；成功终态掩盖了中间的纠正轮次。评测的主问题是：在每个播放切点上，系统实际取得了什么输入、内容播放到哪里、打断后哪些状态延续、下一轮反应暴露了什么局部后果。四者对齐，失败才能归因到正确的接口和 owner。</p>
+<p><span class="claim claim-self">本文归纳</span> 系统已经生成两个选项，但只播放完第一个，用户就在中途插话。下一轮模型该根据完整生成文本理解用户，还是只根据用户可能听到的部分？类似地，转写文本完整不代表模型取得了语气线索，任务最终成功也不代表打断与恢复过程正确。</p>
+<p><span class="claim claim-self">本文归纳</span> 这个分析样例用来说明三种容易被混记的状态：模型实际取得的输入、客户端实际播放的内容、用户下一轮的反应。它不是某次真实事故；下文分别用已有研究核对这些环节，不把完整错误链当作已验证的因果结论。</p>
+<p><span class="claim claim-self">本文归纳</span> 服务端生成进度与客户端播放进度不是同一时间线。只有分开记录输入、生成、播放、打断和后续反应的时刻，才能判断错误来自模型感知、上下文更新、语音合成还是对话策略。</p>
+<p><span class="claim claim-self">本文归纳</span> 本文讨论怎样取得这类分层证据，以及哪些反事实对照可以定位问题。它不将“播放过”当作“用户理解了”，也不将局部状态修复当作真实体验已经提升。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -565,7 +565,8 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-paper">论文</span> 最佳系统的 Pass@1 为 <strong>0.490</strong>，turn-taking 为 <strong>0.653</strong>，DNSMOS 为 <strong>3.378</strong>。三条轴都留有明显缺口，且失败模式不同。一个声音自然但任务没完成的系统，与一个任务完成但频繁抢话的系统，经过平均后可能落成同一种“中等体验”。benchmark 的 world 与 scenario 有自己的分布，这些数值只描述该测试集；三轴差异则说明总分会隐藏不同的失败形态。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-ahmed2026">Multi-turn Conversational AI survey</a>（Qatar Computing Research Institute，Ahmed et al. 2026）把 text、AudioLLM、multimodal / omni-modal 与 tool agent 放在同一版图，指出模态能力的增长快于 session 内持续 coherence、persistent memory、跨轮 grounding、full-duplex interaction 与 robust evaluation 的闭合。</p>
 <p><span class="claim claim-self">本文归纳</span> 这篇 survey 提供的是研究版图边界：模态扩展与评测合同仍是两项独立工程，分轴与分层需要显式维护；它不承担独立实验结果。</p>
-<h2 id="7-三本账-分层评测与反事实归因">7. 三本账：分层评测与反事实归因</h2>
+<p><a id="7-三本账-分层评测与反事实归因"></a></p>
+<h2 id="7-对齐输入-播放和用户反应-再做单层对照">7. 对齐输入、播放和用户反应，再做单层对照</h2>
 <p><span class="claim claim-self">本文归纳</span> 输入、播放、连续性与反应四处时钟错记，共同反推出一次失败的最小记账结构。输入侧冻结系统实际取得的线索，播放侧冻结用户可能听到的位置，反应侧冻结下一轮暴露的局部后果。在每个播放切点同时保留这三类状态，一次交互的后果才能追溯到正确的责任模块。三类状态分别记入 evidence ledger、playback ledger 和 reaction ledger；场景级的总分掩盖是另一类问题，由分轴与 score decomposition 处理，不进账本。</p>
 <figure class="diagram">
 <svg width="100%" viewBox="0 0 820 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ledger-title ledger-desc">

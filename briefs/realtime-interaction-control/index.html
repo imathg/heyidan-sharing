@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>实时交互控制：把“何时行动”纳入模型与系统能力 — brief · Yidan He</title>
+<title>实时交互 Agent：话轮控制、后台协作与延迟预算 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -475,7 +475,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="sep">·</span> edition 2026-07-26
   </div>
 
-  <h1 class="brief-title">实时交互控制：把“何时行动”纳入模型与系统能力</h1>
+  <h1 class="brief-title">实时交互 Agent：话轮控制、后台协作与延迟预算</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-07-26</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">9</span></span>
@@ -487,8 +487,8 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: realtime-interactive-agent -->
 <!-- edition_date: 2026-07-26 -->
-<p><span class="claim claim-tech">tech report</span> 2026 年 5 月，Thinking Machines Lab（TML）公开 Interaction Models：模型以 200 ms 的微话轮（micro-turn）持续接收音频、视频和文本，在同一条时间线上保留停顿、重叠与打断。<span class="claim claim-paper">论文</span> 随后，JD.com 的 JoyAI-VL-Interaction 将这类能力用于开源视觉系统，模型每秒选择沉默、回应或委派。7 月的多篇论文分别考察了话轮可控性、多人对话信号、前后台分工、服务延迟和安全检查。</p>
-<p><span class="claim claim-self">本文归纳</span> 这些工作把实时交互明确成一个可以单独训练和评测的对象：agent 在每个决策时刻选择带时序约束的动作。回答内容是动作携带的信息；动作类型、触发时刻和执行延迟共同决定用户实际感受到的行为。按这个定义，训练、评测和部署可以放进同一张设计表。</p>
+<p><span class="claim claim-self">本文归纳</span> 用户还在说话时，一句迟到的附和可能听起来像抢话；后台正在查资料时，前台也不能等任务结束才回应用户。这类问题涉及的不只是回答内容，还包括是否应开口、何时让出话轮、什么时候委派后台，以及动作能否按时完成。</p>
+<p>下文从 TML 的 200 ms 微话轮、JoyAI 的每秒事件决策，以及话轮指令评测、前后台协作和服务延迟研究中，分别梳理三个问题：模型怎样选择互动动作，前后台怎样协作，服务与安全检查怎样消耗延迟预算。研究使用的动作表和场景并不相同；这里比较接口和证据，不把它们拼成已经验证的统一训练配方。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -548,7 +548,8 @@ footer.brief-foot a:hover { color: var(--text); }
 <text x="410" y="607" text-anchor="middle" fill="#e6edf3" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif" font-size="14" font-weight="600">说话活动与话轮归属 × 控制动作 × 任务调度 × 执行延迟 = 最终行为</text>
 </svg>
 </figure>
-<h2 id="能力对象-带时序约束的控制动作">能力对象：带时序约束的控制动作</h2>
+<p><a id="能力对象-带时序约束的控制动作"></a></p>
+<h2 id="区分谁在说话-谁持有话轮与系统该做什么">区分谁在说话、谁持有话轮与系统该做什么</h2>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-tml-interaction">Interaction Models</a>（Thinking Machines Lab，2026）将连续交互编码为模型输入。音频、视频和文本被切成 200 ms 的微话轮，沉默、重叠、用户插话与模型输出在统一时间轴上展开。该工作的交互性评测同时要求回答语义正确，并在规定的时间窗口内送达；内容相同而时机不同，会得到不同分数。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-yao2026">JoyAI-VL-Interaction</a>（JD.com，Yao et al. 2026）采用每秒一次的事件决策。8B 前台模型持续观看视频，在 <code>silent / respond / delegate</code> 三个动作中选择；ASR、TTS、记忆、界面和后台模型均可替换。作者在自建测试中分别比较 JoyAI 与豆包、Gemini，报告的胜率为 77.6% 和 87.9%；这些结果只适用于上述测试条件。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-skantze2021">对话系统与人机交互中的话轮转换综述</a>（KTH Royal Institute of Technology，Skantze 2021）以对话分析为理论基础，区分当前说话者保持或让出话轮、听者接过话轮，并将简短附和与用户打断作为需要单独处理的互动现象。综述还指出，只看 VAD 发声模式不能可靠判定一次重叠是否构成打断。这套研究传统提供了稳定概念，但没有形成适用于所有系统的单一互斥动作表。</p>
@@ -643,7 +644,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><span class="claim claim-self">本文归纳</span> 将这些信号简化为一个“用户是否说完”的标签，会漏掉两种状态：用户仍在说但允许附和，以及用户已经停顿但系统仍应沉默。连续交互更适合预测话轮状态、控制动作和时间窗口，再由产品策略约束动作选择。</p>
-<h2 id="前台负责协调-后台负责深度">前台负责协调，后台负责深度</h2>
+<p><a id="前台负责协调-后台负责深度"></a></p>
+<h2 id="前台持续对话-后台执行长任务">前台持续对话，后台执行长任务</h2>
 <p><span class="claim claim-tech">tech report</span> TML 的交互模型与异步后台模型共享上下文。前台维持随时可用的交互循环，后台执行较长推理和工具调用；结果返回后，由前台判断何时向用户传达。<span class="claim claim-paper">论文</span> JoyAI 使用 <code>delegate</code> 动作连接 8B 前台与可替换后台模型。<span class="claim claim-paper">论文</span> <a href="#ref-chen2026">JarvisBench</a>（NVIDIA，Chen &amp; Chen 2026）则由两个 agent 分担前后台职责：语音协调 agent 回应进度询问、报告遇到的困惑，并将用户的指导传给仍在运行的 worker。</p>
 <p><span class="claim claim-self">本文归纳</span> 三种方案都把低延迟协调与较慢的任务处理分成两个协同循环：</p>
 <table>

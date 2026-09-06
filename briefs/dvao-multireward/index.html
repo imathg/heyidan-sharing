@@ -483,29 +483,30 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">dvao-multireward</span></span>
   </div>
 
-
+<p class="brief-revision">修订 <time datetime="2026-09-06">2026-09-06</time>：<span class="revision-note">按原论文表1纠正8B结果：DVAO提高长度依从度，但准确率低于单目标GRPO；收窄优势有界性的解释。</span></p>
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-06-11 -->
 <p><span class="claim claim-paper">论文</span> <a href="#ref-dvao">DVAO</a>（arXiv:2605.25604，阿里云团队，2026）处理 <a href="#ref-grpo">GRPO</a> 下的一类常见工程问题：多个互相冲突的奖励，比如数学推理的「答对」与「控制长度」、工具调用的「参数正确」与「JSON 格式合法」，都要标量化后再做 group-relative 优化。论文讨论直接合并为何失稳，以及如何稳定合并。</p>
-<p><span class="claim claim-self">本文归纳</span> 它用 GRPO 框架下的两条闭式命题，形式化说明了直接合并多个奖励信号时，重要目标会被弱信号或易满足目标淹没这一常见现象。</p>
+<p><span class="claim claim-self">本文归纳</span> 本文比较先合并奖励、先分别归一化优势，以及按组内方差动态加权三种做法。DVAO 的理论分析约束的是优势组合的幅值与敏感度，实验则检验准确率和长度依从度的取舍；二者不能互相替代。</p>
 <blockquote>
 <p>正文每条 claim 带 <code>[论文]</code> / <code>[本文归纳]</code> tag。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
 <h2 id="两类直接组合的局限">两类直接组合的局限</h2>
 <p><span class="claim claim-paper">论文</span> 论文将主流标量化分成两类，各自揭示一类问题（三条命题的中文解读见 <a href="#ref-dvao-explainer">此文</a>）：</p>
 <ul>
-<li><strong>奖励组合（RC, Reward Combination）</strong>：先加权求和原始奖励、再统一归一化。Proposition 1 证明，当目标间冲突（样本相关系数 ρ&lt;1）时，RC 的均方优势恒 ≥ 优势组合；归一化又将组合方差恢复为 1，抹去冲突带来的抵消效应，使优势数值在冲突剧烈时被变相放大，引发过大的梯度更新和训练失稳。</li>
+<li><strong>奖励组合（RC, Reward Combination）</strong>：先加权求和原始奖励、再统一归一化。Proposition 1 证明，当组内奖励不完全正相关（样本相关系数 ρ&lt;1）时，RC 的均方优势恒 ≥ 优势组合；作者据此讨论统一归一化可能放大优势、增加训练不稳定风险；ρ&lt;1 本身不等于目标冲突，不等式也不保证某次训练必然失稳。</li>
 <li><strong>优势组合（AC，如 GDPO）</strong>：先对每个目标独立归一化得各自优势、再加权求和。组合方差被限制在 ≤1，梯度幅值较稳定；但静态权重和独立归一化将各目标隔离，梯度信息完全解耦（∇J = Σ wk ∇Jk），无法反映单次 rollout 内多目标的协同或对抗关系，容易停在次优解。</li>
 </ul>
 <h2 id="dvao-用组内经验方差动态加权">DVAO：用组内经验方差动态加权</h2>
-<p><span class="claim claim-paper">论文</span> DVAO（Dynamic Variance-adaptive Advantage Optimization）将静态权重换成数据驱动的动态权重：对每个 rollout 组先算各目标经验标准差 σk，自适应权重 <code>w̃k = wk·σk / Σ wl·σl</code>。组内方差大（回复有好有坏、区分度高）说明学习信号较强，权重随之提高；方差接近 0（样本差异很小或容易满分）则降低权重。</p>
+<p><span class="claim claim-paper">论文</span> DVAO（Dynamic Variance-adaptive Advantage Optimization）将静态权重换成数据驱动的动态权重：对每个 rollout 组先算各目标经验标准差 σk，自适应权重 <code>w̃k = wk·σk / Σ wl·σl</code>。组内差异大的奖励分量得到更高权重，方差接近 0 的分量被降权。方差在这里衡量区分度，不保证该分量是有效学习信号；高方差噪声仍会被放大。</p>
 <p>两条理论保障：</p>
 <ul>
-<li><span class="claim claim-paper">论文</span> <strong>Proposition 2（有界性）</strong>：<code>|A_DVAO| ≤ |A_sum|</code> 逐点成立，以 RC 为上确界，因此可避免梯度爆炸；等号当且仅当奖励两两完美正相关。</li>
+<li><span class="claim claim-paper">论文</span> <strong>Proposition 2（有界性）</strong>：<code>|A_DVAO| ≤ |A_sum|</code> 逐点成立，以 RC 为上界；等号当且仅当奖励两两完美正相关。这限制了优势项的幅值，不能单凭该不等式保证完整训练过程没有梯度爆炸。</li>
 <li><span class="claim claim-paper">论文</span> <strong>Proposition 3（隐式交叉正则）</strong>：DVAO 偏导敏感度由交叉项 <code>A_DVAO·A_k</code> 决定（AC 是孤立的 <code>A_k²</code>），将单目标表现和全局表现绑定：某样本在目标 k 上表现好而全局表现差时，敏感度随之放大，促使模型优先补足全局短板；全局和局部都好时，敏感度收缩，避免在易优化目标上过度消耗核心目标。</li>
 </ul>
-<h2 id="实验-两项目标均改善-并位于帕累托前沿">实验：两项目标均改善，并位于帕累托前沿</h2>
+<p><a id="实验-两项目标均改善-并位于帕累托前沿"></a></p>
+<h2 id="实验-4b两项均提高-8b以准确率换长度依从度">实验：4B两项均提高，8B以准确率换长度依从度</h2>
 <p><span class="claim claim-paper">论文</span> verl 框架、G=16、500 步（math 用 Qwen3-4B/8B-Base，tool-use 用 Qwen2.5-3B/7B-Instruct，BFCL-v4）：</p>
 <table>
 <thead>
@@ -529,11 +530,11 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 <tr>
 <td>DVAO</td>
-<td>双赢（4B 42.19% / 99.91%，8B 47.49% / 99.92%），反超单目标 GRPO</td>
+<td>4B准确率 / 长度依从度为42.19% / 99.91%，高于单目标GRPO的39.91% / 77.84%；8B为47.49% / 99.92%，对应单目标GRPO为52.57% / 63.47%</td>
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-paper">论文</span> 在 w1∈{0.1,0.3,0.5,0.7,0.9} 扫参下，DVAO 在「准确率与依从度」平面形成绝对支配，AC 在大部分权重下失效。</p>
+<p><span class="claim claim-paper">论文</span> <a href="https://arxiv.org/html/2605.25604v1#S4.T1">原论文表1</a>表明，8B的DVAO相对单目标GRPO，准确率降低5.08个百分点，长度依从度提高36.45个百分点。这是多目标取舍，不是两个指标同时反超。论文另对 w1∈{0.1,0.3,0.5,0.7,0.9} 扫参比较准确率与依从度；结论限于所测模型、任务和权重，不能外推为对任意配置的绝对支配。</p>
 <h2 id="局限">局限</h2>
 <p><span class="claim claim-paper">论文</span> 论文自陈三条：</p>
 <ol>
@@ -541,7 +542,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><strong>高维冲突扩展性</strong>：只实证双目标，多目标空间未验。</li>
 <li><strong>辅助奖励质量瓶颈</strong>：DVAO 是&quot;信号放大器&quot;，若某目标本身是高方差随机噪声，DVAO 会把它当成强信号、调大权重，合并算法处理不了低质量信号。</li>
 </ol>
-<p><span class="claim claim-self">本文归纳</span> DVAO 将「按信号区分度分配训练权重」定义为连续、可证明有界的优势加权。它与按场景或样本切分、分开优化冲突信号的离散工程做法正交，两者可以叠加。</p>
+<p><span class="claim claim-self">本文归纳</span> DVAO 将「按信号区分度分配训练权重」定义为连续、可证明有界的优势加权。它与按场景或样本分别组织训练，是不同的设计选择；联合使用的效果仍需实验。</p>
 <h2 id="reference">Reference</h2>
 
 <ol class="ref-list">

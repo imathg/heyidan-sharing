@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>长程 agent 的上下文治理：记忆是一组带生命周期的对象 — brief · Yidan He</title>
+<title>Agent 长期记忆：更新过时事实，保留可追溯证据 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -475,7 +475,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="sep">·</span> edition 2026-07-05
   </div>
 
-  <h1 class="brief-title">长程 agent 的上下文治理：记忆是一组带生命周期的对象</h1>
+  <h1 class="brief-title">Agent 长期记忆：更新过时事实，保留可追溯证据</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-07-05</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">12</span></span>
@@ -487,8 +487,8 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-07-05 -->
-<p>2026 年 6 月底到 7 月初，agent 论文出现一组密集信号。<span class="claim claim-paper">论文</span> <a href="#ref-supersede">Supersede</a>（Vrin，Patel 2026）将长期会话里的旧事实更新定义成可训练环境；<span class="claim claim-paper">论文</span> <a href="#ref-traceretain">TraceRetain</a>（Independent Researcher，Reddy 2026）显示 memory retention 在 noisy write 压力下才显现差异；<span class="claim claim-paper">论文</span> <a href="#ref-vista">VISTA</a>（CUHK + LIGHTSPEED，Xu et al. 2026）将 context 状态暴露成模型可见的 dashboard；<span class="claim claim-paper">论文</span> <a href="#ref-echo">ECHO</a>（北大 + 中科大 + 百度，Xie et al. 2026）在压缩后的 turn record 中保留 source index，用来回传训练 credit；<span class="claim claim-paper">论文</span> <a href="#ref-selfgc">Self-GC</a>（小红书，Hao et al. 2026）将 context 视为可 fold、mask、prune、recover 的对象集合；<span class="claim claim-paper">论文</span> <a href="#ref-automem">AutoMem</a>（Stanford，Wu et al. 2026）将 memory 管理视为可训练技能；<span class="claim claim-paper">论文</span> <a href="#ref-contextnest">ContextNest</a>（PromptOwl + Emory + IBM Research，Sulpovar et al. 2026）将 context governance 放到 retrieval 下层，负责版本、归属、完整性和审计。</p>
-<p>这些工作分属不同层次，包括 benchmark、强化学习（RL）环境、系统层和知识库规范。<span class="claim claim-self">本文归纳</span> 它们共同指向一个转向：长程 agent 的上下文问题，已经从「如何将更多文本放入窗口」转向「哪些对象在什么时候可见、当前、可追溯、可训练」。摘要和向量库只覆盖其中一部分，记忆是一组带生命周期的对象。</p>
+<p><span class="claim claim-self">本文归纳</span> 用户已经修改了计划，Agent 却因旧记录更容易被检索而继续沿用旧计划；一段摘要保住了结论，却丢掉支撑结论的工具结果和文件位置。这两类问题都不能只靠扩大上下文窗口解决。长期记忆除了存下信息，还要决定哪些版本仍然有效，以及压缩后怎样找回原始证据。</p>
+<p>下文比较 2026 年 6 月底至 7 月初的一组研究：事实更新、抗噪检索、模型可见的上下文状态、可恢复压缩，以及记忆操作的训练。它们分属 benchmark、强化学习环境和系统实现，不能当作同一架构的联合验证；但可以据此分清容量、事实版本、来源追溯和管理策略各自要解决的问题。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -600,7 +600,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><span class="claim claim-self">本文归纳</span> 第一层工程直觉是扩窗口或做摘要。这一做法只能处理预算层。进入退化层和当前性层后，系统要维护对象状态：哪条信息已过期、哪条仍可用、哪个版本在某次回答时对 agent 可见。</p>
-<h2 id="四个约束-当前-选择-地址-审计">四个约束：当前、选择、地址、审计</h2>
+<p><a id="四个约束-当前-选择-地址-审计"></a></p>
+<h2 id="旧事实-噪声和压缩分别会丢掉什么">旧事实、噪声和压缩分别会丢掉什么</h2>
 <p><span class="claim claim-self">本文归纳</span> 这些论文反复出现四个约束。相比「记忆容量」，它们更接近长程 agent 的核心指标。</p>
 <p>第一是当前性。<span class="claim claim-paper">论文</span> <a href="#ref-supersede">Supersede</a> 把当前事实和旧事实分开，奖励 agent 使用当前值，惩罚 stale value。<span class="claim claim-paper">论文</span> <a href="#ref-contextnest">ContextNest</a> 在知识库层也处理同一件事：retrieval 负责相关性，governance 先决定哪些 artifact 是 approved、current、attributable、integrity-verified。二者都说明，相关性高的旧事实仍然可能是错误输入。</p>
 <p>第二是选择性。<span class="claim claim-paper">论文</span> <a href="#ref-traceretain">TraceRetain</a> 在 clean ALFWorld 设置中发现，不同 retention 策略差异落在 Wilson 95% 置信区间内；加入 75% synthetic distractor 后，无界 memory 和 FIFO-K50 的 Precision@5 明显下降，TraceRetain-CEM 基本保持不变。关键机制是 unbounded memory 的平均 embedding similarity 最高，但 precision 最低，失败 distractor 离 query 也很近。选择性要同时纳入 success、redundancy、specificity、downstream utility；相似度是多项输入中的一项。</p>
@@ -637,7 +638,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<h2 id="谁来管理上下文">谁来管理上下文</h2>
+<p><a id="谁来管理上下文"></a></p>
+<h2 id="上下文管理由规则-模型还是训练策略执行">上下文管理由规则、模型还是训练策略执行</h2>
 <p><span class="claim claim-self">本文归纳</span> 这些工作还呈现一条产品分歧：上下文管理由谁负责。不同答案对应不同产品形态。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-contextforge">ContextForge</a> 和 <span class="claim claim-paper">论文</span> <a href="#ref-traceretain">TraceRetain</a> 落在系统侧。前者用检索和合成管线复用上下文，后者用一组可解释特征给 memory entry 打分。模型使用结果，但管理策略主要由外部系统提供。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-vista">VISTA</a> 位于中间路线。它的入口是把 runtime 状态暴露给模型：typed block、token usage、recency、access history、recoverable payload。论文称前沿模型对自身上下文“proprioceptively blind”，意思是模型从 prompt 本身看不到每块上下文的大小、年龄和使用历史。VISTA 在 LOCA-Bench 上把 Gemini-3-Flash 从 22.7 提到 50.7%，并且 ablation 显示 dashboard 的作用超过 archive 和 recovery tool 本身。这说明模型可能已有 keep/drop 能力，缺的是可读的状态变量。</p>
@@ -690,7 +692,8 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-paper">论文</span> <a href="#ref-dmvbench">DMV-Bench</a>（Dartmouth College，Tang et al. 2026）把记忆对象扩展到文本以外。DMV-Bench 让 agent 在多轮购物任务中见到带 incidental cue 的产品图片，稍后要找回对应商品 URL。文字 caption baseline 无法充分保留视觉 cue；DualMem 维护 visual 和 verbal 两条 code，在 Gemini 2.5 Flash 与 Qwen2.5-VL-7B 上都优于 caption baseline 和三种 multimodal memory system。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-driftlens">DRIFTLENS</a>（Amazon，Fang et al. 2026）给出另一类风险：记忆会改变推理轨迹。个性化系统会把用户属性、偏好和历史上下文注入后续 prompt。DRIFTLENS 比较无记忆轨迹和注入 user-attribute memory 后的轨迹，发现四个 LLM 在 10 类用户属性上都出现 medium-to-large reasoning drift；最终回答仍然流畅合理，漂移发生在价值权衡和推理步骤里。GRPO 和 DPO（Direct Preference Optimization）都能降低漂移，效果依赖模型和 reward 设计。</p>
 <p><span class="claim claim-self">本文归纳</span> 这两篇将 memory 从单一 buffer 扩展为多对象系统。视觉 cue、事实版本、用户属性、tool evidence、file locator 是不同对象。每种对象有自己的保真要求：视觉对象要保留感知细节，事实对象要保留当前性，个性化对象要控制推理漂移，tool evidence 要保留 source address。将它们全压成一段自然语言摘要，会让不同约束互相覆盖。</p>
-<h2 id="一张设计表">一张设计表</h2>
+<p><a id="一张设计表"></a></p>
+<h2 id="比较记忆系统的对象-管理者与保留保证">比较记忆系统的对象、管理者与保留保证</h2>
 <p><span class="claim claim-self">本文归纳</span> 这些方法可以归入四个设计维度。它们彼此可组合，每个系统都需在这些维度上取值。</p>
 <table>
 <thead>
@@ -725,7 +728,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-agenticsts">AgenticSTS</a>（Alaya Lab + 上海交大 + 上海创智学院 + 南开 + 中科大，Cheng et al. 2026）在这张表中更像一个评测方法学样例。它将 memory 定义成「未来每个 decision 被允许看到什么」的 contract。每一步都从 typed retrieval 组装新 user message，跨决策原始 transcript 留在 prompt 之外。这样 prompt 长度有界，memory/skill layer 能单独 ablate。论文在 Slay the Spire 2 中给出 298 条完成轨迹、condition tag、frozen snapshot、prompt record 和分析脚本。</p>
 <p><span class="claim claim-self">本文归纳</span> 这类 testbed 的价值主要来自实验变量化的 memory interface，小样本胜率属于附带读数。未来 agent memory 论文若只报告「加 memory 提升多少」，而缺少对象可见性、层级 ablation 和版本复原说明，证据密度会偏低。</p>
-<h2 id="对-agent-产品的含义">对 agent 产品的含义</h2>
+<p><a id="对-agent-产品的含义"></a></p>
+<h2 id="存储-可见性选择与学习审计分别负责什么">存储、可见性选择与学习审计分别负责什么</h2>
 <p><span class="claim claim-self">本文归纳</span> 如果将这些结论用于 coding agent、research agent 或个人知识库 agent，最直接的产品判断是：自动摘要适合做 token 预算工具，长期记忆仍需要显式治理层。自动摘要可以降低 token；当前性、选择性、源地址和审计需由治理层单独承担。</p>
 <p>对应到架构上，可以分成三层：</p>
 <table>

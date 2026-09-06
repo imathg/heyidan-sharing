@@ -1,11 +1,11 @@
-# 长程 credit assignment：奖励信号该在轨迹的哪一层附着
+# 长程 Agent RL：如何给中间步骤分配信用
 
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-06-28 -->
 
-2026 年 6 月，七个互不隶属的团队分别改进 GRPO 给长程 agent 分配 credit 的方式。`[论文]` [HSD](#ref-hsd)（George Washington University，Li et al. 2026）将 token 级 credit 定位到失败与成功路径的分叉处；`[论文]` [SCPO](#ref-scpo)（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；`[论文]` [HiMPO](#ref-himpo)（中国联通，Yan et al. 2026）只为 memory 写入动作设置单独的 credit 通道；`[论文]` [VIMPO](#ref-vimpo)（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；`[论文]` [Progress Advantage](#ref-progress-advantage)（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比作为 step 信号；`[论文]` [BiPACE](#ref-bipace)（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；`[论文]` [多步 tool-use RL 失稳分析](#ref-tooluse-collapse)（中科院自动化所，Hao et al. 2026）诊断这套训练为何失稳，以及外部监督如何改善它。
+一次有用的记忆写入，可能因为后续工具失败而一起受到负奖励；一次多余的工具调用，也可能因最终答对而获得正奖励。把同一个轨迹级 advantage 分给所有 token，无法在这些中间步骤之间作区分。这就是本文讨论的长程信用分配问题。
 
-同一时期，`[tech report]` [GLM-5.2](#ref-glm52) 给出了系统实践中的另一类工程取舍：长程任务会产生更长执行轨迹，compaction 后同一个 prompt 下的 rollout 会被切成数量不同、长度高度可变的 sub-trace，因此从 group-wise optimization 转到 critic-based PPO，让 critic 估 token-level advantage。它补上了同一问题的另一面：一旦训练目标从「免 critic」转向「稳定处理变长 sub-trace」，何时应将 critic 重新引入训练环节？
+下文比较 2026 年 6 月的七项研究：从成功同伴轨迹、策略自身或同类动作中构造局部信号，并考察额外监督的代价。[GLM-5.2](#ref-glm52) 则提供另一种系统选择：上下文压缩把 rollout 切成数量和长度不一的 sub-trace 后，改用显式 critic 估计 token-level advantage。各方法的效果绑定各自实验，不能仅按信号更细就断定更好。
 
 > **核心论点：GRPO 将一条轨迹的成败汇总为一个数，再均匀分配到轨迹里的每个 token。长程、稀疏奖励下，这个数无法区分「失败轨迹上的好步」和「成功轨迹上的坏步」。七篇论文大多在不训练 critic 的前提下给每个 step 估一个反事实基线；GLM-5.2 则说明，当 compaction 后的 trace 数量和长度方差足够大时，回到 critic-based PPO 也是同一组设计选择里的合理端点。**
 
@@ -108,7 +108,9 @@ GRPO 这类 group-based RL 的基本做法，是从同一 prompt 采样多条 ro
 | `[tech report]` GLM-5.2 | compaction 后同 prompt 下 trace 数量和长度不齐，group-wise optimization 改成 critic-based PPO |
 | `[论文]` tool-use 失稳分析 | 多步工具调用上只靠 RL 常导致训练不稳定，或拿不到增益 |
 
-## 缺失对象：critic 本会给的 per-step 基线
+<a id="缺失对象-critic-本会给的-per-step-基线"></a>
+
+## 不训练 critic 时，局部信用信号从哪里来
 
 actor-critic 方法有一个组件专门处理这个问题。critic 估「从这一步往后的期望回报」，于是每个 step 都有自己的基线，advantage 是当前回报减去这个基线。critic 需要单独训练，而且训练不稳定。GRPO 去掉 critic 以降低训练复杂度，这个简化也丢了 per-step 基线。
 
@@ -130,7 +132,9 @@ actor-critic 方法有一个组件专门处理这个问题。critic 估「从这
 
 这三派回答的是同一个问题的不同侧面，原则上可以叠加，例如以同组成功 sibling 初步定位，再用 action-cluster 基线在该位置上细化。
 
-## 四个维度
+<a id="四个维度"></a>
+
+## 对照信用粒度、参照信号与额外训练成本
 
 `[本文归纳]` 七个方案和 GLM-5.2 的差异落在四个维度的取值组合上，各自是这四维空间里的一个位点。
 

@@ -3,13 +3,13 @@
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-07-12 -->
 
-`[tech report]` [Thinking Machines Lab](#ref-tml)（2025）以完成 post-training（后训练）的 Qwen3-8B 为学生，先通过 midtrain 注入一批新知识，再让注入前的自身作为 teacher，进行 on-policy distillation 以恢复退化的 instruction following。`[论文]` [CaMOPD](#ref-camopd)（快手，2026）让 post-trained 的领域模型同时担任学生和 domain teacher，并以其谱系上的通用旧版担任 general teacher；两个 teacher 按 prompt 分槽路由。`[论文]` [MOPD](#ref-mopd)（北大 + 小米，2026）是公开多 teacher on-policy distillation 中目前最强的结果：学生从通用 SFT checkpoint 初始化，多个领域 RL expert 按域路由充当 teacher，一次训练整合全部领域能力，并给出了第二轮迭代的做法。
+已有一个经过通用后训练、又经过领域后训练的业务模型，现在要为它增加新知识、新工具或新任务能力。训练应从当前领域 checkpoint 继续，还是回到通用对齐模型，把旧业务能力和新能力重新合入？除了保留旧业务效果，还要避免更基础的通用能力退化。
 
-三者都在做「把能力蒸进一个模型」，但工程中更常见的情形是：**已有一个先经通用后训练、再经领域后训练的模型（业务模型的第 N 版），现要为它增量加入一项新能力（新领域知识、新工具、新任务），后续还会有第 N+1 轮。学生起点应是这个领域特化 checkpoint 本身，还是回到通用对齐模型，将旧业务能力和新能力重新合入？防遗忘要守的也不止一层：既要守领域对齐，也要守更基础的通用能力。** 对 2016 年至今的相关文献逐条核验到一手源（其中有两条常见推断经核实并不成立，正文分别指出），结论可归纳为一句需严格限定范围的判断：
+本文按“学生从哪里开始”和“用什么保留旧能力”比较已有文献。最接近的三个 OPD 先例是 [Thinking Machines Lab 的先注入、后恢复](#ref-tml)、[CaMOPD 的领域与通用双 teacher](#ref-camopd)，以及 [MOPD 的多领域整合与迭代](#ref-mopd)。它们分别验证了部分组件，没有直接回答上述两条训练路径哪条更好。尚未核验的扩展线索在文末单列，不用于确定结论。
 
 > **每个组件均有直接文献支持，完整组合尚无单篇论文验证；最接近的三个先例各差至少一个维度。**
 
-`[本文归纳]` 风险集中在组件之间的交互，这正是现有文献的空白。讨论范围限于「学生起点范式 + 防遗忘设计」；on-policy distillation 机制本身（on-policy 数据在抗遗忘中所起的作用、KL 几何、high-probability overlap window）属于另一个正交层面，见姊妹篇《[OPD：on-policy 数据是抗遗忘的真正承担者](../on-policy-distillation/)》。
+`[本文归纳]` 风险集中在组件之间的交互，这正是现有文献的空白。讨论范围限于「学生起点范式 + 防遗忘设计」；on-policy distillation 机制本身（on-policy 数据在抗遗忘中所起的作用、KL 几何、high-probability overlap window）属于另一个正交层面，见姊妹篇《[OPD 抗遗忘的证据边界：学生采样与师生分布匹配](../on-policy-distillation/)》。
 
 > 正文每条 claim 均标注 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 

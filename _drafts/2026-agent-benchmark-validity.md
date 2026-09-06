@@ -1,4 +1,4 @@
-# 一条 failed 能说明什么：Agent Benchmark 的有效分母
+# Agent Benchmark：哪些失败能计入能力评测
 <!-- domain: rubrics -->
 <!-- edition_date: 2026-08-30 -->
 

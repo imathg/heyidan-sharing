@@ -487,9 +487,9 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-08-02 -->
-<p><span class="claim claim-tech">tech report</span> <a href="#ref-mei2026">SearchArt</a>（Huawei Cloud，Mei et al. 2026）在任务进入训练前同时核验问题、搜索轨迹与检索证据；<span class="claim claim-paper">论文</span> <a href="#ref-wang2026">CAST</a>（中国科学技术大学、南京大学、武汉大学、美团，Wang et al. 2026）用游戏 solver 的状态价值变化评价每次动作；<span class="claim claim-paper">论文</span> <a href="#ref-li2026graph">Graph Is the Verifier</a>（Singapore Management University 等，Li et al. 2026）让同一份代码图既提供调查工具，又核验 agent 引用的证据；<span class="claim claim-paper">论文</span> <a href="#ref-li2026tapo">TAPO</a>（北京大学、鹏城实验室，Li et al. 2026）将动作后的环境反馈重新用于 transition supervision；<span class="claim claim-paper">论文</span> <a href="#ref-wu2026">ClawTrack</a>（美团，Wu et al. 2026）区分结果分与过程分，并用过程分筛选训练轨迹；<span class="claim claim-tech">tech report</span> <a href="#ref-yang2026">Frontis-MA1</a>（Frontis.AI、Horizon Research、清华大学，Yang et al. 2026）用可执行环境连接任务构造、训练与长程搜索。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-zhu2026termigen">TermiGen</a>（UC Santa Barbara 等，Zhu et al. 2026）主动采集由错误、诊断和修复构成的恢复轨迹；<a href="#ref-fan2026skillsynth">SkillSynth</a>（腾讯混元，Fan et al. 2026）以 scenario / skill path 控制训练经历的覆盖范围。</p>
-<p><span class="claim claim-tech">tech report</span> <a href="#ref-raoof2026">OpenThoughts-Agent-RL-5K</a>（UC Berkeley、Stanford University 等，Raoof et al. 2026）的官方数据卡区分固定示范的 task-trajectory pair 与 online RL 使用的可执行任务包。</p>
+<p><span class="claim claim-self">本文归纳</span> 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何。</p>
+<p>下文对照任务合成、游戏求解、漏洞检测、环境交互和过程评测中的证据设计，说明这些记录怎样进入任务入池、SFT、RL、辅助训练与轨迹筛选。失败恢复轨迹和场景覆盖也在讨论范围内，但不与证据质量混成一个指标。</p>
+<p>其中一个基础区别是：SFT 可以使用固定示范，on-policy RL 则需要能由当前策略重新执行的任务环境。两者需要保存的训练对象不同。</p>
 <blockquote>
 <p><strong>核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体。</strong></p>
 </blockquote>
@@ -542,7 +542,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-li2026graph">Graph Is the Verifier</a> 中，结果正确的轨迹仍可能缺少真实调查。在跨过程漏洞检测中，只奖励 vulnerable / safe 的最终 verdict，policy 会利用类别先验，减少调查。完整的 reward 同时检查 verdict、CWE 类别和被引用的 CPG node。论文报告，138 个真实漏洞函数中有 <strong>71.7%</strong> 需要函数外证据；同样能查询 CPG、但不核验引用证据的基线仍明显落后。工具可用只说明能否查询；稳定地址才能核验查过什么。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-wu2026">ClawTrack</a> 同时保留结果分与过程分。它在 8 个领域构造 320 个任务和 25 个以上的确定性 mock services，对 21 个模型运行 <strong>16,000 次以上 trials</strong>。Task Score 衡量最终完成度，Process Score 逐 turn 评估目标对齐、效率、信息利用和结果核验。过程分能剔除结果分看不见的 lucky pass，并将失败定位到具体维度；按过程分筛选轨迹后，不同规模模型的 post-training 都获得提升。</p>
-<h2 id="任务先形成可执行闭包">任务先形成可执行闭包</h2>
+<p><a id="任务先形成可执行闭包"></a></p>
+<h2 id="训练任务需要环境-动作-状态与验收规则">训练任务需要环境、动作、状态与验收规则</h2>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-mei2026">SearchArt</a> 将任务生成与核验置于同一条数据管线中。系统从网页文档构造问答、证据图和搜索轨迹，再联合检查 QA 一致性、轨迹质量与证据相关性。通过验证的轨迹才能用于 SFT 和 RL。SearchArt-27B 在报告中取得 BrowseComp-ZH 74.39、BrowseComp 70.06、DeepResearch-Bench 52.55。这些数字来自 Huawei Cloud 报告。对应的入池规则是：任务、轨迹和证据共同闭合，样本才能进入训练。</p>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-yang2026">Frontis-MA1</a> 将这种闭合关系扩展到机器学习工程。OpenMLE-Gym 提供可验证任务环境和 execution feedback，OpenMLE-ERL 训练 Draft、Improve、Debug、Crossover 四种程序演化操作，OpenMLE-Evo 在推理期组合相同操作做长程搜索。训练和推理共享操作语义，经验因而可表述为“某种操作在某类状态下造成什么结果”，并在搜索时复用。报告在单张 RTX 4090、每题 12 小时预算的 MLE-Bench Lite 上，将 35B base model 的 Medal Average 从 39.39% 提到 60.61%，加入 OpenMLE-Evo-Max 后达到 71.21%。</p>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-raoof2026">OpenThoughts-Agent-RL-5K</a> 的官方数据卡明确区分 SFT 与 on-policy RL 的训练对象。SFT 的数据项是完整的固定 <code>(task, trajectory)</code> pair；RL-5K 则提供 5,000 个自包含的可执行任务，policy 在 sandbox 中实时执行，由任务自带的 test verifier 给 reward，数据项中没有 teacher trajectory。两者的差别在于训练时是否重新采样轨迹：SFT 直接使用固定示范，on-policy RL 从 <code>environment + task + verifier</code> 组成的任务分布出发，由当前 policy 在每一轮重新生成轨迹。</p>
