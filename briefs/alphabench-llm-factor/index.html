@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>AlphaBench：LLM 的因子绩效判断与成对微调 — brief · Yidan He</title>
+<title>AlphaBench：LLM 能否判断因子的回测表现 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -475,7 +475,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="sep">·</span> edition 2026-06-11
   </div>
 
-  <h1 class="brief-title">AlphaBench：LLM 的因子绩效判断与成对微调</h1>
+  <h1 class="brief-title">AlphaBench：LLM 能否判断因子的回测表现</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-06-11</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">3</span></span>
@@ -487,7 +487,7 @@ footer.brief-foot a:hover { color: var(--text); }
   <article class="body" id="brief-body">
 <!-- domain: hf-alpha-factor -->
 <!-- edition_date: 2026-06-11 -->
-<p>LLM 能生成因子公式，不等于能仅凭公式文本判断回测绩效。<a href="#ref-alphabench">AlphaBench</a> 将公式化 alpha 因子挖掘分成生成、评估和搜索三部分，使用 CSI300 数据与 <a href="#ref-qlib">Qlib</a> 回测；本文重点看其中的绩效判断：零样本预测是否可靠，成对选择微调带来什么改善。</p>
+<p>LLM 能生成因子公式，不等于能仅凭公式文本判断它的回测表现。<a href="#ref-alphabench">AlphaBench</a> 将公式化 alpha 因子挖掘分成生成、评估和搜索三部分，使用 CSI300 数据与 <a href="#ref-qlib">Qlib</a> 回测；本文重点看模型对因子回测表现的判断：零样本预测是否可靠，成对选择微调带来什么改善。这里的表现主要指 IC、RankIC 等衡量因子与后续收益相关性的指标。</p>
 <p>本稿所引结果显示，零样本判别在模型和市场之间并不稳定，成对选择 SFT 则改善了所测配置。分类准确率回答的是模型能否判断因子相对表现，不等于因子投入实盘后的收益。</p>
 <blockquote>
 <p>来源范围：三类任务的定义已对照 <a href="https://alphabench.cc/">AlphaBench 官方项目页</a>，Reference 补有其 ICLR 2026 论文入口。下文具体实验数字仍据 <a href="#ref-alphabench-explainer">QuantML 的公开解读</a> 转述，尚未逐表核验；工程建议与实验结果分开表述。</p>
@@ -501,8 +501,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </ol>
 <p>解读介绍了以下质量过滤条件：算子嵌套 ≤5 层、Qlib 算子合法性与参数个数校验、单因子两周计算 ≤30s、NaN ≤1%；涉及未来数据的因子标为 Noise 并给最低分。这里应检查表达式的数据依赖，不能按 <code>Ref</code> 名称直接拦截：按 <a href="#ref-qlib">Qlib 的定义</a>，<code>Ref(feature, N)</code> 在 <code>N &gt; 0</code> 时读取历史滞后值，<code>N &lt; 0</code> 时才读取未来值。</p>
 <p><a id="核心发现-零样本判别力≈掷硬币"></a></p>
-<h2 id="零样本绩效判断跨市场不稳定">零样本绩效判断跨市场不稳定</h2>
-<p><a href="#ref-alphabench-explainer">公开解读</a> 列出的零样本结果包括：DeepSeek-V3 的信号 / 噪声分类准确率为 0.46，成对选择为 0.48；GPT-5 的成对选择在 CSI300 为 0.64，在 SP500 为 0.52。这些配置的结果跨市场差异明显，不能据此承诺稳定的绩效判断，也不足以断言所有 LLM 都没有判别能力。</p>
+<h2 id="零样本因子评估跨市场不稳定">零样本因子评估跨市场不稳定</h2>
+<p><a href="#ref-alphabench-explainer">公开解读</a> 列出的零样本结果包括：DeepSeek-V3 的信号 / 噪声分类准确率为 0.46，成对选择为 0.48；GPT-5 的成对选择在 CSI300 为 0.64，在 SP500 为 0.52。这些配置的结果跨市场差异明显，不能据此承诺模型能稳定判断因子的回测表现，也不足以断言所有 LLM 都没有判别能力。</p>
 <p>解读将失效归因于输入只包含公式文本，缺少调仓频率、信息滞后、平滑策略和市场环境等执行信息。这个解释提示了需要补充的变量，但本稿没有可核验的数学证明，不能把它写成“纯公式推断必然欠定”的定理。解读还报告，所测 CoT 配置在评分排名任务中降低了 NDCG@K；是否由额外方差造成，仍需原实验支持。</p>
 <p><a id="但成对选择-pairwise-sft-效果极强"></a></p>
 <h2 id="成对选择微调改善了所测配置">成对选择微调改善了所测配置</h2>
@@ -536,7 +536,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><strong>构建对比度高的 pairwise 训练集</strong>：将确定 Noise 与确定 Signal 配对。</li>
 <li><strong>EA crossover 需要代码层检查表达式</strong>：限制嵌套深度，并检查包括 <code>Ref</code> 参数方向在内的未来数据依赖；prompt 约束仅作辅助。</li>
 </ol>
-<p><span class="claim claim-self">本文归纳</span> LLM 适合充当变异 / 杂交算子的候选生成器，回测承担最终约束。这是当前较稳妥的 LLM 量化因子挖掘路径：LLM 负责生成候选多样性，成对微调模型可以辅助筛选，绩效判断仍需回测验证。</p>
+<p><span class="claim claim-self">本文归纳</span> LLM 适合充当变异 / 杂交算子的候选生成器，回测承担最终约束。这是当前较稳妥的 LLM 量化因子挖掘路径：LLM 负责生成候选多样性，成对微调模型可以辅助筛选，对因子表现的判断仍需通过实际回测核验。</p>
 <h2 id="reference">Reference</h2>
 
 <ol class="ref-list">

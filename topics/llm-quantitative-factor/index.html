@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
-<title>LLM 量化因子研究：公式表示、替换边界与绩效评估 — 专题 · Yidan He</title>
+<title>LLM 量化因子研究：公式表示、替换边界与回测评估 — 专题 · Yidan He</title>
 <style>
 :root { --bg: #0d1117; --panel: #131922; --text: #e6edf3; --muted: #8b97a4; --border: #2a3441; --accent: #5fd0c8; }
 * { box-sizing: border-box; }
@@ -59,11 +59,11 @@ footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1p
 <main>
   <div class="eyebrow">方向专题</div>
   <article>
-<h1 id="llm-量化因子研究-公式表示-替换边界与绩效评估">LLM 量化因子研究：公式表示、替换边界与绩效评估</h1>
+<h1 id="llm-量化因子研究-公式表示-替换边界与回测评估">LLM 量化因子研究：公式表示、替换边界与回测评估</h1>
 <p>这里讨论 LLM 参与公式化 alpha 因子研究时的三个问题：公式怎样表示才便于检查，替换计算后是否仍在衡量同一对象，以及模型能否判断因子的回测表现。这三种验证不能互相替代。</p>
 <p>设计因子生成或变异系统，可以从<a href="../../briefs/factor-representation/">《因子公式怎样表示，才能检查和控制替换》</a>开始。它用标准化公式的分母替换解释属性摘要、精确计算结构与使用位置的分工，并说明类型、量纲和时间依赖检查各自能发现什么。</p>
 <p>需要判断候选实现能否互换，再读<a href="../../briefs/factor-substitution/">《同是波动率指标，为什么不能直接互换》</a>。中心化方差、收益平方和、下行半方差和高低价估计的例子，帮助区分测量对象变了、估计方法变了和接口不相容；这些区别不直接提供投资效果结论。</p>
-<p>评估 LLM 的绩效判断能力，则看<a href="../../briefs/alphabench-llm-factor/">《AlphaBench：LLM 的因子绩效判断与成对微调》</a>。它比较零样本判断与成对微调，具体数字仍标明二手解读来源和核验范围。预测相对回测表现，与证明公式含义保持或实盘收益，是不同问题。</p>
+<p>考察 LLM 能否判断因子的回测表现，则看<a href="../../briefs/alphabench-llm-factor/">《AlphaBench：LLM 能否判断因子的回测表现》</a>。它比较零样本判断与成对微调，具体数字仍标明二手解读来源和核验范围。预测相对回测表现，与证明公式含义保持或实盘收益，是不同问题。</p>
 
   </article>
 </main>
