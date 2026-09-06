@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>Agent Skill 的七道可靠性门 — brief · Yidan He</title>
+<title>Agent Skill 为何失效：无效调用、执行偏离与错误经验回写 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,10 +472,10 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 7 sources
-    <span class="sep">·</span> last update 2026-08-16
+    <span class="sep">·</span> edition 2026-08-16
   </div>
 
-  <h1 class="brief-title">Agent Skill 的七道可靠性门</h1>
+  <h1 class="brief-title">Agent Skill 为何失效：无效调用、执行偏离与错误经验回写</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-08-16</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">7</span></span>
@@ -477,13 +483,15 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">agent-skill-reliability</span></span>
   </div>
 
+<p class="brief-revision">修订 <time datetime="2026-09-06">2026-09-06</time>：<span class="revision-note">将固定“七道门”改为按风险定位的失效环节，不把跨论文对照当作每次调用的必经流程。</span></p>
   <article class="body" id="brief-body">
 <!-- domain: claude-code-ecosystem -->
+<!-- edition_date: 2026-08-16 -->
 <p>Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找对文档，模型照着执行，成功轨迹再回写成新版 Skill。但实际生效过程要长得多。</p>
 <p><span class="claim claim-paper">论文</span> 2026 年 8 月集中出现的几项工作分别暴露了这条链上的断点。相关 Skill 可能不值得执行；模型读懂了程序也可能跳步；层级委派会丢失原始授权；看似成功的轨迹可能把后门沉淀进下一版 Skill；即使任务最终通过，Skill 也可能带来巨大的验证和实现成本。</p>
-<p><span class="claim claim-self">本文归纳</span> 因此，Skill 是一段会生效的 policy：它改变计划、工具调用、检查项、停止条件和后续经验。可靠性问题需要沿着一条完整生效链逐层检查：</p>
+<p><span class="claim claim-self">本文归纳</span> Skill 会改变计划、工具调用、检查项、停止条件和后续经验。下文沿着使用过程定位这些问题：</p>
 <p><code>nominate → admit → instantiate constraints → execute with authority → verify and diff → adopt or reject</code></p>
-<p>每一层消费不同的证据，也有不同的失败 owner。</p>
+<p>这是组织研究材料的顺序，不是每次调用都必须走完的固定流程。是否启用 Skill、怎样约束执行、要不要更新下一版，分别需要不同证据。</p>
 <figure class="diagram">
 <svg width="100%" viewBox="0 0 820 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="skill-gates-title skill-gates-desc">
 <defs>
@@ -509,12 +517,12 @@ footer.brief-foot a:hover { color: var(--text); }
 <path d="M1 1L9 5L1 9Z" fill="#5fd0c8"/>
 </marker>
 </defs>
-<title id="skill-gates-title">Agent Skill 的七道可靠性门</title>
-<desc id="skill-gates-desc">从候选提名到受控晋升的可靠性拓扑，包含失败模式、原始请求重锚和运行反馈闭环。</desc>
+<title id="skill-gates-title">Agent Skill 从启用到经验回写的失效位置</title>
+<desc id="skill-gates-desc">按使用过程定位无效调用、步骤遗漏与经验投毒；各类检查按任务风险选择，不是统一的必经流程。</desc>
 <rect width="820" height="620" fill="#0b1017"/>
 <rect x="20" y="20" width="780" height="580" rx="24" fill="url(#panel)" stroke="#2a3441" stroke-width="1.05"/>
-<text x="410" y="61" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="700" text-anchor="middle">Agent Skill 的七道可靠性门</text>
-<text x="410" y="88" fill="#8b97a4" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">Skill 可见 → 当前执行放行，需要逐门留下可核验证据</text>
+<text x="410" y="61" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="700" text-anchor="middle">Skill 从启用到经验回写：错误发生在哪里</text>
+<text x="410" y="88" fill="#8b97a4" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">按使用过程定位问题；检查强度取决于当前任务与风险</text>
 <rect x="95" y="116" width="146" height="44" rx="12" fill="url(#pseudo)" stroke="#2a3441" stroke-width="1.05"/>
 <circle cx="112" cy="138" r="3.5" fill="#fbbf24"/>
 <text x="170" y="143" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">相关但无用</text>
@@ -614,14 +622,15 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-paper">论文</span> <a href="#ref-luo2026">Query-Only Backdoor Attacks</a>（Emory University，Luo et al. 2026）研究一种不需要直接访问 Skill 的攻击。攻击者只提交经过构造的 query，让 Agent 在轨迹中执行目标动作，并明确表达对应触发条件；相同 condition-action pattern 在多个不同任务中重复出现后，可信 evolver 会把它总结成可复用的 trigger-dependent rule。</p>
 <p><span class="claim claim-paper">论文</span> Trajectory Backdoor Attack 在三个 benchmark、两个 skill-evolution system 和四个开源/闭源 backbone 上都能植入条件后门，同时保持 clean-task utility，并可达到或超过直接 Skill injection。风险来自 evolver 把“内部真实执行过”直接当成“可信、普遍、值得沉淀”。</p>
 <p><span class="claim claim-self">本文归纳</span> Skill 演化需要单独的 adoption gate。轨迹记录发生过什么，它的规范资格仍待审核。进入下一版 Skill 前，应保留 query 来源、执行环境、触发频率、对照任务、授权状态和 verifier receipt；候选规则还要经过冻结回归集、对抗触发检查和人工 scope review。缺少这道门，系统越擅长总结经验，越可能把稳定重复的攻击模式学得更牢。</p>
-<h2 id="8-六个旋钮-把-skill-可靠性变成可设计对象">8. 六个旋钮，把 Skill 可靠性变成可设计对象</h2>
-<p><span class="claim claim-self">本文归纳</span> 七篇工作分别定位了可靠性链上的独立失效面。可以用六个旋钮描述这片设计空间：</p>
+<p><a id="8-六个旋钮-把-skill-可靠性变成可设计对象"></a></p>
+<h2 id="8-按风险选择启用-执行与经验回写的检查">8. 按风险选择启用、执行与经验回写的检查</h2>
+<p><span class="claim claim-self">本文归纳</span> 七篇工作定位的是不同失效面，而非七个必经步骤。下面归纳各类检查要补什么证据，实施时按任务风险选择：</p>
 <table>
 <thead>
 <tr>
-<th>旋钮</th>
-<th>弱合同</th>
-<th>强合同</th>
+<th>检查对象</th>
+<th>容易遗漏的条件</th>
+<th>可补充的证据或机制</th>
 </tr>
 </thead>
 <tbody>
@@ -660,6 +669,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 这六轴允许按风险调节门的重量。低成本、能回滚的纯读任务可以合并步骤；高成本或高副作用任务需要更强合同。哪个步骤可以跳过、哪条授权不可继承、哪种结果能改写下一版，都应当写成系统状态，并配套观测、测试与回滚入口。</p>
 <p><span class="claim claim-self">本文归纳</span> 可靠的 Skill 系统是一条能区分候选、权威和证据的晋升链。Skill 提供可复用策略；runtime 决定何时以及如何让它生效；原始请求限定权限；verifier 与配对运行判断增量；adoption gate 决定经验是否有资格进入下一版。这些 owner 分开后，Skill 才能从“偶尔有帮助的上下文”变成可维护的 Agent 能力。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-he2026"></a> <strong>[From Relevance to Execution Utility: Reward-Aware Dynamic Execution Gating for Skill-Based LLM Agents]</strong> Liang He, Jingbo Wen, Hongyu Gu, Hao Li, Haoyu Wang, Yixiong Chen, Kangning Cui, Xilu Wang；Tongji University、The University of Sydney、University of Science and Technology of China、Nankai University、Johns Hopkins University、City University of Hong Kong、University of Surrey；2026. <a href="https://arxiv.org/abs/2608.09168">arXiv:2608.09168</a>。用于 relevance–utility gap、配对 bundle 扰动与 execution gate 结果。[arXiv 论文]</li>
@@ -677,6 +687,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-luo2026"></a> <strong>[Query-Only Backdoor Attacks on Self-Evolving Skills via Trajectory Poisoning]</strong> Yuyang Luo, Haoran Wang, Kai Shu；Emory University；2026. <a href="https://arxiv.org/abs/2608.08303">arXiv:2608.08303</a>。用于 query-only trajectory poisoning、自演化 Skill 的 experience supply-chain 风险。[arXiv 论文]</li>
 
 </ol>
+
 
   </article>
 

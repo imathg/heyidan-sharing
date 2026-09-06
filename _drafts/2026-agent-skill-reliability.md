@@ -1,15 +1,18 @@
-# Agent Skill 的七道可靠性门
+# Agent Skill 为何失效：无效调用、执行偏离与错误经验回写
 <!-- domain: claude-code-ecosystem -->
+<!-- edition_date: 2026-08-16 -->
+<!-- revised_date: 2026-09-06 -->
+<!-- revision_note: 将固定“七道门”改为按风险定位的失效环节，不把跨论文对照当作每次调用的必经流程。 -->
 
 Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找对文档，模型照着执行，成功轨迹再回写成新版 Skill。但实际生效过程要长得多。
 
 `[论文]` 2026 年 8 月集中出现的几项工作分别暴露了这条链上的断点。相关 Skill 可能不值得执行；模型读懂了程序也可能跳步；层级委派会丢失原始授权；看似成功的轨迹可能把后门沉淀进下一版 Skill；即使任务最终通过，Skill 也可能带来巨大的验证和实现成本。
 
-`[本文归纳]` 因此，Skill 是一段会生效的 policy：它改变计划、工具调用、检查项、停止条件和后续经验。可靠性问题需要沿着一条完整生效链逐层检查：
+`[本文归纳]` Skill 会改变计划、工具调用、检查项、停止条件和后续经验。下文沿着使用过程定位这些问题：
 
 `nominate → admit → instantiate constraints → execute with authority → verify and diff → adopt or reject`
 
-每一层消费不同的证据，也有不同的失败 owner。
+这是组织研究材料的顺序，不是每次调用都必须走完的固定流程。是否启用 Skill、怎样约束执行、要不要更新下一版，分别需要不同证据。
 
 <figure class="diagram">
 <svg width="100%" viewBox="0 0 820 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="skill-gates-title skill-gates-desc">
@@ -36,12 +39,12 @@ Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找�
 <path d="M1 1L9 5L1 9Z" fill="#5fd0c8"/>
 </marker>
 </defs>
-<title id="skill-gates-title">Agent Skill 的七道可靠性门</title>
-<desc id="skill-gates-desc">从候选提名到受控晋升的可靠性拓扑，包含失败模式、原始请求重锚和运行反馈闭环。</desc>
+<title id="skill-gates-title">Agent Skill 从启用到经验回写的失效位置</title>
+<desc id="skill-gates-desc">按使用过程定位无效调用、步骤遗漏与经验投毒；各类检查按任务风险选择，不是统一的必经流程。</desc>
 <rect width="820" height="620" fill="#0b1017"/>
 <rect x="20" y="20" width="780" height="580" rx="24" fill="url(#panel)" stroke="#2a3441" stroke-width="1.05"/>
-<text x="410" y="61" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="700" text-anchor="middle">Agent Skill 的七道可靠性门</text>
-<text x="410" y="88" fill="#8b97a4" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">Skill 可见 → 当前执行放行，需要逐门留下可核验证据</text>
+<text x="410" y="61" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="700" text-anchor="middle">Skill 从启用到经验回写：错误发生在哪里</text>
+<text x="410" y="88" fill="#8b97a4" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">按使用过程定位问题；检查强度取决于当前任务与风险</text>
 <rect x="95" y="116" width="146" height="44" rx="12" fill="url(#pseudo)" stroke="#2a3441" stroke-width="1.05"/>
 <circle cx="112" cy="138" r="3.5" fill="#fbbf24"/>
 <text x="170" y="143" fill="#e6edf3" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13" text-anchor="middle">相关但无用</text>
@@ -170,11 +173,13 @@ Agent Skill 常被理解成“按需加载的一段最佳实践”：检索找�
 
 `[本文归纳]` Skill 演化需要单独的 adoption gate。轨迹记录发生过什么，它的规范资格仍待审核。进入下一版 Skill 前，应保留 query 来源、执行环境、触发频率、对照任务、授权状态和 verifier receipt；候选规则还要经过冻结回归集、对抗触发检查和人工 scope review。缺少这道门，系统越擅长总结经验，越可能把稳定重复的攻击模式学得更牢。
 
-## 8. 六个旋钮，把 Skill 可靠性变成可设计对象
+<a id="8-六个旋钮-把-skill-可靠性变成可设计对象"></a>
 
-`[本文归纳]` 七篇工作分别定位了可靠性链上的独立失效面。可以用六个旋钮描述这片设计空间：
+## 8. 按风险选择启用、执行与经验回写的检查
 
-| 旋钮 | 弱合同 | 强合同 |
+`[本文归纳]` 七篇工作定位的是不同失效面，而非七个必经步骤。下面归纳各类检查要补什么证据，实施时按任务风险选择：
+
+| 检查对象 | 容易遗漏的条件 | 可补充的证据或机制 |
 |---|---|---|
 | activation gate | 检索到就加载 | relevance 只提名，utility / risk 决定执行 |
 | constraint closure | 相似片段或长 prompt | 原子规则、强制依赖、source span |

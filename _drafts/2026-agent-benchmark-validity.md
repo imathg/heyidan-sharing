@@ -1,11 +1,12 @@
-# 一条 failed 能说明什么：Agent Benchmark 的有效分母
+# Agent Benchmark：哪些失败能计入能力评测
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-08-30 -->
 
 `[本文归纳]` 评测跑完，结果里有一条 `failed`。最直接的读法是“这个 Agent 不会做这道题”，但这条读法要一连串前提同时成立才作数：题目本身得成立，对应的运行轨迹得真的走到要考的那一步，留下的证据得属于当前被测版本，判分的 Judge 得在这类任务上足够可靠。任何一条不成立，`failed` 就只是一个终态标签，不能直接解释成能力缺失。
 
 `[本文归纳]` 总分也是一样。一个通过率，只有在分母里的每道题都有效、每次运行都承载了目标能力、每份证据都属于当前系统、每条判定都可靠时，才是模型或 Agent 系统的效果数。否则它仍是一个数，却没有有效分母。数据问题、运行问题、基础设施问题和判分问题都被同一个标签吞掉了。
 
-> 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../meta/#claim-tags)。
+> 文中的标签区分来源报告与作者归纳；适用条件见各条主张。标签说明见 [本站约定](../../meta/#claim-tags)。
 
 `[本文归纳]` 2026 年的七项工作分别研究网络诊断、安全任务、工程建模、科学复现、runtime 评测、Judge 评测和 Skill 评测，却指向同一个问题。要解释一条 `failed`，需要依次回答五个问题：题目是否成立、运行是否走到考点、证据是否属于当前对象、判定是否可靠，以及两个系统的结果是否可比。
 
@@ -98,7 +99,7 @@
 <text x="82" y="256" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">false premise / no-fault 也覆盖</text>
 <text x="328" y="171" fill="#5fd0c8" font-size="14" font-weight="700" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">02 · RUNTIME GATE</text>
 <text x="328" y="203" fill="#e6edf3" font-size="16" font-weight="650" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">声明配置真实执行</text>
-<text x="328" y="233" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">exposure · version · trace</text>
+<text x="328" y="233" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">版本 · 执行终态 · 证据</text>
 <text x="328" y="256" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">evidence 绑定当前 candidate</text>
 <text x="574" y="171" fill="#5fd0c8" font-size="14" font-weight="700" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">03 · JUDGE GATE</text>
 <text x="574" y="203" fill="#e6edf3" font-size="16" font-weight="650" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">当前证据能够稳定判定</text>

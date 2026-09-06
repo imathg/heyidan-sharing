@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>长程 credit assignment：奖励信号该在轨迹的哪一层附着 — brief · Yidan He</title>
+<title>长程 Agent RL：如何给中间步骤分配信用 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,21 +472,23 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-28
   </div>
 
-  <h1 class="brief-title">长程 credit assignment：奖励信号该在轨迹的哪一层附着</h1>
+  <h1 class="brief-title">长程 Agent RL：如何给中间步骤分配信用</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-28</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">long-horizon-credit-assignment</span></span>
   </div>
 
+
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
-<p>2026 年 6 月，七个互不隶属的团队分别改进 GRPO 给长程 agent 分配 credit 的方式。<span class="claim claim-paper">论文</span> <a href="#ref-hsd">HSD</a>（George Washington University，Li et al. 2026）将 token 级 credit 定位到失败与成功路径的分叉处；<span class="claim claim-paper">论文</span> <a href="#ref-scpo">SCPO</a>（香港科技大学广州，Xu et al. 2026）从同组成功 sibling 恢复 step 级 credit；<span class="claim claim-paper">论文</span> <a href="#ref-himpo">HiMPO</a>（中国联通，Yan et al. 2026）只为 memory 写入动作设置单独的 credit 通道；<span class="claim claim-paper">论文</span> <a href="#ref-vimpo">VIMPO</a>（UC Berkeley，Kang et al. 2026）从 KL 最优性条件解析地读出 per-step value；<span class="claim claim-paper">论文</span> <a href="#ref-progress-advantage">Progress Advantage</a>（威斯康星大学麦迪逊分校，Oh et al. 2026）用训练策略与参考策略的对数概率比作为 step 信号；<span class="claim claim-paper">论文</span> <a href="#ref-bipace">BiPACE</a>（芝加哥大学 + 斯坦福 + 美团等，Wang et al. 2026）按行为相似度聚类 step、给每类动作配反事实基线；<span class="claim claim-paper">论文</span> <a href="#ref-tooluse-collapse">多步 tool-use RL 失稳分析</a>（中科院自动化所，Hao et al. 2026）诊断这套训练为何失稳，以及外部监督如何改善它。</p>
-<p>同一时期，<span class="claim claim-tech">tech report</span> <a href="#ref-glm52">GLM-5.2</a> 给出了系统实践中的另一类工程取舍：长程任务会产生更长执行轨迹，compaction 后同一个 prompt 下的 rollout 会被切成数量不同、长度高度可变的 sub-trace，因此从 group-wise optimization 转到 critic-based PPO，让 critic 估 token-level advantage。它补上了同一问题的另一面：一旦训练目标从「免 critic」转向「稳定处理变长 sub-trace」，何时应将 critic 重新引入训练环节？</p>
+<!-- edition_date: 2026-06-28 -->
+<p>一次有用的记忆写入，可能因为后续工具失败而一起受到负奖励；一次多余的工具调用，也可能因最终答对而获得正奖励。把同一个轨迹级 advantage 分给所有 token，无法在这些中间步骤之间作区分。这就是本文讨论的长程信用分配问题。</p>
+<p>下文比较 2026 年 6 月的七项研究：从成功同伴轨迹、策略自身或同类动作中构造局部信号，并考察额外监督的代价。<a href="#ref-glm52">GLM-5.2</a> 则提供另一种系统选择：上下文压缩把 rollout 切成数量和长度不一的 sub-trace 后，改用显式 critic 估计 token-level advantage。各方法的效果绑定各自实验，不能仅按信号更细就断定更好。</p>
 <blockquote>
 <p><strong>核心论点：GRPO 将一条轨迹的成败汇总为一个数，再均匀分配到轨迹里的每个 token。长程、稀疏奖励下，这个数无法区分「失败轨迹上的好步」和「成功轨迹上的坏步」。七篇论文大多在不训练 critic 的前提下给每个 step 估一个反事实基线；GLM-5.2 则说明，当 compaction 后的 trace 数量和长度方差足够大时，回到 critic-based PPO 也是同一组设计选择里的合理端点。</strong></p>
 </blockquote>
@@ -599,7 +607,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<h2 id="缺失对象-critic-本会给的-per-step-基线">缺失对象：critic 本会给的 per-step 基线</h2>
+<p><a id="缺失对象-critic-本会给的-per-step-基线"></a></p>
+<h2 id="不训练-critic-时-局部信用信号从哪里来">不训练 critic 时，局部信用信号从哪里来</h2>
 <p>actor-critic 方法有一个组件专门处理这个问题。critic 估「从这一步往后的期望回报」，于是每个 step 都有自己的基线，advantage 是当前回报减去这个基线。critic 需要单独训练，而且训练不稳定。GRPO 去掉 critic 以降低训练复杂度，这个简化也丢了 per-step 基线。</p>
 <p><span class="claim claim-tech">tech report</span> <a href="#ref-glm52">GLM-5.2</a> 给出另一类做法：重新引入 critic，用 critic-based PPO 适配 compaction 后的单 rollout 学习，并将 compacted sub-trace 全部作为可训练轨迹。它的重要性在于界定边界：七篇论文主要回答「不用 critic，怎么补上 per-step 基线缺口」；GLM-5.2 回答「何时这个缺口大到需要训练 critic」。</p>
 <p><span class="claim claim-self">本文归纳</span> 七篇论文里有六篇明确强调自己 critic-free、value-free 或 annotation-free。这六种方法估的是同一个缺失对象：critic 本该提供的 per-step 反事实基线。区别在于，不训练 critic 时，这个基线的代理从哪里取得。三种取法：</p>
@@ -633,7 +642,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p>这三派回答的是同一个问题的不同侧面，原则上可以叠加，例如以同组成功 sibling 初步定位，再用 action-cluster 基线在该位置上细化。</p>
-<h2 id="四个维度">四个维度</h2>
+<p><a id="四个维度"></a></p>
+<h2 id="对照信用粒度-参照信号与额外训练成本">对照信用粒度、参照信号与额外训练成本</h2>
 <p><span class="claim claim-self">本文归纳</span> 七个方案和 GLM-5.2 的差异落在四个维度的取值组合上，各自是这四维空间里的一个位点。</p>
 <table>
 <thead>
@@ -680,6 +690,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><strong>一句话收束：长程 agent 的 credit assignment 问题，是 GRPO 去掉 critic 后留下的 per-step 基线缺口。2026 年 6 月这一批方法都在补这个缺口；补法的差异可以归入四个维度，最关键的一个是反事实基线从哪里取，以及什么时候应该转向显式 critic、直接为 token-level advantage 付成本。</strong></p>
 </blockquote>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-hsd"></a> <strong>[Localizing Credit at the Divergence: Path-Conditioned Self-Distillation for LLM Reasoning]</strong> Yu Li, Shu Hong, Tian Lan，George Washington University（Dept. of Electrical and Computer Engineering），2026. <a href="https://arxiv.org/abs/2606.15576">arXiv:2606.15576</a>。本文用到它的 token 级 credit 定位在失败与成功路径分叉处、teacher 以同组成功 peer rollout 为条件。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -699,6 +710,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-tooluse-collapse"></a> <strong>[Why Multi-Step Tool-Use Reinforcement Learning Collapses and How Supervisory Signals Fix It]</strong> Yupu Hao, Zhuoran Jin, Huanxuan Liao, Kang Liu, Jun Zhao，中科院自动化所（认知与决策智能重点实验室）+ 中国科学院大学人工智能学院，2026. <a href="https://arxiv.org/abs/2606.26027">arXiv:2606.26027</a>。本文用作成本轴另一端的对照：多步 tool-use RL 失稳诊断、off-policy 与 hint-based 外部监督稳住训练。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -744,6 +756,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

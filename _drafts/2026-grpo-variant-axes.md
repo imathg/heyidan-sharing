@@ -1,6 +1,7 @@
-# GRPO 变体的设计轴：谁在承载更新信号
+# GRPO 变体比较：归一化、裁剪与轨迹信用分配
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-05-29 -->
 
 `[本文归纳]` 2026 年再看 GRPO，一组新名词容易让人误以为算法空间变得零散：Dr-GRPO 去掉标准化，DAPO 改 clip 和采样，BPPO 只更新最短正负 prefix，CARL 将 tool-use rollout 切到 segment。这些名称可统一归入一个问题：**更新信号到底由谁承载、在哪里归一化、和什么参照系比较**。这些设计轴可以组合，在小 group、单一 carrier、agentic segment 等边界条件下又会耦合。
 
@@ -48,7 +49,9 @@
 
 `[tech report]` [Dr-GRPO pin](#ref-drgrpo) 展示了另一个设计轴：原贴将 Cursor Composer 2 技术报告里的改法概括为去掉 group std normalization 和 response length normalization。这个点不足以形成一篇论文结论，但足以说明许多新 GRPO 的主要改动落在 A1。
 
-## BPPO 是边界最清楚的 A4 案例
+<a id="bppo-是边界最清楚的-a4-案例"></a>
+
+## BPPO：保留组内采样，只更新正负样本的短前缀
 
 `[论文]` [BPPO](#ref-zhao2026)（TeleAI + 上海交通大学，Zhao et al. 2026）问题很聚焦：同一个 prompt group 里，是否每条 completion 都提供同等有用的更新信号。它的 gradient-similarity 分析给出答案：same-class completions 的方向高度相似，correct-incorrect pair 更能提供区分信号。于是 BPPO 只拿最短 correct completion 和最短 incorrect completion 做 compact update unit，并且只更新 prefix。
 
@@ -74,13 +77,17 @@
 
 `[本文归纳]` 这说明 A4 和 A5 在 agentic 场景联系紧密：group key 迁到 state 或 branch，credit 粒度也随之从 trajectory 迁到 segment。它们仍可分开讨论，但边界不像 BPPO 那样清晰。agent 任务的比较单位是「同一个可决策局面」，而非单条 prompt。
 
-## baseline/value source 是第三条主线
+<a id="baseline-value-source-是第三条主线"></a>
+
+## 优势基线：与组均值、贪心回答还是 critic 比较
 
 `[tech report]` [ReMax 背后的故事](#ref-remax) 讨论更早期的 baseline 选择：ReMax 用 greedy decoding response 当 baseline，目的在于解耦「采样随机性到 response」的偏差，也和当时 rollout 基础设施成本高有关。到 GRPO，baseline 变成同 prompt group 的相对比较；到 CARL，value source 变成 segment-level critic。
 
 `[本文归纳]` A3 应作为独立轴保留。normalization scale 问的是 advantage 如何缩放，baseline/value source 问的是 advantage 与什么参照系比较。group mean、greedy response、segment critic 会带来不同方差、不同 bias，也会将 credit 的可解释边界推向不同位置。
 
-## 退化角：小 group 会让 A1 / A3 / A4 数值重合
+<a id="退化角-小-group-会让-a1-a3-a4-数值重合"></a>
+
+## 小 group 下，归一化、基线与更新样本会相互影响
 
 `[本文归纳]` group size 属于关键结构超参数。GRPO 的「relative」来自同 prompt group 内的对比；当有效 group 变小，A1 normalization、A3 baseline、A4 update carrier 会一起退化。极端到 `G = 1` 时，group mean 不再提供相对参照，std normalization 失去稳定意义，full-group update carrier 也只剩一个样本。
 
@@ -94,9 +101,11 @@
 
 `[本文归纳]` 这就是「边界上耦合」的具体含义。五轴表适合阅读算法差异；退化角提醒工程实现时不要将各轴视为完全正交。一个方案若同时调整 group size、去标准化和 carrier，表面是三项改动，实际可能都在处理同一个退化点。
 
-## 伪轴的判据：独立性和干净性
+<a id="伪轴的判据-独立性和干净性"></a>
 
-`[本文归纳]` 「伪轴」指有效但暂时不具备独立坐标资格的改法。这里有两种不同的 disqualification，需要分开讨论。
+## 区分独立改动与多组件耦合，检查收益是否伴随副作用
+
+`[本文归纳]` 一个改法有效，不代表它引入了独立的优化变量，也不代表它没有副作用。阅读消融结果时，需要分开检查这两件事。
 
 `[本文归纳]` 第一关是**独立性**：它是否能由已有轴张成。BPPO 满足这一条件，因为它固定 sampling、reward、group-relative normalization，只移动 A4 update carrier。长度下降出现在结果里，但 BPPO 没有将长度作为独立变量直接优化，因此长度在这里属于 A4 的副产物，尚不构成新的设计轴。
 

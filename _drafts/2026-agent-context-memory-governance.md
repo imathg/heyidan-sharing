@@ -1,10 +1,11 @@
-# 长程 agent 的上下文治理：记忆是一组带生命周期的对象
+# Agent 长期记忆：更新过时事实，保留可追溯证据
 
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-05 -->
 
-2026 年 6 月底到 7 月初，agent 论文出现一组密集信号。`[论文]` [Supersede](#ref-supersede)（Vrin，Patel 2026）将长期会话里的旧事实更新定义成可训练环境；`[论文]` [TraceRetain](#ref-traceretain)（Independent Researcher，Reddy 2026）显示 memory retention 在 noisy write 压力下才显现差异；`[论文]` [VISTA](#ref-vista)（CUHK + LIGHTSPEED，Xu et al. 2026）将 context 状态暴露成模型可见的 dashboard；`[论文]` [ECHO](#ref-echo)（北大 + 中科大 + 百度，Xie et al. 2026）在压缩后的 turn record 中保留 source index，用来回传训练 credit；`[论文]` [Self-GC](#ref-selfgc)（小红书，Hao et al. 2026）将 context 视为可 fold、mask、prune、recover 的对象集合；`[论文]` [AutoMem](#ref-automem)（Stanford，Wu et al. 2026）将 memory 管理视为可训练技能；`[论文]` [ContextNest](#ref-contextnest)（PromptOwl + Emory + IBM Research，Sulpovar et al. 2026）将 context governance 放到 retrieval 下层，负责版本、归属、完整性和审计。
+`[本文归纳]` 用户已经修改了计划，Agent 却因旧记录更容易被检索而继续沿用旧计划；一段摘要保住了结论，却丢掉支撑结论的工具结果和文件位置。这两类问题都不能只靠扩大上下文窗口解决。长期记忆除了存下信息，还要决定哪些版本仍然有效，以及压缩后怎样找回原始证据。
 
-这些工作分属不同层次，包括 benchmark、强化学习（RL）环境、系统层和知识库规范。`[本文归纳]` 它们共同指向一个转向：长程 agent 的上下文问题，已经从「如何将更多文本放入窗口」转向「哪些对象在什么时候可见、当前、可追溯、可训练」。摘要和向量库只覆盖其中一部分，记忆是一组带生命周期的对象。
+下文比较 2026 年 6 月底至 7 月初的一组研究：事实更新、抗噪检索、模型可见的上下文状态、可恢复压缩，以及记忆操作的训练。它们分属 benchmark、强化学习环境和系统实现，不能当作同一架构的联合验证；但可以据此分清容量、事实版本、来源追溯和管理策略各自要解决的问题。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -103,7 +104,9 @@
 
 `[本文归纳]` 第一层工程直觉是扩窗口或做摘要。这一做法只能处理预算层。进入退化层和当前性层后，系统要维护对象状态：哪条信息已过期、哪条仍可用、哪个版本在某次回答时对 agent 可见。
 
-## 四个约束：当前、选择、地址、审计
+<a id="四个约束-当前-选择-地址-审计"></a>
+
+## 旧事实、噪声和压缩分别会丢掉什么
 
 `[本文归纳]` 这些论文反复出现四个约束。相比「记忆容量」，它们更接近长程 agent 的核心指标。
 
@@ -122,7 +125,9 @@
 | 源地址 | 摘要保留结论，训练和审计找不到证据来源 | ECHO、Self-GC |
 | 审计 | 系统回答后无法复原知识版本和可见性 | ContextNest |
 
-## 谁来管理上下文
+<a id="谁来管理上下文"></a>
+
+## 上下文管理由规则、模型还是训练策略执行
 
 `[本文归纳]` 这些工作还呈现一条产品分歧：上下文管理由谁负责。不同答案对应不同产品形态。
 
@@ -163,7 +168,9 @@ ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounde
 
 `[本文归纳]` 这两篇将 memory 从单一 buffer 扩展为多对象系统。视觉 cue、事实版本、用户属性、tool evidence、file locator 是不同对象。每种对象有自己的保真要求：视觉对象要保留感知细节，事实对象要保留当前性，个性化对象要控制推理漂移，tool evidence 要保留 source address。将它们全压成一段自然语言摘要，会让不同约束互相覆盖。
 
-## 一张设计表
+<a id="一张设计表"></a>
+
+## 比较记忆系统的对象、管理者与保留保证
 
 `[本文归纳]` 这些方法可以归入四个设计维度。它们彼此可组合，每个系统都需在这些维度上取值。
 
@@ -178,7 +185,9 @@ ECHO 的做法是把每个 environment turn 压成 memory record，重建 bounde
 
 `[本文归纳]` 这类 testbed 的价值主要来自实验变量化的 memory interface，小样本胜率属于附带读数。未来 agent memory 论文若只报告「加 memory 提升多少」，而缺少对象可见性、层级 ablation 和版本复原说明，证据密度会偏低。
 
-## 对 agent 产品的含义
+<a id="对-agent-产品的含义"></a>
+
+## 存储、可见性选择与学习审计分别负责什么
 
 `[本文归纳]` 如果将这些结论用于 coding agent、research agent 或个人知识库 agent，最直接的产品判断是：自动摘要适合做 token 预算工具，长期记忆仍需要显式治理层。自动摘要可以降低 token；当前性、选择性、源地址和审计需由治理层单独承担。
 

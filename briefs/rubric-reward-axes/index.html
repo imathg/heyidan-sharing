@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆 — brief · Yidan He</title>
+<title>Rubric 奖励与步骤信用：两种细化训练信号的方法 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,36 +472,40 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 8 sources
-    <span class="sep">·</span> last update 2026-07-12
+    <span class="sep">·</span> edition 2026-06-14
   </div>
 
-  <h1 class="brief-title">Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆</h1>
+  <h1 class="brief-title">Rubric 奖励与步骤信用：两种细化训练信号的方法</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-06-14</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">8</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#rubrics" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">rubrics</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">rubric-reward-axes</span></span>
   </div>
 
+<p class="brief-revision">修订 <time datetime="2026-09-06">2026-09-06</time>：<span class="revision-note">区分按要求评分与按时间步骤分配信用，撤回“rubric条目就是credit单元”的等同表述。</span></p>
   <article class="body" id="brief-body">
 <!-- domain: rubrics -->
-<p><span class="claim claim-paper">论文</span> RLVR 在数学和代码上好用，靠的是答案能自动判对错。一旦任务只满足部分要求、或根本没有单一参考答案，这个前提就会消失。<span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a>（Cohere Labs，Dash et al. 2026）把每个 prompt 拆成一组原子要求的 checklist，逐项用 LLM verifier 打分再合成 soft reward，在指令遵循设置上 IFEval 提升至多 <strong>11.1 分</strong>。<span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a>（马里兰大学，Agrawal et al. 2026）从 RL 侧切入：GRPO 用 outcome reward 训练，当一组采样轨迹拿到相同 verifier 分时，group-relative advantage 坍缩到零，梯度消失。</p>
-<p><span class="claim claim-self">本文归纳</span> 2026 年上半年，多项相互独立的工作采用同一种做法：将一个标量 reward 拆成一组子信号，再重新聚合。<strong>核心论点：rubric 构造（judge 侧将回答拆成要求条目）和 credit assignment（RL 侧将轨迹拆成 step 或 prefix）是同一个分解的两面，一个 rubric 条目就是一个 credit 单元</strong>。这些方案的差异落在五个正交维度上。</p>
+<!-- edition_date: 2026-06-14 -->
+<p>一个回答可能满足内容要求，却违反格式要求；一条最终失败的轨迹，也可能包含正确的中间步骤。前者需要按要求评分，后者需要给步骤分配信用。两者都能让训练信号更细，但评分对象不同，不能直接互换。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a> 用原子要求 checklist 形成部分得分，在其指令遵循设置上 IFEval 提升至多 <strong>11.1 分</strong>；<a href="#ref-verigate">VeriGate</a> 则在 GRPO 的组内轨迹全部取得 0 分时引入步骤监督。<span class="claim claim-self">本文归纳</span> 本文比较这两类方法的信号对象、来源、聚合和偏差，不把 rubric 条目等同于某个时间步骤的贡献，也不将跨论文对照当作统一数学证明。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
-<figure style="margin: 18px 0 24px;"><svg viewBox="0 0 760 300" width="100%" role="img" aria-label="rubric reward decomposition two faces" style="border:1px solid #2a3441;border-radius:4px;background:#0a1018;"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#131922"/><stop offset="1" stop-color="#1a2230"/></linearGradient><style>.t{fill:#e6edf3;font:600 15px Charter,Georgia,serif}.s{fill:#8b97a4;font:12px Charter,Georgia,serif}.m{fill:#5fd0c8;font:12px "JetBrains Mono",monospace}.b{fill:url(#bg);stroke:#3aa89f;stroke-width:1.2;rx:8}</style></defs><text x="380" y="32" text-anchor="middle" class="t" font-size="17">一个标量 reward，两侧分解</text><rect x="40" y="60" width="280" height="170" rx="8" class="b"/><text x="180" y="86" text-anchor="middle" class="t">judge 侧：rubric 构造</text><text x="180" y="110" text-anchor="middle" class="s">holistic 打分 → 拆成要求条目</text><rect x="70" y="128" width="220" height="26" rx="4" fill="#0a1018" stroke="#3aa89f" stroke-width="0.8"/><text x="180" y="146" text-anchor="middle" class="m">checklist item / criterion</text><text x="180" y="184" text-anchor="middle" class="s">Soft-RLVR · ELMES+ · MERIT</text><text x="180" y="206" text-anchor="middle" class="s">Dynamic Rubrics · Eval-Skill</text><rect x="440" y="60" width="280" height="170" rx="8" class="b"/><text x="580" y="86" text-anchor="middle" class="t">RL 侧：credit assignment</text><text x="580" y="110" text-anchor="middle" class="s">outcome reward → 拆到步骤</text><rect x="470" y="128" width="220" height="26" rx="4" fill="#0a1018" stroke="#3aa89f" stroke-width="0.8"/><text x="580" y="146" text-anchor="middle" class="m">step / prefix credit</text><text x="580" y="184" text-anchor="middle" class="s">VeriGate · PUM</text><text x="580" y="206" text-anchor="middle" class="s">Orch-RM (BT pair)</text><line x1="320" y1="145" x2="440" y2="145" stroke="#5fd0c8" stroke-width="1.4" stroke-dasharray="5 4"/><text x="380" y="138" text-anchor="middle" class="m">item = credit</text><text x="380" y="270" text-anchor="middle" class="s">同一个稀疏 / 退化信号问题，分解是共同解</text></svg></figure>
-<h2 id="触发条件-可验证性是一道谱">触发条件：可验证性是一道谱</h2>
-<p><span class="claim claim-paper">论文</span> 数学和代码处在可验证性谱的一端，正确性能自动判定，reward 退化成 0/1 就够。多要求的指令、开放式写作、教学对话处在另一端，一个回答可能满足三条要求、违反第二条，单个布尔函数很难一次判完。<a href="#ref-soft">Soft-RLVR</a>（Cohere Labs，Dash et al. 2026）把这种情况叫部分可验证（partially verifiable），处理办法是把 prompt 转成原子要求的 checklist，逐项判、给部分得分，把稀疏的全有全无监督换成稠密信号。</p>
-<p><span class="claim claim-paper">论文</span> 同样的退化在 RL 侧表现为梯度消失。<a href="#ref-verigate">VeriGate</a>（马里兰大学，Agrawal et al. 2026）指出，GRPO 的组内优势靠采样轨迹之间的差异提供梯度，当 verifier 给一组轨迹打出相同分数时，优势归零、训练停滞。<span class="claim claim-self">本文归纳</span> 两侧描述的是同一件事：标量信号在难判定的任务上要么太粗（judge 给不出区分度），要么太稀（RL 没有梯度）。把信号拆细是两侧共同的出路。</p>
-<h2 id="一个分解-两侧失败">一个分解，两侧失败</h2>
-<p><span class="claim claim-self">本文归纳</span> judge 侧和 RL 侧的方法在数学形式上重合。judge 侧把回答拆成要求条目逐条打分，RL 侧把轨迹拆成步骤逐步赋信用，两者都是先把一个标量拆成一组子分、再聚合成训练信号。一个 rubric 条目和一个 credit 单元是同一个对象在两侧的名字。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a> 的三段设计将这种对应落实为三步：verifier 能区分轨迹时使用 outcome reward，不可区分时启用过程监督；将 Process Reward Model 的步骤分转成 future-cumulated reward，给出延续敏感的信用；再转成 group-normalized token-level 优势，恢复梯度。在 MATH 上训练 1.5B 和 7B 的 Qwen2.5-Instruct，并在六个推理基准上评测，平均准确率分别提升约 <strong>20%</strong> 和 <strong>12%</strong>，零梯度失败显著减少。<span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a> 采用要求轴的对应版本：checklist 逐项分直接作为 RL reward，judge 的分解和训练的分解在同一步完成。</p>
+<figure style="margin: 18px 0 24px;"><svg viewBox="0 0 760 300" width="100%" role="img" aria-label="按要求评分与按步骤分配信用的区别" style="border:1px solid #2a3441;border-radius:4px;background:#0a1018;"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#131922"/><stop offset="1" stop-color="#1a2230"/></linearGradient><style>.t{fill:#e6edf3;font:600 15px Charter,Georgia,serif}.s{fill:#8b97a4;font:12px Charter,Georgia,serif}.m{fill:#5fd0c8;font:12px "JetBrains Mono",monospace}.b{fill:url(#bg);stroke:#3aa89f;stroke-width:1.2;rx:8}</style></defs><text x="380" y="32" text-anchor="middle" class="t" font-size="17">按要求评分与按步骤分配信用</text><rect x="40" y="60" width="280" height="170" rx="8" class="b"/><text x="180" y="86" text-anchor="middle" class="t">judge 侧：rubric 构造</text><text x="180" y="110" text-anchor="middle" class="s">holistic 打分 → 拆成要求条目</text><rect x="70" y="128" width="220" height="26" rx="4" fill="#0a1018" stroke="#3aa89f" stroke-width="0.8"/><text x="180" y="146" text-anchor="middle" class="m">checklist item / criterion</text><text x="180" y="184" text-anchor="middle" class="s">Soft-RLVR · ELMES+ · MERIT</text><text x="180" y="206" text-anchor="middle" class="s">Dynamic Rubrics · Eval-Skill</text><rect x="440" y="60" width="280" height="170" rx="8" class="b"/><text x="580" y="86" text-anchor="middle" class="t">RL 侧：credit assignment</text><text x="580" y="110" text-anchor="middle" class="s">outcome reward → 拆到步骤</text><rect x="470" y="128" width="220" height="26" rx="4" fill="#0a1018" stroke="#3aa89f" stroke-width="0.8"/><text x="580" y="146" text-anchor="middle" class="m">step / prefix credit</text><text x="580" y="184" text-anchor="middle" class="s">VeriGate · PUM</text><text x="580" y="206" text-anchor="middle" class="s">Orch-RM (BT pair)</text><line x1="320" y1="145" x2="440" y2="145" stroke="#5fd0c8" stroke-width="1.4" stroke-dasharray="5 4"/><text x="380" y="138" text-anchor="middle" class="m">对象不同</text><text x="380" y="270" text-anchor="middle" class="s">要求条目与时间步骤并非一一对应；组合使用需要明确映射</text></svg></figure>
+<p><a id="触发条件-可验证性是一道谱"></a></p>
+<h2 id="回答只满足部分要求时-怎样给训练信号">回答只满足部分要求时，怎样给训练信号</h2>
+<p><span class="claim claim-paper">论文</span> 数学题的答案核对、代码的测试用例可以提供自动验证信号；但即使能判定最终成功与否，二值奖励也未必足以区分训练中的候选。多要求的指令、开放式写作和教学对话还可能只满足部分要求。<a href="#ref-soft">Soft-RLVR</a>（Cohere Labs，Dash et al. 2026）将 prompt 转成原子要求的 checklist，逐项判断并给部分得分，让未完全合格的回答之间也能形成差异。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a>（马里兰大学，Agrawal et al. 2026）处理另一种情况：GRPO 的组内优势依赖采样轨迹之间的得分差异，一组轨迹获得相同 outcome 分时，这部分优势归零。<a href="https://arxiv.org/html/2605.30451v1#S3.SS1">其方法</a> 只在组内轨迹全部为 0 分时引入步骤监督，不包括全部为 1 分的组。<span class="claim claim-self">本文归纳</span> 这里的问题是组内缺少差异，不是“标量”这种表示本身有问题；按要求评分和按步骤监督，最终都可以汇总成标量奖励。</p>
+<p><a id="一个分解-两侧失败"></a></p>
+<h2 id="按要求评分与按步骤分配信用-回答不同问题">按要求评分与按步骤分配信用，回答不同问题</h2>
+<p><span class="claim claim-self">本文归纳</span> rubric 条目说明输出满足了哪项要求；步骤信用说明某个动作或前缀怎样影响后续回报。一项要求可能依赖多个步骤，一个步骤也可能同时影响多项要求。两者可以在同一训练中组合，但需要另行定义要求与步骤的对应关系；仅有逐项得分，不能恢复每一步的贡献。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a> 在组内轨迹全部失败时启用过程监督，其他组保留 outcome reward；它累加 Process Reward Model 的后续步骤分，形成 future-cumulated reward，再转成 group-normalized token-level 优势。这里累加的是 PRM 预测分，不是后续真实执行结果。在 MATH 上训练 1.5B 和 7B 的 Qwen2.5-Instruct，并在六个推理基准上评测，平均准确率分别提升约 <strong>20%</strong> 和 <strong>12%</strong>，零梯度失败显著减少。<span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a> 则聚合 checklist 逐项分作为 RL reward。前者补的是步骤监督，后者补的是要求维度的部分得分。</p>
 <blockquote>
-<p>把回答按要求拆（judge 侧）和把轨迹按时间拆（RL 侧），是同一个稀疏信号问题的两条解法。</p>
+<p>细化要求有助于判断回答哪里不合格；细化时间步骤有助于定位过程贡献。是否组合，以及怎样组合，要由任务和可取得的证据决定。</p>
 </blockquote>
 <h2 id="切要求-还是切轨迹">切要求，还是切轨迹</h2>
-<p><span class="claim claim-self">本文归纳</span> 第一个维度是切分对象。要求轴回答「这个回答好在哪几条」，时间轴回答「这条推理链从哪一步开始变好」。两轴独立，可同时取值。</p>
+<p><span class="claim claim-self">本文归纳</span> 首先区分切分对象。要求维度回答「这个回答好在哪几条」，时间维度回答「这条推理链从哪一步开始变好」。可以同时描述二者，但方法之间的联合效果仍需实验。</p>
 <table>
 <thead>
 <tr>
@@ -524,11 +534,12 @@ footer.brief-foot a:hover { color: var(--text); }
 <h2 id="rubric-从哪来">rubric 从哪来</h2>
 <p><span class="claim claim-self">本文归纳</span> 第二个维度是 rubric 的出处：从人手编写，到每条 query 在线生成，再到离线演化为可复用 skill，或训练专门的 rubric 生成器。后两种方式更能摊薄单次推理成本并跨 query 复用，代价是更依赖一次性离线投入。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-evalskill">Beyond Rubrics</a>（浙大 + 小红书，Yue et al. 2026）直接比较了前两档：每条 query 在线生成 criteria 会带来推理开销，也容易产生僵硬或与任务不一致的指引；Eval-Skill 改为离线演化可复用的评判 skill，每个 domain 只用 100 个 case 演化两阶段，随后直接注入 judge context，在 RewardBench 2 上给 Qwen3-8B 带来 <strong>+13.44%</strong>、给 DeepSeek-V4-Flash 带来 <strong>+18.51%</strong>。<span class="claim claim-paper">论文</span> <a href="#ref-wang2026">Dynamic Rubrics</a> 采用生成器路线：先用免训练的方法在数据集和实例两个粒度自动生成 rubric，再用 meta-judge reward 迭代微调一个 rubric 生成器，微调后的 14B 生成器在 rubric 生成上超过更大的闭源模型。</p>
-<h2 id="把-item-分数锚在结果上">把 item 分数锚在结果上</h2>
-<p><span class="claim claim-self">本文归纳</span> 第三个维度是每个子分锚在哪里。锚在 LLM 的主观判断（这一步是否合理）容易被 reward hacking，因为打分者和被打分者共享盲区；锚在下游结果（这一步是否真的提升解题率）则将信号绑定到可验证的终态，更难被操纵。</p>
-<p><span class="claim claim-paper">论文</span> <a href="#ref-pum">PUM</a> 把 prefix 评估从局部步骤正确性改成 prefix gain，定义为用一组轻量 student 模型条件在该 prefix 上、测得的解题率提升量，是 outcome-grounded 的 prefix utility。<span class="claim claim-paper">论文</span> <a href="#ref-verigate">VeriGate</a> 把 PRM 步骤分转成 future-cumulated reward，称比直接优化聚合 PRM 分的方法更难被 reward hacking。<span class="claim claim-self">本文归纳</span> 两者指向同一条经验：主观步骤分提供密度，结果锚定提供抗操纵性，工程上需要在两者之间取位置。</p>
+<p><a id="把-item-分数锚在结果上"></a></p>
+<h2 id="区分预测步骤分与实测结果增益">区分预测步骤分与实测结果增益</h2>
+<p><span class="claim claim-self">本文归纳</span> 分数来自模型预测，还是来自后续执行测得的结果，会改变它能支持什么判断。两者都需要可靠性检查；不能仅凭“结果锚定”这个名称，就保证分数不会被操纵。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-pum">PUM</a> 用一组轻量 student 模型从指定 prefix 继续求解，以实测解题率增益定义 prefix utility。<a href="https://arxiv.org/html/2605.30451v1#S3.SS2">VeriGate §3.2</a> 则累加后续 PRM 分数，让当前步骤的信用考虑预测的后续质量。前者测量求解结果，后者仍依赖 PRM；不能把 VeriGate 也当作真实结果锚定，再由两者共同推出抗 reward-hacking 的保证。</p>
 <h2 id="分解引入的新失败模式">分解引入的新失败模式</h2>
-<p><span class="claim claim-self">本文归纳</span> 将稀疏信号转为稠密信号的同时，会引入两个新失败模式。</p>
+<p><span class="claim claim-self">本文归纳</span> 细化或自动生成评分信号，还可能引入下面几类问题。</p>
 <table>
 <thead>
 <tr>
@@ -556,8 +567,9 @@ footer.brief-foot a:hover { color: var(--text); }
 </tbody>
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-soft">Soft-RLVR</a> 形式化了这个 trade-off，并给出 checklist 验证何时比 holistic 验证更可靠的条件；它的自验证变体 Soft-SVeRL 让 policy 兼任 verifier，容易因过宽松的自判将分数单调推高，需要显式稳定化以维持训练稳定。<span class="claim claim-paper">论文</span> <a href="#ref-elmes">ELMES+</a>（华东师大，Liu et al. 2026）报告 LLM judge 的打分方差远低于人类，但带 judge-specific 偏差，典型是 self-preference；它的 SceneGen 模块让评判标准和测试数据共同演化，用分数分布反推过严、过松或区分度弱的 rubric。<span class="claim claim-paper">论文</span> <a href="#ref-orchrm">Orch-RM</a>（Rutgers + Salesforce，Tsang et al. 2026）用多 agent 执行的中间产物构造胜负对训练 Bradley-Terry reward model，自监督、无人工标注，token 效率提升至多 <strong>10 倍</strong>、MAS 测试时扩展准确率提升至多 <strong>8%</strong>，代价同样是标准由模型自生成。</p>
-<h2 id="五个维度">五个维度</h2>
-<p><span class="claim claim-self">本文归纳</span> 将八个方案归纳后，差异落在五维空间，任一方案对应一个位点。每个维度都有对应方案实例。</p>
+<p><a id="五个维度"></a></p>
+<h2 id="选择方法前-先确认信号对象-来源与可靠性">选择方法前，先确认信号对象、来源与可靠性</h2>
+<p><span class="claim claim-self">本文归纳</span> 下表归纳八个方案的比较项目。它用于分辨方法差异，不证明这些项目相互独立或覆盖全部设计。</p>
 <table>
 <thead>
 <tr>
@@ -594,8 +606,9 @@ footer.brief-foot a:hover { color: var(--text); }
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> 五个维度彼此正交，选型时先定 K1（任务是否有可监督的中间步骤），再定 K3（是否有可测的下游结果决定能否结果锚定）；K5 的自验证档需配合 K4 的显式稳定化。这组划分仍需随着更多方案进入继续验证；如果出现第三种切分方式，或要求轴与时间轴在新任务里合并，就要修订。</p>
+<p><span class="claim claim-self">本文归纳</span> 选择方法时先看能取得什么证据：任务要求能否逐项判断，有没有可监督的中间步骤，能否测量后续结果。再检查评分者的偏差和聚合方式。自验证带来的宽松打分、部分得分奖励不完整回答等问题，都不能靠增加条目数量自动消除。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-soft"></a> <strong>[Soft-SVeRL: Self-Verified Reinforcement Learning with Soft Rewards]</strong> Saurabh Dash, Pierre Clavier, John Dang, Matthias Galle, Marzieh Fadaee, Ahmet Üstün, Beyza Ermis，Cohere Labs，2026. <a href="https://arxiv.org/abs/2605.28561">arXiv:2605.28561</a>。部分可验证任务的 checklist soft reward 与自验证 reward 通胀。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -615,6 +628,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-merit"></a> <strong>[MERIT: Matching Expertise via Rubric-Informed Training for Reviewer Assignment]</strong> Zixuan Yang, Yibo Zhao, Weicong Liu, Xiang Li，华东师范大学，2026. <a href="https://arxiv.org/abs/2605.27865">arXiv:2605.27865</a>。criterion 级专长匹配转成可扩展适配度监督。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -660,6 +674,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

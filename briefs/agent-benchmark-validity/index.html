@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>一条 failed 能说明什么：Agent Benchmark 的有效分母 — brief · Yidan He</title>
+<title>Agent Benchmark：哪些失败能计入能力评测 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,10 +472,10 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 7 sources
-    <span class="sep">·</span> last update 2026-08-30
+    <span class="sep">·</span> edition 2026-08-30
   </div>
 
-  <h1 class="brief-title">一条 failed 能说明什么：Agent Benchmark 的有效分母</h1>
+  <h1 class="brief-title">Agent Benchmark：哪些失败能计入能力评测</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-08-30</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">7</span></span>
@@ -477,12 +483,14 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">agent-benchmark-validity</span></span>
   </div>
 
+
   <article class="body" id="brief-body">
 <!-- domain: rubrics -->
+<!-- edition_date: 2026-08-30 -->
 <p><span class="claim claim-self">本文归纳</span> 评测跑完，结果里有一条 <code>failed</code>。最直接的读法是“这个 Agent 不会做这道题”，但这条读法要一连串前提同时成立才作数：题目本身得成立，对应的运行轨迹得真的走到要考的那一步，留下的证据得属于当前被测版本，判分的 Judge 得在这类任务上足够可靠。任何一条不成立，<code>failed</code> 就只是一个终态标签，不能直接解释成能力缺失。</p>
 <p><span class="claim claim-self">本文归纳</span> 总分也是一样。一个通过率，只有在分母里的每道题都有效、每次运行都承载了目标能力、每份证据都属于当前系统、每条判定都可靠时，才是模型或 Agent 系统的效果数。否则它仍是一个数，却没有有效分母。数据问题、运行问题、基础设施问题和判分问题都被同一个标签吞掉了。</p>
 <blockquote>
-<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../meta/#claim-tags">本站约定</a>。</p>
+<p>文中的标签区分来源报告与作者归纳；适用条件见各条主张。标签说明见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
 <p><span class="claim claim-self">本文归纳</span> 2026 年的七项工作分别研究网络诊断、安全任务、工程建模、科学复现、runtime 评测、Judge 评测和 Skill 评测，却指向同一个问题。要解释一条 <code>failed</code>，需要依次回答五个问题：题目是否成立、运行是否走到考点、证据是否属于当前对象、判定是否可靠，以及两个系统的结果是否可比。</p>
 <h2 id="1-题目本身成立吗">1. 题目本身成立吗</h2>
@@ -578,7 +586,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <text x="82" y="256" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">false premise / no-fault 也覆盖</text>
 <text x="328" y="171" fill="#5fd0c8" font-size="14" font-weight="700" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">02 · RUNTIME GATE</text>
 <text x="328" y="203" fill="#e6edf3" font-size="16" font-weight="650" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">声明配置真实执行</text>
-<text x="328" y="233" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">exposure · version · trace</text>
+<text x="328" y="233" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">版本 · 执行终态 · 证据</text>
 <text x="328" y="256" fill="#8b97a4" font-size="12.5" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">evidence 绑定当前 candidate</text>
 <text x="574" y="171" fill="#5fd0c8" font-size="14" font-weight="700" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">03 · JUDGE GATE</text>
 <text x="574" y="203" fill="#e6edf3" font-size="16" font-weight="650" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">当前证据能够稳定判定</text>
@@ -613,6 +621,7 @@ footer.brief-foot a:hover { color: var(--text); }
 </figure>
 <p><span class="claim claim-self">本文归纳</span> 有效分母是效果结论的最低证据合同。它让“这批题里通过了多少”变成“哪些题真的测到了目标能力，哪些结果属于当前系统，哪些判定足够可靠”。这些条件分别成立后，分数才重新指向它声称测量的对象。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-shao2026"></a> <strong>[Beyond End-to-End Success: Diagnosing Failures in Long-Horizon Security LLM Agents]</strong> Wei Shao, Chongzhou Fang, Zuxiong Tan, Zequan Liang, Setareh Rafatirad, Avesta Sasan, Houman Homayoun，University of California, Davis / Rochester Institute of Technology，2026. <a href="https://arxiv.org/abs/2608.20563">arXiv:2608.20563</a>。本文用它定义 capability exposure，并区分考点前失败与考点后表现。[arXiv 论文]</li>
@@ -630,6 +639,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-tseng2026"></a> <strong>[FaulT-Bench: Towards Benchmarking Network Troubleshooting LLM Agents under Unreliable User Tickets]</strong> Kuan-Hao Tseng, Niruth Bogahawatta, Yasod Ginige, Kunjan Patel, Kosta Dakic, Suranga Seneviratne，The University of Sydney，2026. <a href="https://arxiv.org/abs/2608.27021">arXiv:2608.27021</a>。本文用它说明 Case validity 必须覆盖错误前提、无故障世界与输入表达变化。[arXiv 论文]</li>
 
 </ol>
+
 
   </article>
 

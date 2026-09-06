@@ -1,11 +1,12 @@
 # Agent RL 的轨迹证据：环境如何把执行过程变成训练信号
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-08-02 -->
 
-`[tech report]` [SearchArt](#ref-mei2026)（Huawei Cloud，Mei et al. 2026）在任务进入训练前同时核验问题、搜索轨迹与检索证据；`[论文]` [CAST](#ref-wang2026)（中国科学技术大学、南京大学、武汉大学、美团，Wang et al. 2026）用游戏 solver 的状态价值变化评价每次动作；`[论文]` [Graph Is the Verifier](#ref-li2026graph)（Singapore Management University 等，Li et al. 2026）让同一份代码图既提供调查工具，又核验 agent 引用的证据；`[论文]` [TAPO](#ref-li2026tapo)（北京大学、鹏城实验室，Li et al. 2026）将动作后的环境反馈重新用于 transition supervision；`[论文]` [ClawTrack](#ref-wu2026)（美团，Wu et al. 2026）区分结果分与过程分，并用过程分筛选训练轨迹；`[tech report]` [Frontis-MA1](#ref-yang2026)（Frontis.AI、Horizon Research、清华大学，Yang et al. 2026）用可执行环境连接任务构造、训练与长程搜索。
+`[本文归纳]` 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何。
 
-`[论文]` [TermiGen](#ref-zhu2026termigen)（UC Santa Barbara 等，Zhu et al. 2026）主动采集由错误、诊断和修复构成的恢复轨迹；[SkillSynth](#ref-fan2026skillsynth)（腾讯混元，Fan et al. 2026）以 scenario / skill path 控制训练经历的覆盖范围。
+下文对照任务合成、游戏求解、漏洞检测、环境交互和过程评测中的证据设计，说明这些记录怎样进入任务入池、SFT、RL、辅助训练与轨迹筛选。失败恢复轨迹和场景覆盖也在讨论范围内，但不与证据质量混成一个指标。
 
-`[tech report]` [OpenThoughts-Agent-RL-5K](#ref-raoof2026)（UC Berkeley、Stanford University 等，Raoof et al. 2026）的官方数据卡区分固定示范的 task-trajectory pair 与 online RL 使用的可执行任务包。
+其中一个基础区别是：SFT 可以使用固定示范，on-policy RL 则需要能由当前策略重新执行的任务环境。两者需要保存的训练对象不同。
 
 > **核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体。**
 
@@ -30,7 +31,9 @@
 
 `[论文]` [ClawTrack](#ref-wu2026) 同时保留结果分与过程分。它在 8 个领域构造 320 个任务和 25 个以上的确定性 mock services，对 21 个模型运行 **16,000 次以上 trials**。Task Score 衡量最终完成度，Process Score 逐 turn 评估目标对齐、效率、信息利用和结果核验。过程分能剔除结果分看不见的 lucky pass，并将失败定位到具体维度；按过程分筛选轨迹后，不同规模模型的 post-training 都获得提升。
 
-## 任务先形成可执行闭包
+<a id="任务先形成可执行闭包"></a>
+
+## 训练任务需要环境、动作、状态与验收规则
 
 `[tech report]` [SearchArt](#ref-mei2026) 将任务生成与核验置于同一条数据管线中。系统从网页文档构造问答、证据图和搜索轨迹，再联合检查 QA 一致性、轨迹质量与证据相关性。通过验证的轨迹才能用于 SFT 和 RL。SearchArt-27B 在报告中取得 BrowseComp-ZH 74.39、BrowseComp 70.06、DeepResearch-Bench 52.55。这些数字来自 Huawei Cloud 报告。对应的入池规则是：任务、轨迹和证据共同闭合，样本才能进入训练。
 

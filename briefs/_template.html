@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,7 +472,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> {{SOURCE_COUNT}} sources
-    <span class="sep">·</span> last update {{DATE}}
+    <span class="sep">·</span> edition {{DATE}}
   </div>
 
   <h1 class="brief-title">{{TITLE}}</h1>
@@ -477,6 +483,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">{{SLUG}}</span></span>
   </div>
 
+{{REVISION}}
   <article class="body" id="brief-body">
 {{BODY}}
   </article>

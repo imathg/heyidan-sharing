@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>可学习 Agent Harness：从固定工作流到运行时控制面 — brief · Yidan He</title>
+<title>Agent Harness 如何学习：状态读写策略与运行代码演化 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,10 +472,10 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 9 sources
-    <span class="sep">·</span> last update 2026-08-09
+    <span class="sep">·</span> edition 2026-08-09
   </div>
 
-  <h1 class="brief-title">可学习 Agent Harness：从固定工作流到运行时控制面</h1>
+  <h1 class="brief-title">Agent Harness 如何学习：状态读写策略与运行代码演化</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-08-09</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">9</span></span>
@@ -477,14 +483,17 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">learnable-agent-harness</span></span>
   </div>
 
+<p class="brief-revision">修订 <time datetime="2026-09-06">2026-09-06</time>：<span class="revision-note">区分两类学习对象，撤回固定流程与安全能力的错误对应；新策略checkpoint仍需评测后上线。</span></p>
   <article class="body" id="brief-body">
 <!-- domain: claude-code-ecosystem -->
-<p><span class="claim claim-self">本文归纳</span> Agent Harness 正在经历一次职责迁移。早期 Harness 主要回答“按什么步骤调用模型和工具”，新的研究开始让它回答五个运行时问题：当前什么状态有效，模型提出的动作何时生效，结果由什么证据确认，失败应修复哪一层，以及哪些运行经验可以更新下一版系统。</p>
-<p>这里的<strong>运行时控制面</strong>，指模型外负责状态、动作生效与核验的执行层。模型可以提出计划、工具调用和状态更新；控制面决定这些 proposal 能否进入权威状态、能否产生外部副作用，以及执行结果如何回写。固定 workflow 是控制面的一种策略，控制面本身还可以由规则、训练策略或可演化程序实现。</p>
+<!-- edition_date: 2026-08-09 -->
+<p><span class="claim claim-self">本文归纳</span> 让 Agent 从运行经验中改进，有两种不同的做法：训练模型更好地使用已有的状态读写接口，或者修改 Harness 中负责核验、修复和上下文组装的代码。前者改变既有动作的选择，后者会改变整个执行系统的行为。本文比较这两类学习对象，并说明它们分别需要什么反馈和验证。</p>
+<p>这里的 <strong>Harness</strong> 指模型外负责状态、工具执行与结果核验的程序。例如，模型声称任务完成后，Harness 检查实际产物；工具返回新状态后，Harness 决定怎样保存它、怎样处理旧记录。下文把这些职责称为“运行时控制面”。固定工作流、可训练策略和候选代码修改都可以作用于这一层，并不对应安全能力由弱到强的必然次序。</p>
 <blockquote>
-<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../meta/#claim-tags">本站约定</a>。</p>
+<p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
-<h2 id="1-从“怎么跑”到“什么算真的发生了”">1. 从“怎么跑”到“什么算真的发生了”</h2>
+<p><a id="1-从“怎么跑”到“什么算真的发生了”"></a></p>
+<h2 id="1-区分模型提案-实际执行与结果确认">1. 区分模型提案、实际执行与结果确认</h2>
 <p><span class="claim claim-personal">个人实验</span> <a href="#ref-weng2026">Harness Engineering for Self-Improvement</a>（Lilian Weng 个人博客，Weng 2026）把 Harness 的范围扩展到 prompt 之外：它组织规划、工具与动作、上下文、持久化工件、评测、权限和状态。文章将优化对象依次列为 <code>prompt → structured context → workflow → harness code → optimizer code</code>。优化对象越往后，越接近模型外的完整执行程序。</p>
 <p><span class="claim claim-self">本文归纳</span> 这条演进可以画成一条状态机。输入先成为 observation，Harness 选出当前有效状态，模型基于它生成 proposal；控制面随后核验或补充证据，再决定 commit、fallback 或转交人工处理。执行结束后先生成 receipt，receipt 经过校验后才能更新状态。</p>
 <table>
@@ -579,7 +588,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <rect x="30" y="78" width="198" height="60" rx="8" fill="#0f2532" stroke="#38bdf8" stroke-width="1.5"/>
 <text x="42" y="99" fill="#e2e8f0" font-size="13" font-weight="600">Runtime Policy</text>
 <text x="42" y="114" fill="#7dd3fc" font-size="10.5">read · update · consolidate</text>
-<text x="42" y="129" fill="#7dd3fc" font-size="10.5">高频选择既有动作 · 下一轮直接生效</text>
+<text x="42" y="129" fill="#7dd3fc" font-size="10.5">已验策略 · 逐步选择既有动作</text>
 <!-- Model (neutral) -->
 <rect x="241" y="84" width="110" height="52" rx="8" fill="#131c2c" stroke="#94a3b8" stroke-width="1.5"/>
 <text x="296" y="105" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">Model</text>
@@ -621,7 +630,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <text x="657" y="506" text-anchor="middle" fill="#fcd34d" font-size="10.5">frozen eval · replay</text>
 <text x="657" y="519" text-anchor="middle" fill="#fcd34d" font-size="10.5">通过后晋升 · 失败 rollback</text>
 <!-- footer -->
-<text x="30" y="604" fill="#8194a8" font-size="10.5">反馈先成为可追溯证据；policy 直接学习选择，program 经过行为门后才改变控制面。</text>
+<text x="30" y="604" fill="#8194a8" font-size="10.5">反馈先成为证据；新策略 checkpoint 与程序候选均经评测后上线。</text>
 </svg>
 <figcaption>实线表示单次运行的生效链；虚线表示 receipt 回写权威状态、runtime policy 与候选 Harness program 的学习路径。</figcaption>
 </figure>
@@ -642,52 +651,47 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-paper">论文</span> 这个实验的关键增量在于把外部状态使用转化为带成本的 policy action，并通过 memory store 的读写实现。训练后，模型把反复出现的 Harness 使用方式吸收到 policy 中，外部访问从固定、频繁的 scaffold 变为选择性调用。结论仍绑定 ALFWorld；真实工作流还包含权限、不可逆副作用和开放工具错误。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-nie2026">EvolveNet</a>（香港浸会大学、中国科学技术大学、香港科技大学，Nie et al. 2026）进一步把 Harness 程序本身设为学习对象：各数据本地部署从同一个 shared Harness 出发演化代码，随后只上传 scope-typed program delta 与行为证据。服务端组合候选修改，并在行为门通过后晋升下一版 Harness。</p>
 <p><span class="claim claim-paper">论文</span> 程序演化需要语义合并，参数平均并不适用。两个本地有效的修改可能同时编辑同一控制路径，也可能分别加强和移除同一 verifier。EvolveNet 因此把共同 base、适用范围、行为变化和 adoption gate 一起交给 aggregator。论文在五类设置上报告改进，但每种 aggregation rule 只有一个 seed，且 data locality 本身不提供隐私保证。</p>
-<p><span class="claim claim-self">本文归纳</span> 这两类学习对象需要分开。runtime policy 学的是既有接口上的选择，例如何时读取状态、何时 probe、何时 consolidate；Harness evolution 学的是接口背后的程序，例如 verifier、repair rule 和 context builder。前者可以在线高频调整，后者会改变执行语义，更适合先作为候选版本接受回归验证，再受控晋升。</p>
-<h2 id="5-五个旋钮描述了同一片设计空间">5. 五个旋钮描述了同一片设计空间</h2>
-<p><span class="claim claim-self">本文归纳</span> 九个来源归纳出一组围绕模型外执行控制的五轴坐标，覆盖它如何形成、运行和更新；完整 Agent 架构还包含模型、环境与多 Agent 协议等其他维度。</p>
+<p><span class="claim claim-self">本文归纳</span> 这两类学习对象需要分开。runtime policy 学的是既有接口上的选择，例如何时读取状态、何时 probe、何时 consolidate；Harness evolution 学的是接口背后的程序，例如 verifier、repair rule 和 context builder。已上线策略可以逐步选择既有动作；重新训练得到的 policy checkpoint 仍需评测后上线。程序演化改变执行语义，也应以候选版本接受回归验证，再受控晋升。</p>
+<p><a id="5-五个旋钮描述了同一片设计空间"></a></p>
+<h2 id="5-对照状态-提交-核验-修复与学习对象">5. 对照状态、提交、核验、修复与学习对象</h2>
+<p><span class="claim claim-self">本文归纳</span> 下表比较两类学习实际改变的对象。固定程序同样可以保留版本、先核验再提交，也可以做局部修复；是否学习与检查强度是两个不同选择。</p>
 <table>
 <thead>
 <tr>
-<th>旋钮</th>
-<th>固定 Harness</th>
-<th>可学习 runtime policy</th>
-<th>可演化 Harness program</th>
+<th>对照项</th>
+<th>学习状态使用策略</th>
+<th>演化 Harness 程序</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>状态 owner</td>
-<td>transcript 或固定 store</td>
-<td>BPE、Oracle-conditioned state</td>
-<td>新 schema 或 state operator 的候选版本</td>
+<td>改变什么</td>
+<td>既有接口下，何时读取、更新或整合状态</td>
+<td>实现接口的代码，如 context builder、核验或修复规则</td>
 </tr>
 <tr>
-<td>提交语义</td>
-<td>tool call 直接执行</td>
-<td>proposal 后 probe、certificate、commit</td>
-<td>commit rule 代码经 gate 晋升</td>
+<td>状态接口</td>
+<td>EvoHarness-RL 使用 BPE，学习调用时机</td>
+<td>EvolveNet 提交带适用范围的程序修改</td>
 </tr>
 <tr>
-<td>核验单位</td>
-<td>outcome score</td>
-<td>action、observation diff、artifact</td>
-<td>program delta 的行为回归</td>
+<td>核验对象</td>
+<td>策略执行的任务结果与状态访问成本</td>
+<td>程序修改在任务中的行为变化与合并冲突</td>
 </tr>
 <tr>
-<td>修复粒度</td>
-<td>整轮重跑或固定分支</td>
-<td>targeted probe、局部 subtask repair</td>
-<td>scope-typed patch 与 rollback</td>
+<td>更新方式</td>
+<td>训练得到新的 policy checkpoint</td>
+<td>本地演化后汇聚候选，接受行为验证</td>
 </tr>
 <tr>
-<td>学习对象</td>
-<td>prompt、workflow</td>
-<td>read / update / consolidate / act policy</td>
-<td>Harness code、aggregator rule</td>
+<td>不会自动获得什么</td>
+<td>状态事实的真实性、工具权限或可靠提交语义</td>
+<td>跨环境有效性、隐私保证或安全的代码合并</td>
 </tr>
 </tbody>
 </table>
-<p><span class="claim claim-self">本文归纳</span> 五轴里最容易混读的是“状态 owner”和“学习对象”。把更多历史塞进 prompt 会增加可见信息量；能否作为 current 状态仍由外部版本、来源和有效性合同决定。policy 可以优化选择，权威状态则由经过 admission 的 observation 形成。</p>
+<p><span class="claim claim-self">本文归纳</span> 学习对象与状态权威要分开。把更多历史塞进 prompt 会增加可见信息量；能否作为 current 状态仍由外部版本、来源和有效性合同决定。policy 可以优化选择，权威状态则由经过 admission 的 observation 形成。</p>
 <p><span class="claim claim-self">本文归纳</span> “提交语义”决定系统风险。低副作用的搜索可以允许模型直接调用，再以超时和重试策略处理；删除、发送、支付、发布等动作需要更强的 proposal、readback、certificate 或人工 gate。同一个 Agent 可以按工具风险采用分级提交语义。</p>
 <h2 id="6-先冻结运行合同-再训练-harness">6. 先冻结运行合同，再训练 Harness</h2>
 <p><span class="claim claim-personal">个人实验</span> <a href="#ref-wuzy2026">从 Spec 驱动转向环境与验证驱动</a>（吴佐衍个人技术文章，Wu 2026）把企业内部的构建、部署、测试、数据、日志、监控和发布链路视为 Agent 可调用环境。文章主张让 workflow 回到调度、权限、状态保存、审计和高风险检查，并把 spec 分成长期约束与可随反馈调整的实现假设。</p>
@@ -706,6 +710,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <p><span class="claim claim-self">本文归纳</span> 第三，Harness 演化怎样控制语义漂移。程序 delta 能积累本地经验，也会改变 tool contract、error handling 与状态 schema。aggregate score 容易奖励投机修复。候选修改还需要 contract test、旧 case replay、scope review 和可恢复发布，才能把“会改 Harness”变成可维护能力。</p>
 <p><span class="claim claim-self">本文归纳</span> 可学习 Harness 的核心目标是给模型行动配上清晰的状态、证据和生效边界。模型负责提出更强的行动；运行时控制面记录行动依据、修复 owner 和恢复入口，并把执行结果变成下一次学习的可信反馈。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-weng2026"></a> <strong>[Harness Engineering for Self-Improvement]</strong> Lilian Weng，个人技术博客，2026. <a href="https://lilianweng.github.io/posts/2026-07-04-harness/">Lil'Log</a>。用于界定 Harness 范围、优化对象上移和 Meta-Harness 研究版图。[个人实验 / 技术综述]</li>
@@ -727,6 +732,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-wuzy2026"></a> <strong>[从 Spec 驱动转向环境与验证驱动：我对 AI Coding 的一点思考]</strong> 吴佐衍，个人技术文章，2026. <a href="https://mp.weixin.qq.com/s/EMUsGt6m1aNQ4T9yDtg7Jg">微信公众号原文</a>。用于环境与验证资产、workflow 职责及约束 / 假设边界。[个人实验 / 技术文章]</li>
 
 </ol>
+
 
   </article>
 
@@ -772,6 +778,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

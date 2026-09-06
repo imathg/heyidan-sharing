@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/heyidan-sharing/favicon.svg">
-<title>OPD 稳定域：teacher 监督信号的失真路径与修复 — brief · Yidan He</title>
+<title>OPD 失效诊断：长生成、师生失配与异步旧轨迹 — brief · Yidan He</title>
 <style>
 :root {
   --bg: #0d1117;
@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,10 +472,10 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 13 sources
-    <span class="sep">·</span> last update 2026-07-19
+    <span class="sep">·</span> edition 2026-07-19
   </div>
 
-  <h1 class="brief-title">OPD 稳定域：teacher 监督信号的失真路径与修复</h1>
+  <h1 class="brief-title">OPD 失效诊断：长生成、师生失配与异步旧轨迹</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-07-19</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">13</span></span>
@@ -477,13 +483,15 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="item"><span class="k">slug</span> <span class="v">opd-training-pathologies</span></span>
   </div>
 
+
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
+<!-- edition_date: 2026-07-19 -->
 <p><span class="claim claim-self">本文归纳</span> 2026 年上半年，OPD（on-policy distillation）研究的焦点从「如何纳入 post-training pipeline」转向「何时失效」。半年内至少十篇论文分别报告了一种失效路径：prefix 变长后 teacher 失去判别力、teacher-student 分布差过大导致优化失败、异步训练下 rollout 变旧、聚合目标造成长度捷径。这些结果共同指向同一个图景：</p>
 <blockquote>
-<p><code>[本文归纳]</code> OPD 的 token 级监督只在有限区域内可靠，区域的边界由 teacher 判别力的覆盖范围决定。prefix 变长、分布差拉大、rollout 变旧，是 student 状态离开这个区域的三种方式。各家修复方案的目标高度一致：将训练拉回这个区域，或在区域边缘修复监督信号本身。</p>
+<p><code>[本文归纳]</code> OPD 的监督可靠性需要随训练状态检查：长 prefix 可能削弱 teacher 的纠偏信号，师生分布失配可能使优化失败，异步旧 rollout 则可能使损失使用过期的 student 分布。三者需要的检测量不同，不能只凭 KL 下降判断训练有效。</p>
 </blockquote>
-<p>下文称这个区域为<strong>稳定域</strong>。已发布的 <a href="../on-policy-distillation/">OPD 机制篇</a> 从 token 级观测给出了这个稳定域的两个切面：有效梯度集中在 student/teacher 高概率 token 的交集上；交集不动而 KL 下降，就是伪收敛。2026 年的这批论文将这些切面扩展为完整的失效分类，并给出一组可操作的修复手段。</p>
+<p>下文用“稳定域”概括监督仍可用的训练条件，它只是本文组织材料的比喻，不是已有统一指标或证明的数学区域。<a href="../on-policy-distillation/">OPD 机制篇</a> 讨论了高概率 token 交集和伪收敛；本文进一步对照长生成、师生失配、异步训练等失败，并说明相应修复的适用范围。</p>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
@@ -591,7 +599,8 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-paper">论文</span> 长度捷径由 <a href="#ref-ruiwang2026">Demystifying OPD</a>（港中文 + 腾讯 AI Lab，Rui Wang et al. 2026）系统刻画。这篇论文先界定 OPD 的作用：它是探索催化剂（exploration catalyst），通过密集的 token 级引导将 student 引向正确推理路径，并不扩展能力上限；prompt 多样性比单题采样数更重要。明确这一定位后，两个病理就有了统一解释：师生失配（Student-Teacher Mismatch）指引导信号与任务正确性错位（沿模型轴失真的行为面）；长度套取（Length Exploitation）指聚合 token 目标造成的长度依赖捷径，student 探索的是退化的长度模式，偏离推理策略。他们的结论不再以 teacher 规模为重心：<strong>调控后的信号质量，而非 teacher 大小，决定 OPD 成败</strong>。</p>
 <p><span class="claim claim-paper">论文</span> 后缀重复来自压缩恢复场景。<a href="#ref-zhang2026">ShortOPD</a>（字节跳动 + 中科院软件所，Zhang et al. 2026）观察到结构化剪枝后的模型 greedy pass@1 几乎归零，pass@k 却大幅可恢复，说明压缩降低了有用生成结果的概率，这些结果仍对应分布中的低概率区域，重复采样就能找回；可恢复区域的主要失效模式是后缀重复，长 rollout 会将早期用于恢复性能的 rollout 预算耗在这些低信息后缀上。修复是检测 teacher 确认的重复后缀，将重复开始前的存活 prefix 作为有效长度，按由短到长的训练日程（short-to-long）分配 rollout 预算：把分数恢复到未恢复值的约 <strong>9 倍</strong>，以四分之一训练时间（8.5 小时 vs 35.9 小时）达到与固定 8192-token 方案相当的性能。</p>
-<h2 id="修复方案收敛为三类信号调控">修复方案收敛为三类信号调控</h2>
+<p><a id="修复方案收敛为三类信号调控"></a></p>
+<h2 id="修复方法-限制训练区域-重加权或重算监督">修复方法：限制训练区域、重加权或重算监督</h2>
 <p><span class="claim claim-self">本文归纳</span> 2026 年各篇提出的修复方案，可以按调控对象划为三类。每类回答一个问题：在哪里训练（限域）、给各位置的信号多大权重（重加权）、用什么量做监督（信号替换）。</p>
 <table>
 <thead>
@@ -631,6 +640,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <h2 id="边界与未决问题">边界与未决问题</h2>
 <p><span class="claim claim-self">本文归纳</span> 三点边界。其一，稳定域目前还没有统一、可测的指标：各家用的 proxy 各不相同（teacher confidence、KL 信赖域、staleness 步数、drift gate），尚无对照实验说明哪一量适合作为统一度量。其二，三类修复之间的组合效应尚无人测量：限域、重加权、信号替换在同一训练里叠加后是否仍然相互独立，现有论文只分别测量各自的方案。其三，量化数字来自不同 setup（模型规模、benchmark、训练预算各异），横向比较只能在方向一致的粒度上进行，具体数值要结合各论文的实验条件解读。</p>
 <h2 id="reference">Reference</h2>
+
 <ol class="ref-list">
 
 <li><a id="ref-liu2026"></a> <strong>[Your Teacher Can't Help You Here: Combating Supervision Fidelity Decay in On-Policy Distillation]</strong> Yanjiang Liu, Jie Lou, Xinyan Guan, Yuqiu Ji, Hongyu Lin, Ben He, Xianpei Han, Le Sun, Xing Yu, Yaojie Lu，中国科学院软件研究所中文信息处理实验室 + 中国科学院大学 + 小红书，2026. <a href="https://arxiv.org/abs/2605.30833">arXiv:2605.30833</a>。用于支撑：SFD 命名与长生成增益数据。<span class="claim claim-paper">arxiv 论文</span></li>
@@ -660,6 +670,7 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-nrehiew2026"></a> <strong>[@nrehiew_ 关于 OPD teacher 选择的 X 推文]</strong> <a href="https://x.com/nrehiew_/status/2072318210788245649">原推</a>，2026-07。观点：teacher 应选同族模型，否则分布距离过大。<span class="claim claim-personal">个人实验 / X 推文</span></li>
 
 </ol>
+
 
   </article>
 
@@ -705,6 +716,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>

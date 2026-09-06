@@ -385,6 +385,7 @@ footer a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../">Home</a>
       <a href="./" class="active">前沿</a>
+      <a href="../topics/">专题</a>
       <a href="../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -437,8 +438,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B001 / 2026-05-27</span>
     </div>
-    <h2>OPD：on-policy 数据是抗遗忘的真正承担者</h2>
-    <p class="desc">串联 2026 年上半年的 GKD / TML 博客、DeepSeek-V4 / MiMo-V2-Flash / SDAR / Uni-OPD / ROPD / Rethinking-OPD，梳理 on-policy distillation 的主线。将 10+ 个方案归入 5 个正交维度，说明几何视角 (RL's Razor)、token-level 机制 (97-99% overlap)、failure mode (伪收敛) 与选型依据。</p>
+    <h2>OPD 抗遗忘的证据边界：学生采样与师生分布匹配</h2>
+    <p class="desc">学生自己生成训练轨迹，为什么可能减轻遗忘？从代码实验与师生 token 匹配研究看已有证据，也区分尚未成立的因果解释：策略 KL 不等于 token 交集，97–99% 概率质量不是通用收敛阈值。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-27</span>
       <span class="badge sources">12 sources</span>
@@ -448,12 +449,12 @@ footer a:hover { color: var(--text); }
 
   <a class="brief-card" href="capability-merge-distillation/" data-domain="agentic-rl">
     <div class="row1">
-      <span class="idx mono">B010 / 2026-07-13</span>
+      <span class="idx mono">B010 / 2026-07-12</span>
     </div>
     <h2>用 OPD 给领域后训练模型继续叠加能力：组件已有先例，组合仍待验证</h2>
-    <p class="desc">面向「已有领域后训练模型、要叠第 N 轮能力」的工程问题梳理文献：主轴「领域点续叠与通用点重合入」无正面对比（阴性结果），TML / CaMOPD / MOPD 三个最接近先例各差至少一维；守成槽给出 MulKI 双槽先例与 RL's Razor 的 KL 判据（「范式决定存活」已证伪）。所引文献均逐条核验到一手源。与 B001 互补。</p>
+    <p class="desc">已有领域后训练模型，下一轮能力应从当前模型继续叠加，还是回到通用底座重新合并？文献提供了若干蒸馏与能力保留组件，但还没有直接比较这两条路线。</p>
     <div class="badges mono">
-      <span class="badge date">2026-07-13</span>
+      <span class="badge date">2026-07-12</span>
       <span class="badge sources">16 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
@@ -463,8 +464,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B011 / 2026-07-19</span>
     </div>
-    <h2>OPD 稳定域：teacher 监督信号的失真路径与修复</h2>
-    <p class="desc">汇总 2026 年上半年 12 篇 OPD 失效研究（SFD / TrOPD / TRB / AsyncOPD / Demystifying / ShortOPD 等），用「稳定域」统一三条失真路径（沿生成轴、模型轴、时间轴）与三个行为签名（长度捷径、后缀重复、伪收敛），修复方案归入限域、重加权、信号替换三类。承接 B001 的 token 级机制观测。</p>
+    <h2>OPD 失效诊断：长生成、师生失配与异步旧轨迹</h2>
+    <p class="desc">OPD 的 loss 下降，任务表现却不升，可能发生了什么？分别检查长生成中的信号退化、师生分布失配和异步旧轨迹，再对照限制训练区域、重加权与重算监督的修法。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-19</span>
       <span class="badge sources">13 sources</span>
@@ -476,8 +477,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B012 / 2026-07-26</span>
     </div>
-    <h2>实时交互控制：把“何时行动”纳入模型与系统能力</h2>
-    <p class="desc">汇总话轮转换综述、TML Interaction Models、JoyAI-VL-Interaction、Instruct-FD、FlashRT、JarvisBench 等 9 个来源，把实时交互分为说话活动与话轮归属、五类话轮控制原语，以及内部任务的执行与结果处置。主线贯穿策略可控性、前台协调与后台推理的双循环，以及服务和安全延迟如何改变最终行为；给出 7 个设计维度与 5 类评测面。</p>
+    <h2>实时交互 Agent：话轮控制、后台协作与延迟预算</h2>
+    <p class="desc">用户说话时，Agent 该等待、接话还是打断？后台任务未结束时如何继续对话？文章比较话轮控制、前后台协作及延迟预算，区分已有研究结果与尚未联合验证的系统设计。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-26</span>
       <span class="badge sources">9 sources</span>
@@ -490,7 +491,7 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B013 / 2026-08-02</span>
     </div>
     <h2>Agent RL 的轨迹证据：环境如何把执行过程变成训练信号</h2>
-    <p class="desc">综合 9 项研究与公开资料，说明终局奖励为何不足以支撑 Agent 从长程执行中学习。除了 solver value、稳定对象 ID、next observation、过程 rubric 与审计，还区分 SFT 固定示范轨迹和 online RL 可执行任务包，并将失败恢复轨迹与 skill / state-path coverage 放回各自的设计轴；核心约束是环境 schema 决定 verifier 能核验什么。</p>
+    <p class="desc">同样是最终失败，轨迹中哪些动作做对了、哪里开始偏离？比较环境状态、工具观察、对象 ID 和过程验证如何提供训练证据，并区分固定示范数据与可执行的 RL 任务环境。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-02</span>
       <span class="badge sources">9 sources</span>
@@ -502,8 +503,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B014 / 2026-08-09</span>
     </div>
-    <h2>可学习 Agent Harness：从固定工作流到运行时控制面</h2>
-    <p class="desc">综合 9 个来源，说明 Agent Harness 如何从固定 workflow 扩展为持有权威状态、约束动作提交、核验执行结果并吸收反馈的运行时控制面。文章区分 runtime policy 与 Harness program 两类学习对象，并用状态 owner、提交语义、核验单位、修复粒度和学习对象五轴整理共同设计空间。</p>
+    <h2>Agent Harness 如何学习：状态读写策略与运行代码演化</h2>
+    <p class="desc">让 Agent 学会何时读写状态，与让系统自行修改 Harness 代码，是两种不同的学习任务。文章比较它们改变的对象、已有实验和验证需求；学习本身不会自动解决状态真实性、权限与代码合并问题。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-09</span>
       <span class="badge sources">9 sources</span>
@@ -515,8 +516,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B015 / 2026-08-16</span>
     </div>
-    <h2>Agent Skill 的七道可靠性门</h2>
-    <p class="desc">综合 7 篇本周论文，把 Skill 从候选提名到受控晋升拆成执行准入、约束闭包、逐步运行保证、原始授权重锚、配对失败归因和经验晋升门。核心结论是：Skill 会改变计划、工具调用、验证与停止条件，因此应按可执行 policy 管理，而非只把检索命中当作可靠性。</p>
+    <h2>Agent Skill 为何失效：无效调用、执行偏离与错误经验回写</h2>
+    <p class="desc">检索到 Skill 不等于它适用，开始执行也不等于约束一直有效。文章沿启用、执行与经验回写定位失败：何时误用技能、何时偏离授权，以及错误执行怎样被保存成可复用经验。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-16</span>
       <span class="badge sources">7 sources</span>
@@ -528,8 +529,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B016 / 2026-08-23</span>
     </div>
-    <h2>全双工 Agent 评测：交互状态、时间边界与失败归因</h2>
-    <p class="desc">综合 7 篇 2026 年论文，区分模型实际取得的输入、服务端生成与上下文提交、客户端播放边界、打断后的状态继承、下一轮反应和场景终态。文章用 evidence、playback、reaction 三本账与单层反事实，把全双工交互故障归因到可验证的接口和 owner，并明确工程代理与真实用户体验之间的证据缺口。</p>
+    <h2>全双工语音 Agent 评测：输入、播放与打断状态如何对齐</h2>
+    <p class="desc">服务端已经生成的话，用户可能还没听到；被打断后，下一轮又可能继承了错误状态。评测需对齐实际输入、客户端播放和用户反应，才能区分模型判断、状态继承与服务延迟造成的失败。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-23</span>
       <span class="badge sources">7 sources</span>
@@ -541,8 +542,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B017 / 2026-08-30</span>
     </div>
-    <h2>一条 failed 能说明什么：Agent Benchmark 的有效分母</h2>
-    <p class="desc">综合 7 篇 2026 年论文，从一条 failed 是否能证明 Agent 不会切入，依次检查题目是否成立、运行是否走到考点、证据是否绑定当前版本、Judge 是否可靠，以及两套系统的分数是否可比。文章把有效分母拆成逐 Case 的证据条件，并分别记录能力未暴露、运行错误、证据缺失和判分不确定。</p>
+    <h2>Agent Benchmark：哪些失败能计入能力评测</h2>
+    <p class="desc">一次 failed 可能来自能力不足，也可能来自题目、执行、证据或判分错误。文章说明哪些记录能进入能力比较，哪些应单列诊断，并检查跨版本分数是否使用了可比条件。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-30</span>
       <span class="badge sources">7 sources</span>
@@ -550,12 +551,51 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
+  <a class="brief-card" href="procedural-skill-consolidation/" data-domain="agentic-rl">
+    <div class="row1">
+      <span class="idx mono">B018 / 2026-09-06</span>
+    </div>
+    <h2>Agent 执行经验：复用粒度与部署条件</h2>
+    <p class="desc">综合 7 篇 2026 年研究，区分精确 replay、参数化操作、程序族先验与重新规划，说明经验写回为什么要先过归因、收敛和生效三道门。核心结论是：程序族只适合共享解题骨架但局部绑定会变化的相关任务，不是全局文档或逐任务轨迹的通用替代品。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-09-06</span>
+      <span class="badge sources">7 sources</span>
+      <span class="badge domain">agentic-rl</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="factor-representation/" data-domain="hf-alpha-factor">
+    <div class="row1">
+      <span class="idx mono">B019 / 2026-09-06</span>
+    </div>
+    <h2>因子公式怎样表示，才能检查和控制替换</h2>
+    <p class="desc">从 z-score 的分母替换看属性摘要、精确公式图与目标位置检查怎样分工，并区分类型、量纲、时间可得性和金融含义。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-09-06</span>
+      <span class="badge sources">4 sources</span>
+      <span class="badge domain">hf-alpha-factor</span>
+    </div>
+  </a>
+
+  <a class="brief-card" href="factor-substitution/" data-domain="hf-alpha-factor">
+    <div class="row1">
+      <span class="idx mono">B020 / 2026-09-06</span>
+    </div>
+    <h2>同是波动率指标，为什么不能直接互换</h2>
+    <p class="desc">用中心化方差、收益平方和、下行半方差与高低价估计的可手算反例，区分目标量、估计假设和使用位置；不把可计算当作投资有效。</p>
+    <div class="badges mono">
+      <span class="badge date">2026-09-06</span>
+      <span class="badge sources">3 sources</span>
+      <span class="badge domain">hf-alpha-factor</span>
+    </div>
+  </a>
+
   <a class="brief-card" href="grpo-variant-axes/" data-domain="agentic-rl">
     <div class="row1">
       <span class="idx mono">B002 / 2026-05-29</span>
     </div>
-    <h2>GRPO 变体的设计轴：谁在承载更新信号</h2>
-    <p class="desc">将 DAPO / Dr-GRPO / CISPO / BPPO / CARL / ReMax 等 GRPO-style 变体归入 5 个 update-signal 设计轴：normalization、ratio/clip、baseline/value、update carrier 和 credit granularity。重点说明 BPPO 为何是边界最清楚的 update-carrier 案例，以及 agentic RL 为何将 group 从 prompt 迁到 state / segment。</p>
+    <h2>GRPO 变体比较：归一化、裁剪与轨迹信用分配</h2>
+    <p class="desc">GRPO 变体究竟改了什么：优势归一化、概率比裁剪、基线、参与更新的样本，还是步骤信用？以 BPPO 等具体方法区分这些改动，并说明小 group 时它们为何会相互影响。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-29</span>
       <span class="badge sources">7 sources</span>
@@ -568,10 +608,10 @@ footer a:hover { color: var(--text); }
       <span class="idx mono">B003 / 2026-06-11</span>
     </div>
     <h2>DVAO：多目标 RL 里按方差自适应的优势组合</h2>
-    <p class="desc">GRPO 下多个冲突奖励（准确率 vs 长度、正确性 vs JSON 格式）标量化时，奖励相加 (RC) 会放大优势幅值，独立优势组合 (AC/GDPO) 则会隔离目标，甚至退化到易满分目标。DVAO（arXiv:2605.25604）用 rollout 组内经验方差动态加权，Prop 2 保证有界，Prop 3 提供隐式交叉正则，实验中两项目标均改善并形成帕累托支配。</p>
+    <p class="desc">DVAO 用组内奖励方差动态组合多个目标的优势。原论文表 1 中，4B 的准确率与长度依从度均提高；8B 的准确率下降 5.08 个百分点，换得长度依从度提高 36.45 个百分点，不能概括为全面反超。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-11</span>
-      <span class="badge sources">2 sources</span>
+      <span class="badge sources">3 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>
@@ -580,11 +620,11 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B004 / 2026-06-11</span>
     </div>
-    <h2>AlphaBench：LLM 做公式化因子挖掘，瓶颈在哪一环</h2>
-    <p class="desc">首个面向公式化 alpha 因子挖掘 (FAFM) 的 LLM 基准（CSI300 + Qlib 闭环）。核心结论：零样本下没有任何 LLM 能稳定判别因子优劣（≈掷硬币，公式省略执行上下文导致欠定）；但 pairwise 成对选择 SFT 效果显著且可跨市场泛化（GPT-4.1-Mini 0.44→0.83，SP500 仍 0.64）。EA 适合担任变异算子。</p>
+    <h2>AlphaBench：LLM 的因子绩效判断与成对微调</h2>
+    <p class="desc">AlphaBench 把因子生成、绩效判断和搜索分开测。本文聚焦零样本判断的不稳定性与成对选择微调；具体实验数字据公开解读转述，收益仍需回测验证。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-11</span>
-      <span class="badge sources">2 sources</span>
+      <span class="badge sources">3 sources</span>
       <span class="badge domain">hf-alpha-factor</span>
     </div>
   </a>
@@ -593,8 +633,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B005 / 2026-06-14</span>
     </div>
-    <h2>Rubric 当 reward：可验证答案缺席时，奖励信号往哪拆</h2>
-    <p class="desc">当任务只满足部分要求、没有单一参考答案时，reward 会从 binary verifier 退化为 rubric / checklist 逐项打分。将 2026 年 5-6 月八篇独立工作（Soft-RLVR / VeriGate / Eval-Skill / Dynamic Rubrics / PUM / Orch-RM / ELMES+ / MERIT）放入同一张设计表，归纳出 5 个正交维度：切要求还是切轨迹、rubric 从哪来、item 分数锚在主观还是结果、如何聚合、谁来打分。核心是 rubric 构造（judge 侧）和 credit assignment（RL 侧）是同一个分解的两面。</p>
+    <h2>Rubric 奖励与步骤信用：两种细化训练信号的方法</h2>
+    <p class="desc">一个回答满足了哪些要求，与哪一步推动了任务成功，是两种评分问题。文章比较 checklist 奖励和步骤信用的证据来源、聚合方法与偏差；逐项得分不能直接替代步骤贡献。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-14</span>
       <span class="badge sources">8 sources</span>
@@ -606,8 +646,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B006 / 2026-06-21</span>
     </div>
-    <h2>低精度训练的共同主线：损伤集中在分布的尖锐处</h2>
-    <p class="desc">2026 年 6 月六个互不隶属的团队（UFP4 / Nemotron 3 Ultra / ReQAT / TWLA / UltraQuant / ReSET）将 4-bit 精度扩展到 LLM 生命周期的每一段。核心论点：低精度损伤集中在分布的尖锐处：网格几何不对称、low-entropy token、激活 outlier 是同一现象的三个投影，每个配方都在将稀缺的 bit / 训练信号 / scale 粒度分配给尖锐处。归纳出 4 个正交维度（lifecycle 位置、量化张量、格式几何、尖锐再分配机制），并用 DeepSeek-V4 / Ideogram INT8 界定边界。</p>
+    <h2>4-bit LLM 的精度损失：格式偏置、激活异常值与关键 token</h2>
+    <p class="desc">4-bit LLM 的精度损失可能涉及格式舍入偏置、激活异常值或关键 token 敏感性。文章比较各自修法与硬件收益；这三种对象尚不能用同一个“尖锐性”机制解释。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-21</span>
       <span class="badge sources">8 sources</span>
@@ -619,8 +659,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B007 / 2026-06-28</span>
     </div>
-    <h2>长程 credit assignment：奖励信号该在轨迹的哪一层附着</h2>
-    <p class="desc">2026 年 6 月七篇长程 agent RL 论文（HSD / SCPO / HiMPO / VIMPO / Progress Advantage / BiPACE + 多步 tool-use 失稳分析）和 GLM-5.2 官方技术博客共同指向一个问题：奖励信号到底该附着在轨迹的哪一层。核心论点：多数 post-GRPO 配方都在补 critic 去掉后留下的 per-step 反事实基线；GLM-5.2 在长程 compaction 下转向 critic-based PPO，说明当子轨迹数量和长度方差升高时，显式 critic 的收益会重新超过成本。归纳出四个维度（附着粒度、反事实参照系、额外部件成本、时序方向），并用单步 RLVR、on-policy 蒸馏与 GLM-5.2 界定边界。</p>
+    <h2>长程 Agent RL：如何给中间步骤分配信用</h2>
+    <p class="desc">最终奖励怎样分给中间步骤？比较子轨迹、前缀价值、进展差分与 critic 等方法的局部信号和额外成本，区分具体任务中的收益与尚无统一答案的选型条件。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-28</span>
       <span class="badge sources">8 sources</span>
@@ -632,8 +672,8 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B008 / 2026-07-05</span>
     </div>
-    <h2>长程 agent 的上下文治理：记忆是一组带生命周期的对象</h2>
-    <p class="desc">汇总 Supersede / TraceRetain / VISTA / ECHO / Self-GC / AutoMem / AgenticSTS / DRIFTLENS / ContextNest 等 12 个研究信号，主线从扩窗口和摘要转向 context object lifecycle：当前性、选择性、源地址、审计。结论：长程 agent 的记忆系统需要 object store、policy layer、learning/audit layer，才能处理旧事实、噪声写入、source-addressability 和个性化漂移。</p>
+    <h2>Agent 长期记忆：更新过时事实，保留可追溯证据</h2>
+    <p class="desc">用户更新了计划，旧记忆却仍约束下一步；摘要保留结论，却丢掉工具结果和文件位置。文章比较过时事实处理、可见内容选择与来源追踪，不把这些能力强行合成一种已验证架构。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-05</span>
       <span class="badge sources">12 sources</span>
@@ -645,11 +685,11 @@ footer a:hover { color: var(--text); }
     <div class="row1">
       <span class="idx mono">B009 / 2026-07-12</span>
     </div>
-    <h2>Verifier 决定上限：判官不可靠时，强化学习会受系统性偏差限制</h2>
-    <p class="desc">将 Citation Verifier / RuVerBench / DeepSWE / SEVA / Hallucination Self-Play 等 8 个来源组织为一条主线：答案不可程序化验证时，打分的 LLM judge 本身就是 reward model，它的方向性偏差限制 RL 与自我改进的上限。标量 F1 掩盖方向性偏差，而 RL 会放大它；给出降低误差的四个调节维度（容量·校准·结构化·聚合）与通过共进化提高上限的路径。</p>
+    <h2>LLM Judge 用作奖励：误判偏差与校准方法</h2>
+    <p class="desc">相近的总分可能掩盖不同的误判。文章比较判据校准、投票与过程评分，说明如何检查判分偏差，以及为什么还要独立验证训练后的任务效果。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-12</span>
-      <span class="badge sources">8 sources</span>
+      <span class="badge sources">7 sources</span>
       <span class="badge domain">rubrics</span>
     </div>
   </a>

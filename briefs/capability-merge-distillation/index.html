@@ -203,6 +203,11 @@ h1.brief-title {
 }
 .brief-meta .item .k { color: var(--text-secondary); margin-right: 4px; }
 .brief-meta .item .v { color: var(--accent); }
+.brief-revision {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: -10px 0 24px;
+}
 
 /* ---------- Body content ---------- */
 .body { font-size: 15px; }
@@ -437,6 +442,7 @@ footer.brief-foot a:hover { color: var(--text); }
     <div class="topnav-links">
       <a href="../../">Home</a>
       <a href="../" class="active">前沿</a>
+      <a href="../../topics/">专题</a>
       <a href="../../meta/">本站约定</a>
       <a href="https://github.com/imathg/heyidan-sharing" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -466,158 +472,183 @@ footer.brief-foot a:hover { color: var(--text); }
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
     <span class="sep">·</span> 16 sources
-    <span class="sep">·</span> last update 2026-07-13
+    <span class="sep">·</span> edition 2026-07-12
   </div>
 
   <h1 class="brief-title">用 OPD 给领域后训练模型继续叠加能力：组件已有先例，组合仍待验证</h1>
   <div class="brief-meta">
-    <span class="item"><span class="k">date</span> <span class="v">2026-07-13</span></span>
+    <span class="item"><span class="k">date</span> <span class="v">2026-07-12</span></span>
     <span class="item"><span class="k">sources</span> <span class="v">16</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">capability-merge-distillation</span></span>
   </div>
 
+
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
-
-<p><span class="claim claim-tech">tech report</span> <a href="#ref-tml">Thinking Machines Lab</a>（2025）以完成 post-training（后训练）的 Qwen3-8B 为学生，先通过 midtrain 注入一批新知识，再让注入前的自身作为 teacher，进行 on-policy distillation 以恢复退化的 instruction following。<span class="claim claim-paper">论文</span> <a href="#ref-camopd">CaMOPD</a>（快手，2026）让 post-trained 的领域模型同时担任学生和 domain teacher，并以其谱系上的通用旧版担任 general teacher；两个 teacher 按 prompt 分槽路由。<span class="claim claim-paper">论文</span> <a href="#ref-mopd">MOPD</a>（北大 + 小米，2026）是公开多 teacher on-policy distillation 中目前最强的结果：学生从通用 SFT checkpoint 初始化，多个领域 RL expert 按域路由充当 teacher，一次训练整合全部领域能力，并给出了第二轮迭代的做法。</p>
-
-<p>三者都在做「把能力蒸进一个模型」，但工程中更常见的情形是：<strong>已有一个先经通用后训练、再经领域后训练的模型（业务模型的第 N 版），现要为它增量加入一项新能力（新领域知识、新工具、新任务），后续还会有第 N+1 轮。学生起点应是这个领域特化 checkpoint 本身，还是回到通用对齐模型，将旧业务能力和新能力重新合入？防遗忘要守的也不止一层：既要守领域对齐，也要守更基础的通用能力。</strong> 对 2016 年至今的相关文献逐条核验到一手源（其中有两条常见推断经核实并不成立，正文分别指出），结论可归纳为一句需严格限定范围的判断：</p>
-
+<!-- edition_date: 2026-07-12 -->
+<p>已有一个经过通用后训练、又经过领域后训练的业务模型，现在要为它增加新知识、新工具或新任务能力。训练应从当前领域 checkpoint 继续，还是回到通用对齐模型，把旧业务能力和新能力重新合入？除了保留旧业务效果，还要避免更基础的通用能力退化。</p>
+<p>本文按“学生从哪里开始”和“用什么保留旧能力”比较已有文献。最接近的三个 OPD 先例是 <a href="#ref-tml">Thinking Machines Lab 的先注入、后恢复</a>、<a href="#ref-camopd">CaMOPD 的领域与通用双 teacher</a>，以及 <a href="#ref-mopd">MOPD 的多领域整合与迭代</a>。它们分别验证了部分组件，没有直接回答上述两条训练路径哪条更好。尚未核验的扩展线索在文末单列，不用于确定结论。</p>
 <blockquote>
 <p><strong>每个组件均有直接文献支持，完整组合尚无单篇论文验证；最接近的三个先例各差至少一个维度。</strong></p>
 </blockquote>
-
-<p><span class="claim claim-self">本文归纳</span> 风险集中在组件之间的交互，这正是现有文献的空白。讨论范围限于「学生起点范式 + 防遗忘设计」；on-policy distillation 机制本身（on-policy 数据在抗遗忘中所起的作用、KL 几何、high-probability overlap window）属于另一个正交层面，见姊妹篇《<a href="../on-policy-distillation/">OPD：on-policy 数据是抗遗忘的真正承担者</a>》。</p>
-
+<p><span class="claim claim-self">本文归纳</span> 风险集中在组件之间的交互，这正是现有文献的空白。讨论范围限于「学生起点范式 + 防遗忘设计」；on-policy distillation 机制本身（on-policy 数据在抗遗忘中所起的作用、KL 几何、high-probability overlap window）属于另一个正交层面，见姊妹篇《<a href="../on-policy-distillation/">OPD 抗遗忘的证据边界：学生采样与师生分布匹配</a>》。</p>
 <blockquote>
 <p>正文每条 claim 均标注 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
 </blockquote>
-
 <h2 id="问题的构成-一个学生起点轴-一个防遗忘轴">问题的构成：一个学生起点轴，一个防遗忘轴</h2>
-
 <p>这个「给领域模型继续叠加能力」的工程问题可分为两个正交的设计轴。</p>
-
 <p><strong>第一个轴：学生起点取领域后训练 checkpoint，还是回到通用后训练 checkpoint。</strong> 两个候选都是 post-trained 模型：在已领域特化的 checkpoint 上继续增量训练，或者回到它的通用对齐祖先，将旧业务能力和新能力重新合入。on-policy 蒸馏以学生具备基本生成能力为前提，因此裸基座不在这条轴上（见下节的边界注记）。这个轴决定第 N+1 轮采用「增量叠加」还是「全量重新整合」，两端的成本结构和遗忘风险完全不同。</p>
-
 <p><strong>第二个轴：防遗忘靠什么。</strong> 增量训练会将权重推离原分布、削弱旧能力（catastrophic forgetting），需要用某种机制维持其在原有能力分布附近。一种常见手法是保留模型自身的冻结旧版本，让它在训练中充当 teacher。下文将这套手法称为<strong>自蒸馏锚</strong>（self-distillation anchor）：锚是停止更新的旧版自身，蒸馏是让当前模型与其对齐。文献里没有统一叫法，这一名称仅用于本文讨论。锚可以是冻结旧 checkpoint、学生参数的指数滑动平均（EMA），或谱系上更早的祖先模型；当学生已经领域特化时，需要保留的对象可能不止一个，领域对齐和通用能力可能需要分别设置锚（后文「守成槽」一节）。</p>
-
 <p>这两个轴的组合中，最缺乏直接证据的一格是「领域特化起点 × 冻结自身守成」；在此基础上再加上任务所需的外部 teacher 注入，便是本文的<strong>目标组合</strong>。下文从证据最扎实的部分谈到最稀薄的部分。</p>
-
 <h2 id="主轴-领域点续叠与通用点重合入-文献没有正面对比">主轴：领域点续叠与通用点重合入，文献没有正面对比</h2>
-
 <p><span class="claim claim-self">本文归纳</span> <strong>已检索文献中，尚无工作对「面对同一新能力，在领域特化 checkpoint 上续叠，或回到通用对齐点重新合入」作受控对比</strong>：效果、成本与遗忘三轴均无直接证据。目前只有两侧的单侧先例与结构近似证据。</p>
-
 <p><strong>续叠一侧：多轮在同一演化 checkpoint 上添加能力，2025-2026 已被反复验证。</strong> <span class="claim claim-paper">论文</span> <a href="#ref-shenfeld">Shenfeld et al. 2026</a> 在同一个累积 checkpoint 上链式叠加三项技能（Tool Use → Science → Medical），采用自蒸馏形态，保留既有技能与预存通用能力；第 2、3 轮均从已叠加能力的 checkpoint 继续训练。<span class="claim claim-paper">论文</span> <a href="#ref-rftcl">RFT-continual</a> 在严格顺序的任务流上训练 7 轮，RFT/GRPO 保留旧知识，最终达到与联合多任务训练相当的效果（基座是视觉语言模型，提供机制证据，而非文本 LLM 的直接证据）。<span class="claim claim-paper">论文</span> <a href="#ref-opr">On-Policy Replay</a> 通过回放由当前 checkpoint 生成并经 reward 过滤的 rollout 防遗忘，<span class="claim claim-paper">论文</span> <a href="#ref-moecl">MoE-CL</a> 通过每任务 LoRA expert 做参数隔离。防遗忘手段各异，但「第 N 轮继续在演化 checkpoint 上叠加」这一形态已有先例。</p>
-
 <p><strong>通用点一侧：多 teacher 融合路径的学生起点均为通用模型。</strong> <span class="claim claim-paper">论文</span> FuseLLM（ICLR 2024）主实验的目标模型是通用 base Llama-2 7B（附录包含 instruction-tuned 目标的补充实验，仍是通用模型），采用 off-policy；FuseChat（EMNLP 2025）以通用 chat 模型 OpenChat-3.5-7B 为 pivot，结合 off-policy 与参数合并；<a href="#ref-mopd">MOPD</a> 的学生是通用 Stage-1 SFT checkpoint。这条路径支持「将多方能力合入通用模型」，尚未支持「将能力合入已领域特化的模型」；其中只有 MOPD 采用 on-policy，不宜将 on-policy 视为整条融合路径的共性。</p>
-
 <p><strong>MOPD 的迭代设计介于两侧之间，也是文献中最接近「第 N 轮如何进行」的公开做法。</strong> 它仅在第 1 轮从通用 SFT 起点整合；迭代轮的原文是：</p>
-
 <blockquote>
 <p>We propose using the post-MOPD model as a new student and repeating the procedure: retrain each per-domain teacher from this student, then perform another MOPD integration with the new teachers.</p>
 </blockquote>
-
 <p><span class="claim claim-paper">论文</span> 迭代轮以合入后的<strong>累积模型</strong>为新学生，teacher 也以它为起点重新 fork；每轮均将所有领域槽全量重蒸（同一批领域的精炼，归一化分 0.937→0.986），而非单独新增一个新能力槽。<span class="claim claim-self">本文归纳</span> 对第 N 轮问题，MOPD 介于两极之间：起点上属于「续叠」侧（从当前累积模型继续），训练配方上属于「重整合」侧（全域槽重蒸、teacher 重训）。与目标组合相比，它尚缺守成锚：teacher 均为领域 expert，未设置冻结旧自身以守既有能力的槽，也尚未验证过每轮加入<strong>全新</strong>能力。</p>
-
 <p><strong>工业先例均从通用 instruct 起步，明确以深度领域特化模型为起点的公开先例仍然缺失。</strong> <span class="claim claim-tech">tech report</span> <a href="#ref-granite">IBM Granite</a> 在 granite-3.1-8b-instruct 上直接通过 RL 补充推理能力；Meta Llama 3.2 Vision 冻结整个 LM，仅训练视觉 adapter（<a href="https://ai.meta.com/blog/llama-3-2-connect-2024-vision-edge-mobile-devices/">官方博客</a>）；DeepSeek-V2.5 合并了通用 chat 和代码特化两个 post-trained checkpoint，但没有发布合并算法的技术报告（<a href="https://api-docs.deepseek.com/news/news0905/">官方公告</a>）。这些都支持「复用已 post-trained 的 checkpoint 继续添加能力」，但被复用的起点是通用 instruct 模型；「明确从业务特化 checkpoint 出发叠加新能力」的公开记录，已检索文献中尚未找到。</p>
-
 <p><strong>成本方面的先验仅限预训练层。</strong> <span class="claim claim-paper">论文</span> 续训 + replay 能以较少算力匹配全量重训（<a href="#ref-cpt">continual pretraining</a>，TMLR 2024；NVIDIA &quot;Reuse, Don't Retrain&quot; 同方向），但这些对照中的 &quot;from scratch&quot; 是随机初始化；主轴两端均保留对齐，成本量级不能直接外推。post-training 层「续叠与重合入」的成本对比（训练量、teacher 准备、回归评测）尚无文献。</p>
-
 <h3 id="边界注记-裸基座为何不在轴上">边界注记：裸基座为何不在轴上</h3>
-
 <p><span class="claim claim-paper">论文</span> <a href="#ref-gkd">GKD</a>（on-policy distillation 的方法学起源）将学生起点明确为前提：&quot;As opposed to a randomly initialized student, we assume access to a student that can generate sequences of adequate quality&quot;。on-policy 蒸馏依靠学生采样的 rollout 提供训练 state，学生必须已能产出 teacher 可给出有意义反馈的样本。GKD 实验从任务级 SFT checkpoint 起步，官方实现 TRL GKDTrainer 的规范用例是 instruction-tuned 模型，<a href="#ref-minillm">MiniLLM</a> 也先 SFT 再蒸馏。<span class="claim claim-tech">tech report</span> <a href="#ref-qwen3">Qwen3</a> 的 strong-to-weak distillation 属于另一类任务：从 base 模型蒸出小模型，整条管线<strong>替代</strong>四阶段 post-training（能力压缩，非增量合入）；进入 on-policy 阶段的学生也已是 off-policy 蒸馏冷启动后的 checkpoint。它 §4.7 那句「on-policy distillation 优于直接 RL、约 1/10 GPU hours」比较的是同一 off-policy 起点下 RL 与 OPD 的差别，与学生起点选择无关，因而不能作为本文主轴中学生起点选择的依据。</p>
-
 <h2 id="自蒸馏锚-从离线软标签到-on-policy">自蒸馏锚：从离线软标签到 on-policy</h2>
-
 <p>用「冻结的旧自身」作为 teacher 防遗忘，这一组件的文献先例可追溯至深度学习早期，演进链也较完整。</p>
-
 <p><span class="claim claim-paper">论文</span> <a href="#ref-lwf">Learning without Forgetting</a>（ECCV 2016）是奠基形态：更新网络前，先记录原网络在新任务数据上对旧任务的输出，再用 knowledge distillation loss（知识蒸馏损失）让更新后的网络逼近这些输出。关键性质是「uses only new task data」：不回放旧任务数据，只将「更新前的自己」在新数据上的输出作为锚。</p>
-
 <p><span class="claim claim-paper">论文</span> <a href="#ref-sdft">SDFT</a>（ACL 2024）将这套方法应用于 LLM：学生是已对齐的 Llama-2-7b-chat，微调前的自身离线改写任务数据，形成与原始分布匹配的 distilled dataset，再以此引导微调，显式缓解 catastrophic forgetting，并保留 helpfulness 与 safety alignment。它仍是<strong>离线</strong>形态：数据级改写加标准 NLL，不包含学生 rollout。这里的 SDFT 指 Yang et al. 的 ACL 2024 工作，与 Shenfeld et al. 的 2026 工作是两篇不同的论文。</p>
-
 <p><span class="claim claim-paper">论文</span> <a href="#ref-shenfeld">Shenfeld et al. 2026</a> 将自蒸馏锚扩展到 on-policy：学生从 post-trained 模型初始化（主实验 Qwen2.5-7B-Instruct），严格采用 on-policy（只从学生策略采样、最小化学生与 teacher 分布的 reverse KL），并将 on-policy self-distillation 定位为 &quot;a practical path to continual learning from demonstrations&quot;。</p>
-
 <table>
 <thead>
-<tr><th>工作</th><th>年份</th><th>自蒸馏锚形态</th><th>采样</th><th>领域</th></tr>
+<tr>
+<th>工作</th>
+<th>年份</th>
+<th>自蒸馏锚形态</th>
+<th>采样</th>
+<th>领域</th>
+</tr>
 </thead>
 <tbody>
-<tr><td>LwF</td><td>2016</td><td>冻结旧网络软标签</td><td>离线固定输入</td><td>CNN 视觉分类</td></tr>
-<tr><td>SDFT (Yang et al.)</td><td>2024</td><td>微调前自身改写数据</td><td>离线</td><td>LLM 对齐保持</td></tr>
-<tr><td>Shenfeld et al.</td><td>2026</td><td>学生参数 EMA</td><td>on-policy rollout</td><td>LLM continual learning</td></tr>
+<tr>
+<td>LwF</td>
+<td>2016</td>
+<td>冻结旧网络软标签</td>
+<td>离线固定输入</td>
+<td>CNN 视觉分类</td>
+</tr>
+<tr>
+<td>SDFT (Yang et al.)</td>
+<td>2024</td>
+<td>微调前自身改写数据</td>
+<td>离线</td>
+<td>LLM 对齐保持</td>
+</tr>
+<tr>
+<td>Shenfeld et al.</td>
+<td>2026</td>
+<td>学生参数 EMA</td>
+<td>on-policy rollout</td>
+<td>LLM continual learning</td>
+</tr>
 </tbody>
 </table>
-
 <p><span class="claim claim-self">本文归纳</span> 「冻结旧自身防遗忘」从 2016 到 2026 由离线软标签发展到 on-policy reverse KL，各阶段均有文献支持，组件层面的先验充分。</p>
-
 <h2 id="三个最接近的先例-各差至少一个维度">三个最接近的先例，各差至少一个维度</h2>
-
 <p>「领域特化学生 + 自蒸馏锚守既有能力 + 外部 teacher 注入新能力」这一目标组合尚无单篇论文完整覆盖，但有三个先例从不同侧面接近它。</p>
-
 <p><strong>先例一，顺序式、同方向：<span class="claim claim-tech">tech report</span> <a href="#ref-tml">Thinking Machines Lab</a>。</strong> 以 post-trained 的 Qwen3-8B 为学生，先通过 midtrain 注入一批内部文档知识（这批文档上的 QA 准确率 18%→36%，代价 IF-eval 85%→79%），再让 midtrain 前的自身作为 teacher 进行 on-policy distillation，IF-eval 恢复到 83%、该 QA 进一步升至 41%。博客将「用模型更早版本作为 teacher，重新调用微调中丢失的能力」作为 continual learning 机制，建议在「新数据微调 ↔ 蒸馏恢复」之间交替。HuggingFaceH4 用 TRL GKDTrainer 复现，数字接近（IFEval 83.4→79.5→82.8）。与目标组合的差异在于：注入依靠 midtrain 而非蒸馏，恢复是事后的独立阶段，并非训练中常驻的多槽设计；学生也是通用 post-trained，而非领域特化模型。</p>
-
 <p><strong>先例二，并发式、反方向：<span class="claim claim-paper">论文</span> <a href="#ref-camopd">CaMOPD</a>。</strong> 唯一以<strong>领域特化模型</strong>为学生起点的先例：学生自身的冻结副本守一个 prompt 槽（保留新获得的领域能力），谱系上的通用旧版作为 general teacher 守另一槽（恢复因特化而削弱的通用能力）；按 prompt 槽路由，学生自采 rollout，并接受 token 级 teacher log-prob 监督。原文直接说明这一结构：</p>
-
 <blockquote>
 <p>the original open-source model serves as the general teacher, and the specialized model serves as both the student initialization and the domain teacher.</p>
 </blockquote>
-
 <p>差异在于方向相反：它冻结自身守的是<strong>新</strong>能力、通用旧版负责<strong>恢复</strong>旧能力；目标组合中冻结自身守的是<strong>旧</strong>能力、外部 teacher 负责<strong>注入</strong>新能力。</p>
-
 <p><strong>先例三，迭代式、无守成锚：<span class="claim claim-paper">论文</span> <a href="#ref-mopd">MOPD</a>。</strong> 它是多 teacher 按域路由的 on-policy 蒸馏当前最佳公开结果，迭代轮从累积模型继续训练（见主轴一节）。差异在于没有守成锚（全部 teacher 都是领域 expert），且迭代只验证了同域精炼，尚未验证每轮加入全新能力。</p>
-
 <table>
 <thead>
-<tr><th>维度</th><th>TML</th><th>CaMOPD</th><th>MOPD</th><th>目标组合</th></tr>
+<tr>
+<th>维度</th>
+<th>TML</th>
+<th>CaMOPD</th>
+<th>MOPD</th>
+<th>目标组合</th>
+</tr>
 </thead>
 <tbody>
-<tr><td>学生起点</td><td>通用 post-trained</td><td>领域特化 ✓</td><td>第 1 轮通用 SFT；迭代轮累积模型</td><td>领域特化</td></tr>
-<tr><td>新能力注入</td><td>midtrain（非蒸馏）</td><td>domain teacher 蒸馏（守新）</td><td>领域 expert teacher 蒸馏</td><td>外部 teacher 蒸馏</td></tr>
-<tr><td>冻结自身当锚</td><td>✓（守旧，事后恢复）</td><td>✓（守新）</td><td>无</td><td>✓（守旧，常驻）</td></tr>
-<tr><td>多槽 teacher 路由</td><td>否（事后单阶段）</td><td>✓</td><td>✓（按域）</td><td>✓</td></tr>
-<tr><td>多轮迭代</td><td>单轮（建议交替）</td><td>单轮</td><td>✓（2 遍、同域精炼）</td><td>每轮加新能力</td></tr>
+<tr>
+<td>学生起点</td>
+<td>通用 post-trained</td>
+<td>领域特化 ✓</td>
+<td>第 1 轮通用 SFT；迭代轮累积模型</td>
+<td>领域特化</td>
+</tr>
+<tr>
+<td>新能力注入</td>
+<td>midtrain（非蒸馏）</td>
+<td>domain teacher 蒸馏（守新）</td>
+<td>领域 expert teacher 蒸馏</td>
+<td>外部 teacher 蒸馏</td>
+</tr>
+<tr>
+<td>冻结自身当锚</td>
+<td>✓（守旧，事后恢复）</td>
+<td>✓（守新）</td>
+<td>无</td>
+<td>✓（守旧，常驻）</td>
+</tr>
+<tr>
+<td>多槽 teacher 路由</td>
+<td>否（事后单阶段）</td>
+<td>✓</td>
+<td>✓（按域）</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>多轮迭代</td>
+<td>单轮（建议交替）</td>
+<td>单轮</td>
+<td>✓（2 遍、同域精炼）</td>
+<td>每轮加新能力</td>
+</tr>
 </tbody>
 </table>
-
 <p><span class="claim claim-self">本文归纳</span> 表中每个维度均有先例，但没有一列与最右列完全对应；尚待实验回答的是多槽并发时的组件交互，包括注入与守成是否相互干扰、多 teacher 信号是否冲突。CaMOPD 标题中的 Counteraction-Aware 正是冲突处理机制，本文未展开其细节。</p>
-
 <h2 id="守成槽-锚定什么-设置几个-采用何种形态">守成槽：锚定什么、设置几个、采用何种形态</h2>
-
 <p>学生已经领域特化时，「守成」要保留两层能力：领域/业务对齐，以及更基础的通用能力。这引出三个设计问题：锚的形态、锚的数量和选择判据。</p>
-
 <p><strong>形态应按槽位角色确定，而非全局统一。</strong> <span class="claim claim-paper">论文</span> <a href="#ref-shenfeld">Shenfeld et al. 2026</a> 的消融结论是冻结 teacher 虽然稳定，效果却持续较差，EMA 最好；TML 的成功案例用的恰是冻结旧版。两个结论可以并存，因为两个 teacher 对应的槽位角色不同：</p>
-
 <table>
 <thead>
-<tr><th>槽位角色</th><th>teacher 要不要跟踪学生进度</th><th>该用的形态</th><th>证据</th></tr>
+<tr>
+<th>槽位角色</th>
+<th>teacher 要不要跟踪学生进度</th>
+<th>该用的形态</th>
+<th>证据</th>
+</tr>
 </thead>
 <tbody>
-<tr><td>学新能力槽</td><td>要（teacher 得带着学生往前）</td><td>跟踪型：EMA / 当前学生</td><td>Shenfeld 2026 消融：frozen &quot;consistently underperforms&quot;</td></tr>
-<tr><td>守既有能力槽</td><td>不要（要的正是不动的回拉目标）</td><td>冻结锚：冻结旧版 / 谱系祖先</td><td>TML 冻结旧版恢复成功；LwF / SDFT 冻结自身守成</td></tr>
+<tr>
+<td>学新能力槽</td>
+<td>要（teacher 得带着学生往前）</td>
+<td>跟踪型：EMA / 当前学生</td>
+<td>Shenfeld 2026 消融：frozen &quot;consistently underperforms&quot;</td>
+</tr>
+<tr>
+<td>守既有能力槽</td>
+<td>不要（要的正是不动的回拉目标）</td>
+<td>冻结锚：冻结旧版 / 谱系祖先</td>
+<td>TML 冻结旧版恢复成功；LwF / SDFT 冻结自身守成</td>
+</tr>
 </tbody>
 </table>
-
 <p><span class="claim claim-self">本文归纳</span> 这条分工是从三篇不同研究场景的工作归纳出的推论，没有单篇在同一个守成槽上对比过冻结与 EMA；它是可证伪的设计假设，尚非定论。</p>
-
 <p><strong>双槽守成只有一个先例，且属于跨模态工作。</strong> <span class="claim claim-paper">论文</span> <a href="#ref-mulki">MulKI</a>（AAAI 2025）在持续学习中同时保留两个蒸馏 teacher，并自适应地逐样本加权：冻结的原始模型守零样本泛化（通用祖先），上一轮模型守累积的任务知识，每轮均注入新任务。它是「一槽守通用祖先 + 一槽守适配后的自身」的直接结构先例；但它是 CLIP/视觉语言模型上的图像分类工作。<strong>在已检索的 LLM post-training 文献中，尚未找到</strong>将「特化自身」和「通用祖先」作为两个槽分别守住的工作。</p>
-
 <p><strong>判据：通用能力能否保留，关键看 KL 距离。</strong> 有一种流行说法是「RFT 保护通用能力、SFT 摧毁通用能力，范式决定存活」，但它并不成立：<span class="claim claim-paper">论文</span> <a href="#ref-rlrazor">RL's Razor</a>（MIT，2025）系统测试了权重变化范数、稀疏度、梯度秩和 RL-vs-SFT 范式，发现对 base 模型的 KL 距离才是决定因素，其他指标与训练范式均非决定因素。RFT 抗遗忘的经验现象本身有多篇独立佐证，其机制是「行为已正确的样本不产生参数更新」的隐式选择性更新；注入全新能力时必须发生大量更新，这一机制无法直接覆盖。<span class="claim claim-self">本文归纳</span> 对守成设计，可控变量是「对想守住的参考模型的 KL 距离」：不同的锚对应不同的守成目标，训练范式本身不会自动提供保护。</p>
-
 <p><strong>多锚既有理论构造，也有尚未核验的负向实证线索。</strong> 以下线索仅经检索定位、本文未及核实，引用前请自行查证一手源：多参考模型 KL 正则 RLHF 的精确解与样本复杂度（arXiv 2502.01203）给出了双锚构造的数学形式；MRPO（arXiv 2512.10040）的实证结果是单参考 DPO 在 7 个参考中 6 个情况下优于所有多参考变体，多锚的理论吸引力与实际收益之间仍有未解的落差。另有金融领域 CPT 专家与通用祖先做参数合并、找回特化中丢失的通用知识的报告（arXiv 2511.02451），提示「参数算术恢复通用性」可能是守成之外的第三条路径。</p>
-
 <h2 id="边界与开放问题">边界与开放问题</h2>
-
 <p><span class="claim claim-self">本文归纳</span> 这套做法的文献边界如下。</p>
-
 <p><strong>两个明确的空白（已检索的阴性结果）。</strong> 第一，主轴正面对比：没有工作对「同一新能力，领域特化点续叠与通用点重合入」作受控对比，效果、成本、遗忘任一轴均无直接证据。第二，干净的单侧先例：工业界复用 post-trained checkpoint 的公开案例（IBM Granite 等）起点均为通用 instruct，「明确从业务特化 checkpoint 出发、用外部 teacher OPD 注入新能力」尚无公开记录。</p>
-
 <p><strong>三个待验证的组合缺口。</strong> 第一，多轮 on-policy 蒸馏且每轮加入<strong>全新</strong>能力，尚未见先例（Shenfeld 链式三轮是自蒸馏形态，MOPD 迭代是同域精炼）。第二，LLM 上的双槽守成（一槽守业务对齐、一槽守通用祖先）尚无先例，唯一结构先例 MulKI 是跨模态的。第三，守成槽上冻结、EMA 与谱系祖先三种锚形态缺少直接对比。</p>
-
 <p><strong>一批未核验线索。</strong> 上节列出的多参考 KL 理论、MRPO 负结果、参数合并恢复通用性，以及 MergeBench（arXiv 2505.10833，领域特化模型合回一体的系统评测）均只经检索定位、本文未及核实，引用前请自行查证。</p>
-
 <p><span class="claim claim-self">本文归纳</span> 多轮续叠已有 Shenfeld / RFT-continual / MOPD 迭代等先例，成本先验也偏向复用；但「业务特化学生 + 外部 teacher 注入 + 冻结自身守成」这一精确组合尚无公开先例，风险集中在组件交互。文献中最接近、可供借鉴的第 N 轮形态是 MOPD 的迭代设计（累积模型为学生、teacher 从它重新 fork、全域槽重蒸），它缺少守成锚这一维；将 CaMOPD 的双槽路由反向设置以补上这一维，便构成本文目标组合的最小实现路径。这一步尚无公开验证，需要通过实验补足。</p>
-
 <h2 id="reference">Reference</h2>
 
 <ol class="ref-list">
@@ -655,8 +686,8 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-cpt"></a> <strong>[Simple and Scalable Strategies to Continually Pre-train Large Language Models]</strong> TMLR 2024。<a href="https://arxiv.org/abs/2403.08763">arXiv:2403.08763</a>。LR re-warm + re-decay + replay 以全量重训的一小部分算力达到相当效果（预训练层、对照臂为随机初始化）；NVIDIA &quot;Reuse, Don't Retrain&quot;（<a href="https://arxiv.org/abs/2407.07263">arXiv:2407.07263</a>）提供同方向的续训配方。<span class="claim claim-paper">arxiv 论文 / 同行评审</span></li>
 
 </ol>
+<p><strong>未核验线索</strong>（仅经检索定位、本文未及核实，引用前请查证一手源）：多参考 KL-RLHF 精确解 <a href="https://arxiv.org/abs/2502.01203">arXiv:2502.01203</a>；MRPO 多参考 DPO 及其单参考更优的负结果 <a href="https://arxiv.org/abs/2512.10040">arXiv:2512.10040</a>；MergeBench 领域模型合并评测 <a href="https://arxiv.org/abs/2505.10833">arXiv:2505.10833</a>；金融 CPT 专家与通用祖先合并找回通用知识 <a href="https://arxiv.org/abs/2511.02451">arXiv:2511.02451</a>；风险门控 KL 锚 <a href="https://arxiv.org/abs/2602.17546">arXiv:2602.17546</a>。</p>
 
-<p><strong>未核验线索</strong>（仅经检索定位、本文未及核实，引用前请查证一手源）：多参考 KL-RLHF 精确解 <a href="https://arxiv.org/abs/2502.01203">arXiv:2502.01203</a>；MRPO 多参考 DPO 及其单参考更优的负结果 <a href="https://arxiv.org/abs/2512.10040">arXiv:2512.10040</a>；MergeBench 领域模型合并评测 <a href="https://arxiv.org/abs/2505.10833">arXiv:2505.10833</a>；金融 CPT 专家与通用祖先合并找回通用知识 <a href="https://arxiv.org/abs/2511.02451">arXiv:2511.02451</a>；风险门控 KL 锚 <a href="https://arxiv.org/abs/2602.17546">arXiv:2602.17546</a>。
   </article>
 
   <footer class="brief-foot">
@@ -701,6 +732,7 @@ footer.brief-foot a:hover { color: var(--text); }
   onScroll();
 })();
 </script>
+<script src="../../assets/image-lightbox.js"></script>
 
 </body>
 </html>
