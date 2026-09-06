@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<title>在线蒸馏 OPD：抗遗忘、能力合并与训练失效 — 专题 · Yidan He</title>
+<style>
+:root { --bg: #0d1117; --panel: #131922; --text: #e6edf3; --muted: #8b97a4; --border: #2a3441; --accent: #5fd0c8; }
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-padding-top: 5rem; }
+body { margin: 0; color: var(--text); background: var(--bg); font-family: Charter, 'Iowan Old Style', Georgia, 'Songti SC', 'Noto Serif SC', serif; line-height: 1.85; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: .2em; overflow-wrap: anywhere; }
+a:hover { color: #a0e7e2; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.topnav { border-bottom: 1px solid var(--border); background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif; }
+.topnav-inner { max-width: 1180px; margin: auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { color: var(--text); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.nav-links { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; }
+.nav-links a { color: var(--muted); text-decoration: none; }
+.nav-links a[aria-current] { color: var(--accent); border-bottom: 2px solid var(--accent); }
+main { max-width: 850px; margin: 0 auto; padding: 54px 28px 80px; }
+.eyebrow { color: var(--muted); font: 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: .12em; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.35; margin: 16px 0 32px; overflow-wrap: anywhere; }
+h2 { margin: 2.3em 0 .8em; padding-bottom: .3em; border-bottom: 1px solid var(--border); font-size: 25px; line-height: 1.5; }
+h3, h4 { margin: 1.8em 0 .7em; line-height: 1.5; }
+p, ul, ol, blockquote, pre, table { margin: 0 0 1.25em; }
+ul, ol { padding-left: 1.5em; }
+li { margin: .4em 0; }
+blockquote { margin-left: 0; padding: .5em 1.1em; border-left: 3px solid var(--accent); color: var(--muted); background: var(--panel); }
+blockquote > :last-child { margin-bottom: 0; }
+code, pre { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: .87em; }
+code { background: var(--panel); padding: .12em .3em; border-radius: 3px; }
+pre { overflow-x: auto; padding: 18px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); line-height: 1.65; }
+pre code { padding: 0; background: none; font-size: inherit; }
+table { display: block; overflow-x: auto; border-collapse: collapse; font-size: .92em; }
+th, td { border: 1px solid var(--border); padding: 9px 13px; text-align: left; }
+th { background: var(--panel); }
+img, svg, video { max-width: 100%; height: auto; }
+hr { margin: 2em 0; border: 0; border-top: 1px solid var(--border); }
+.topic-list { list-style: none; padding: 0; }
+.topic-list li { padding: 18px 0; border-bottom: 1px solid var(--border); font-size: 21px; }
+footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1px solid var(--border); color: var(--muted); font: 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+@media (max-width: 640px) { .topnav-inner { padding: 12px 16px; align-items: flex-start; } .nav-links { gap: 10px 14px; justify-content: flex-end; } main { padding: 36px 20px 56px; } h2 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="主导航">
+  <div class="topnav-inner">
+    <a class="brand" href="../../">Yidan He</a>
+    <div class="nav-links">
+      <a href="../../">Home</a>
+      <a href="../../briefs/">前沿</a>
+      <a href="../../topics/" aria-current="page">专题</a>
+      <a href="../../meta/">本站约定</a>
+    </div>
+  </div>
+</nav>
+<main>
+  <div class="eyebrow">方向专题</div>
+  <article>
+<h1 id="在线蒸馏-opd-抗遗忘-能力合并与训练失效">在线蒸馏 OPD：抗遗忘、能力合并与训练失效</h1>
+<p>理解 OPD 的学生采样与师生匹配，可以先读 <a href="../../briefs/on-policy-distillation/">《OPD 抗遗忘的证据边界：学生采样与师生分布匹配》</a>。它比较抗遗忘观察、高概率 token 匹配和 loss 下降却没有效果的情形，说明现有证据能支持哪些机制解释。</p>
+<h2 id="为领域模型继续叠加能力">为领域模型继续叠加能力</h2>
+<p><a href="../../briefs/capability-merge-distillation/">《用 OPD 给领域后训练模型继续叠加能力：组件已有先例，组合仍待验证》</a> 面向已有业务模型的增量训练：从当前领域模型继续，还是回到通用后训练模型重新合入能力？文章按学生起点和旧能力保留方式比较先例；完整组合与两条路径的直接对比仍待验证。</p>
+<h2 id="定位长生成-师生失配与异步训练故障">定位长生成、师生失配与异步训练故障</h2>
+<p><a href="../../briefs/opd-training-pathologies/">《OPD 失效诊断：长生成、师生失配与异步旧轨迹》</a> 适合训练已经运行、但曲线与任务效果脱节时阅读。它按失效现象对照检测量和修复方法，包括长前缀削弱监督、师生分布差异和异步轨迹过期。</p>
+<p>三篇分别用于理解机制、选择能力合并方案和排查训练故障，可按当前问题直接进入。</p>
+
+  </article>
+</main>
+<footer>Yidan He · <a href="../../topics/">方向专题</a></footer>
+</body>
+</html>

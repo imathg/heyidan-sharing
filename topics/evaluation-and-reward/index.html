@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<title>评测与奖励设计：Benchmark、Rubric 与 Judge — 专题 · Yidan He</title>
+<style>
+:root { --bg: #0d1117; --panel: #131922; --text: #e6edf3; --muted: #8b97a4; --border: #2a3441; --accent: #5fd0c8; }
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-padding-top: 5rem; }
+body { margin: 0; color: var(--text); background: var(--bg); font-family: Charter, 'Iowan Old Style', Georgia, 'Songti SC', 'Noto Serif SC', serif; line-height: 1.85; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: .2em; overflow-wrap: anywhere; }
+a:hover { color: #a0e7e2; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+.topnav { border-bottom: 1px solid var(--border); background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif; }
+.topnav-inner { max-width: 1180px; margin: auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { color: var(--text); font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.nav-links { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; }
+.nav-links a { color: var(--muted); text-decoration: none; }
+.nav-links a[aria-current] { color: var(--accent); border-bottom: 2px solid var(--accent); }
+main { max-width: 850px; margin: 0 auto; padding: 54px 28px 80px; }
+.eyebrow { color: var(--muted); font: 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: .12em; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.35; margin: 16px 0 32px; overflow-wrap: anywhere; }
+h2 { margin: 2.3em 0 .8em; padding-bottom: .3em; border-bottom: 1px solid var(--border); font-size: 25px; line-height: 1.5; }
+h3, h4 { margin: 1.8em 0 .7em; line-height: 1.5; }
+p, ul, ol, blockquote, pre, table { margin: 0 0 1.25em; }
+ul, ol { padding-left: 1.5em; }
+li { margin: .4em 0; }
+blockquote { margin-left: 0; padding: .5em 1.1em; border-left: 3px solid var(--accent); color: var(--muted); background: var(--panel); }
+blockquote > :last-child { margin-bottom: 0; }
+code, pre { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: .87em; }
+code { background: var(--panel); padding: .12em .3em; border-radius: 3px; }
+pre { overflow-x: auto; padding: 18px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); line-height: 1.65; }
+pre code { padding: 0; background: none; font-size: inherit; }
+table { display: block; overflow-x: auto; border-collapse: collapse; font-size: .92em; }
+th, td { border: 1px solid var(--border); padding: 9px 13px; text-align: left; }
+th { background: var(--panel); }
+img, svg, video { max-width: 100%; height: auto; }
+hr { margin: 2em 0; border: 0; border-top: 1px solid var(--border); }
+.topic-list { list-style: none; padding: 0; }
+.topic-list li { padding: 18px 0; border-bottom: 1px solid var(--border); font-size: 21px; }
+footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1px solid var(--border); color: var(--muted); font: 13px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+@media (max-width: 640px) { .topnav-inner { padding: 12px 16px; align-items: flex-start; } .nav-links { gap: 10px 14px; justify-content: flex-end; } main { padding: 36px 20px 56px; } h2 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="主导航">
+  <div class="topnav-inner">
+    <a class="brand" href="../../">Yidan He</a>
+    <div class="nav-links">
+      <a href="../../">Home</a>
+      <a href="../../briefs/">前沿</a>
+      <a href="../../topics/" aria-current="page">专题</a>
+      <a href="../../meta/">本站约定</a>
+    </div>
+  </div>
+</nav>
+<main>
+  <div class="eyebrow">方向专题</div>
+  <article>
+<h1 id="评测与奖励设计-benchmark-rubric-与-judge">评测与奖励设计：Benchmark、Rubric 与 Judge</h1>
+<p>评测结果的解释、训练奖励的构造和判分模型的校准，分别对应下面三篇文章。检查一批 Agent 结果是否可信，从 Benchmark 篇开始；设计更细的训练反馈，从 Rubric 篇开始。</p>
+<h2 id="benchmark-的失败归因与结果可比性">Benchmark 的失败归因与结果可比性</h2>
+<p><a href="../../briefs/agent-benchmark-validity/">《Agent Benchmark：哪些失败能计入能力评测》</a> 用于检查题目是否成立、运行是否到达考点、证据是否属于当前系统，以及判分是否足以支撑能力结论。它也说明单系统统计与双系统比较如何处理不可判定或未完成的结果。</p>
+<h2 id="按要求评分与按步骤分配信用">按要求评分与按步骤分配信用</h2>
+<p><a href="../../briefs/rubric-reward-axes/">《Rubric 奖励与步骤信用：两种细化训练信号的方法》</a> 比较 checklist 部分得分和步骤监督，适合选择信号对象、来源与聚合方式。文章区分“回答满足了哪项要求”与“哪一步影响了后续结果”，并讨论细化评分引入的偏差。</p>
+<h2 id="judge-的误放-误拒与校准">Judge 的误放、误拒与校准</h2>
+<p><a href="../../briefs/verifier-reliability-ceiling/">《LLM Judge 用作奖励：误判偏差与校准方法》</a> 适合在接入 Judge 奖励前检查判分质量，或排查 Judge 分数上涨而真实质量没有改善的情况。它区分判分模型误判与判据本身不合适，并分别讨论判分校准和训练效果验证。</p>
+
+  </article>
+</main>
+<footer>Yidan He · <a href="../../topics/">方向专题</a></footer>
+</body>
+</html>
