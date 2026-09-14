@@ -65,10 +65,10 @@ footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1p
 <p><a href="../../briefs/dvao-multireward/">《DVAO：多目标 RL 里按方差自适应的优势组合》</a> 聚焦准确率与长度依从度等多目标取舍，比较先合并奖励、分别归一化优势和动态加权。需要调整奖励组合时读这篇；其中优势幅值的理论分析与实验中的目标取舍分别讨论。</p>
 <h2 id="执行证据与中间步骤信用">执行证据与中间步骤信用</h2>
 <ul>
-<li>训练数据只有最终答案和成败标签，读 <a href="../../briefs/agent-trajectory-evidence/">《Agent RL 的轨迹证据：环境如何把执行过程变成训练信号》</a>。它对照动作后果、稳定对象地址、测试与过程评分等记录，说明这些证据怎样进入任务筛选、SFT 和 RL。</li>
+<li>需要判断线上 / Agent 轨迹能否进入训练，读 <a href="../../briefs/agent-trajectory-evidence/">《Agent RL 的轨迹证据：环境如何把执行过程变成训练信号》</a>。它对照动作后果、稳定对象地址、测试与过程评分等记录，并把资格拆成 task、trajectory、segment 与 training-policy effect 四层。</li>
 <li>已有轨迹与反馈，需要区分成功轨迹中的坏步、失败轨迹中的好步，读 <a href="../../briefs/long-horizon-credit-assignment/">《长程 Agent RL：如何给中间步骤分配信用》</a>。它比较局部信用的参照信号、额外监督成本与 critic 的使用条件。</li>
 </ul>
-<p>前者关注环境留下什么，后者关注怎样把反馈分配给步骤。可以按当前是在构造训练环境，还是调整学习信号，选择对应文章。</p>
+<p>前者关注环境留下什么、这些记录是否已经获得训练资格；后者关注已有反馈怎样分配给步骤。可以按当前是在构造 / 清洗训练数据，还是调整学习信号，选择对应文章。</p>
 
   </article>
 </main>

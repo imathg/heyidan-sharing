@@ -1,14 +1,16 @@
 # Agent RL 的轨迹证据：环境如何把执行过程变成训练信号
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-08-02 -->
+<!-- revised_date: 2026-09-13 -->
+<!-- revision_note: 补入任务、轨迹、片段与训练效果四层资格，说明一次 pass 不能自动下放为下一层训练资格。 -->
 
-`[本文归纳]` 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何。
+`[本文归纳]` 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何；记录了证据也不等于整条轨迹、每个片段和对应数据策略都已经获得训练资格。
 
 下文对照任务合成、游戏求解、漏洞检测、环境交互和过程评测中的证据设计，说明这些记录怎样进入任务入池、SFT、RL、辅助训练与轨迹筛选。失败恢复轨迹和场景覆盖也在讨论范围内，但不与证据质量混成一个指标。
 
 其中一个基础区别是：SFT 可以使用固定示范，on-policy RL 则需要能由当前策略重新执行的任务环境。两者需要保存的训练对象不同。
 
-> **核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体。**
+> **核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体；task、trajectory、segment 与 training-policy effect 则需要分别验收。**
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -78,6 +80,25 @@
 
 `[本文归纳]` 失败样本也应按证据位置分流。task admission 失败适合修任务或拒绝入池；动作后果证据为负可以直接进入 credit；过程分低但 outcome 成功的轨迹适合保留作诊断，通常不宜直接当优质示范；执行环境异常则应隔离为基础设施失败，避免给 policy 错误惩罚。统一写成一个 success / failure 标量，会将四类处置压缩为一种处置方式。
 
+## 一次 pass 不能下放为整条数据链的资格
+
+`[本文归纳]` 数据管线里至少有四种不同资格。它们沿训练链相邻，却回答不同问题：任务能不能执行，某条轨迹能不能作为示范，轨迹里的哪些片段应该贡献梯度，以及一套数据策略是否真的改善了 policy。前一层 pass 只允许进入下一次验收，不替代下一层验收。
+
+| 资格门 | 需要回答的问题 | 代表证据 |
+|---|---|---|
+| task gate | 任务、环境与 verifier 是否闭合 | SearchArt、TermiGen、OpenThoughts-Agent-RL-5K |
+| trajectory gate | 原轨迹是否合格；失败场景是否值得重采样 | ClawTrack、PROOF-Gen |
+| segment gate | 哪些局部步骤应参与 loss，哪些只保留为上下文 | SWE-Prime |
+| training-policy effect gate | 数据策略的收益是否跨 seed、跨汇总口径成立 | DataFlex-RL |
+
+`[论文]` [PROOF-Gen](#ref-ta2026proof) 把“失败 scenario”与“失败 trajectory”拆开。在 τ2-bench 的 teacher 采样中，57% 的 trials 失败，其中三分之二是只被一个决定性错误破坏的 near-miss。系统根据失败 trace 与评测反馈生成任务专属纠偏指引，再让 teacher 重采样一条通过的 golden trajectory，最终救回 93% 的失败 scenario；训练学生前，任务专属指引会被移除。这里被回收的是场景，进入示范集的是重新通过验收的新轨迹，不是原失败轨迹。
+
+`[论文]` [SWE-Prime](#ref-zheng2026sweprime) 继续把成功轨迹拆到 semantic segment。它先按过程质量、结果质量和代表性筛 trajectory，再选择对任务有贡献、可学习且风险可控的片段参与 loss；未选片段仍留在序列里提供上下文。论文报告，在其软件工程 SFT 设置中，选出的 10% 轨迹子集相对全量 resolved 数据，在 SWE-Bench Pro 与 Verified 上分别取得最高 12.2% 与 24.2% 的相对提升。这些比例和增益绑定该论文的数据、模型与筛选器，不是通用配方。
+
+`[论文]` [DataFlex-RL](#ref-liang2026dataflex) 给最后一层提供反证。论文在统一 GRPO recipe 下比较 13 种配置、12 个 matched seed；uniform GRPO 相对 base 的 domain-balanced average accuracy 提升 7.76 个百分点，但八种 selection / reweighting 方法相对 uniform 的 paired 95% confidence interval 都没有排除 0，adaptive mixture 也未胜过 equal mixture。把汇总从 12 个均衡 benchmark 改成偏数学的 6 个后，方法排序相关系数为 -0.33。这个结果只覆盖数学、逻辑和科学 RLVR，不能推出长程 Agent 一律应该 uniform；它说明“策略改变了采样”与“策略产生稳定收益”必须分开验收。
+
+`[本文归纳]` 四层资格是一组验收问题，不是一套固定筛选算法。安全、授权、分布覆盖等场景还会增加新的 gate。关键是不让上游的 pass 沿链路自动升级：可执行任务可以继续采样，失败场景可以重采样，成功轨迹可以局部屏蔽 loss，复杂数据策略则要用重复实验和稳定汇总单独证明价值。
+
 ## 环境与 verifier 是同一份合同的前后两面
 
 `[本文归纳]` 环境设计决定 agent 能做哪些动作、每次动作改变哪些状态、哪些对象拥有稳定地址；verifier 只能检查环境已经显式记录的对象。任务生成时写下 tests 和 evidence graph，执行时保留 state transition 与对象 ID，评测时才能把 claim、action 和 outcome 接回同一条证据链。环境 schema 的表达能力限定 verifier 的上限。
@@ -132,3 +153,12 @@
 
 <a id="ref-fan2026skillsynth"></a>
 **[Toward Scalable Terminal Task Synthesis via Skill Graphs]** Zhiyuan Fan, Tinghao Yu, Yuanjun Cai, Jiangtao Guan, Yun Yang, Dingxin Hu, Jiang Zhou, Xing Wu, Zhuo Han, Feng Zhang, Lilin Wang，Hunyuan Team, Tencent，2026. [arXiv:2604.25727](https://arxiv.org/abs/2604.25727)。用于 scenario-mediated skill graph、workflow path 采样，以及 scenario / skill coverage 这一独立设计轴。`[arxiv 论文]`
+
+<a id="ref-ta2026proof"></a>
+**[PROOF-Gen: From Optimized Data to Better Distillation]** Anh Ta, Junjie Zhu, Shahin Shayandeh，2026. [arXiv:2608.23911](https://arxiv.org/abs/2608.23911)。用于区分失败 scenario、原失败 trajectory 与经纠偏重采样的新示范。`[arxiv 论文]`
+
+<a id="ref-zheng2026sweprime"></a>
+**[SWE-Prime: Fewer Trajectories, Better Performance]** Dewu Zheng, Ruizhe Ye, Yanlin Wang, Yang Ye, Hongyu Zhang, Ensheng Shi, Xilin Liu, Yuchi Ma, Jianxing Yu, Zibin Zheng，2026. [arXiv:2608.27449](https://arxiv.org/abs/2608.27449)。用于 trajectory / semantic segment 两级选择与 selective loss。`[arxiv 论文]`
+
+<a id="ref-liang2026dataflex"></a>
+**[DataFlex-RL: An Evaluation Platform for RLVR Data Policies]** Hao Liang, Mingrui Chen, Hengyi Feng, Meiyi Qiang, Wentao Zhang，2026. [arXiv:2609.06107](https://arxiv.org/abs/2609.06107)。用于 selection / reweighting 的跨 seed 反证，以及评测汇总口径对方法排序的影响。`[arxiv 论文]`
