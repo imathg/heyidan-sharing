@@ -275,8 +275,9 @@ header.section-head .meta-note span.k { color: var(--accent); }
 }
 .brief-card .badge.sources { color: var(--accent); border-color: rgba(95,208,200,0.25); }
 .brief-card .badge.date { color: var(--text-secondary); }
+.brief-card .badge.revised { color: #d2a8ff; border-color: rgba(210,168,255,0.28); background: rgba(210,168,255,0.07); }
 
-/* View tabs (全部 / 精选) + edit-featured */
+/* View tabs (全部 / 最近更新 / 精选) + edit-featured */
 .view-bar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap;
@@ -401,6 +402,7 @@ footer a:hover { color: var(--text); }
 <div class="view-bar">
   <div class="view-tabs" id="view-tabs">
     <button class="view-tab active" data-view="all" type="button">全部 <span class="vc" id="vc-all"></span></button>
+    <button class="view-tab" data-view="updated" type="button">最近更新 <span class="vc" id="vc-updated"></span></button>
     <button class="view-tab" data-view="featured" type="button">★ 精选 <span class="vc" id="vc-featured"></span></button>
   </div>
   <button class="edit-toggle" id="edit-toggle" type="button">编辑精选</button>
@@ -434,7 +436,7 @@ footer a:hover { color: var(--text); }
 
 <div class="brief-list" id="brief-list">
 
-  <a class="brief-card" href="on-policy-distillation/" data-domain="agentic-rl">
+  <a class="brief-card" href="on-policy-distillation/" data-domain="agentic-rl" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B001 / 2026-05-27</span>
     </div>
@@ -442,6 +444,7 @@ footer a:hover { color: var(--text); }
     <p class="desc">学生自己生成训练轨迹，为什么可能减轻遗忘？从代码实验与师生 token 匹配研究看已有证据，也区分尚未成立的因果解释：策略 KL 不等于 token 交集，97–99% 概率质量不是通用收敛阈值。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-27</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">12 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
@@ -486,7 +489,7 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
-  <a class="brief-card" href="agent-trajectory-evidence/" data-domain="agentic-rl">
+  <a class="brief-card" href="agent-trajectory-evidence/" data-domain="agentic-rl" data-revised-date="2026-09-13">
     <div class="row1">
       <span class="idx mono">B013 / 2026-08-02</span>
     </div>
@@ -494,12 +497,13 @@ footer a:hover { color: var(--text); }
     <p class="desc">同样是一次 pass，任务、整条轨迹、局部片段和数据策略是否都已合格？比较环境状态、对象 ID、过程验证与跨 seed 结果如何为四层训练资格提供证据。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-02</span>
+      <span class="badge revised">修订 2026-09-13</span>
       <span class="badge sources">12 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>
 
-  <a class="brief-card" href="learnable-agent-harness/" data-domain="claude-code-ecosystem">
+  <a class="brief-card" href="learnable-agent-harness/" data-domain="claude-code-ecosystem" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B014 / 2026-08-09</span>
     </div>
@@ -507,12 +511,13 @@ footer a:hover { color: var(--text); }
     <p class="desc">让 Agent 学会何时读写状态，与让系统自行修改 Harness 代码，是两种不同的学习任务。文章比较它们改变的对象、已有实验和验证需求；学习本身不会自动解决状态真实性、权限与代码合并问题。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-09</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">9 sources</span>
       <span class="badge domain">claude-code-ecosystem</span>
     </div>
   </a>
 
-  <a class="brief-card" href="agent-skill-reliability/" data-domain="claude-code-ecosystem">
+  <a class="brief-card" href="agent-skill-reliability/" data-domain="claude-code-ecosystem" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B015 / 2026-08-16</span>
     </div>
@@ -520,6 +525,7 @@ footer a:hover { color: var(--text); }
     <p class="desc">检索到 Skill 不等于它适用，开始执行也不等于约束一直有效。文章沿启用、执行与经验回写定位失败：何时误用技能、何时偏离授权，以及错误执行怎样被保存成可复用经验。</p>
     <div class="badges mono">
       <span class="badge date">2026-08-16</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">7 sources</span>
       <span class="badge domain">claude-code-ecosystem</span>
     </div>
@@ -603,7 +609,7 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
-  <a class="brief-card" href="dvao-multireward/" data-domain="agentic-rl">
+  <a class="brief-card" href="dvao-multireward/" data-domain="agentic-rl" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B003 / 2026-06-11</span>
     </div>
@@ -611,12 +617,13 @@ footer a:hover { color: var(--text); }
     <p class="desc">DVAO 用组内奖励方差动态组合多个目标的优势。原论文表 1 中，4B 的准确率与长度依从度均提高；8B 的准确率下降 5.08 个百分点，换得长度依从度提高 36.45 个百分点，不能概括为全面反超。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-11</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">3 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>
 
-  <a class="brief-card" href="alphabench-llm-factor/" data-domain="hf-alpha-factor">
+  <a class="brief-card" href="alphabench-llm-factor/" data-domain="hf-alpha-factor" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B004 / 2026-06-11</span>
     </div>
@@ -624,12 +631,13 @@ footer a:hover { color: var(--text); }
     <p class="desc">AlphaBench 把因子生成、评估和搜索分开测。本文聚焦 LLM 对因子回测表现的判断，以及成对选择微调带来的改善；具体实验数字据公开解读转述，IC、RankIC 等指标不等于实盘盈利能力。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-11</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">3 sources</span>
       <span class="badge domain">hf-alpha-factor</span>
     </div>
   </a>
 
-  <a class="brief-card" href="rubric-reward-axes/" data-domain="rubrics">
+  <a class="brief-card" href="rubric-reward-axes/" data-domain="rubrics" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B005 / 2026-06-14</span>
     </div>
@@ -637,12 +645,13 @@ footer a:hover { color: var(--text); }
     <p class="desc">一个回答满足了哪些要求，与哪一步推动了任务成功，是两种评分问题。文章比较 checklist 奖励和步骤信用的证据来源、聚合方法与偏差；逐项得分不能直接替代步骤贡献。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-14</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">8 sources</span>
       <span class="badge domain">rubrics</span>
     </div>
   </a>
 
-  <a class="brief-card" href="low-precision-recipes/" data-domain="training-infra">
+  <a class="brief-card" href="low-precision-recipes/" data-domain="training-infra" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B006 / 2026-06-21</span>
     </div>
@@ -650,6 +659,7 @@ footer a:hover { color: var(--text); }
     <p class="desc">4-bit LLM 的精度损失可能涉及格式舍入偏置、激活异常值或关键 token 敏感性。文章比较各自修法与硬件收益；这三种对象尚不能用同一个“尖锐性”机制解释。</p>
     <div class="badges mono">
       <span class="badge date">2026-06-21</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">8 sources</span>
       <span class="badge domain">training-infra</span>
     </div>
@@ -681,7 +691,7 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
-  <a class="brief-card" href="verifier-reliability-ceiling/" data-domain="rubrics">
+  <a class="brief-card" href="verifier-reliability-ceiling/" data-domain="rubrics" data-revised-date="2026-09-06">
     <div class="row1">
       <span class="idx mono">B009 / 2026-07-12</span>
     </div>
@@ -689,6 +699,7 @@ footer a:hover { color: var(--text); }
     <p class="desc">相近的总分可能掩盖不同的误判。文章比较判据校准、投票与过程评分，说明如何检查判分偏差，以及为什么还要独立验证训练后的任务效果。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-12</span>
+      <span class="badge revised">修订 2026-09-06</span>
       <span class="badge sources">7 sources</span>
       <span class="badge domain">rubrics</span>
     </div>
@@ -698,7 +709,7 @@ footer a:hover { color: var(--text); }
 
 </div>
 
-<div class="empty-state" id="empty-state">还没有精选。点右上角【编辑精选】挑几篇。</div>
+<div class="empty-state" id="empty-state"></div>
 
 <footer>
   Source at <a href="https://github.com/imathg/heyidan-sharing">heyidan-sharing</a>
@@ -725,6 +736,7 @@ footer a:hover { color: var(--text); }
   var copyMsg = document.getElementById('copy-msg');
   var emptyState = document.getElementById('empty-state');
   var vcAll = document.getElementById('vc-all');
+  var vcUpdated = document.getElementById('vc-updated');
   var vcFeatured = document.getElementById('vc-featured');
   var tokenInput = document.getElementById('gist-token');
   var saveToken = document.getElementById('save-token');
@@ -748,13 +760,21 @@ footer a:hover { color: var(--text); }
     var m = idx && idx.textContent.match(/B(\d+)/);
     return m ? parseInt(m[1], 10) : 0;
   }
-
-  // ---- sort: newest date first, tiebreak higher B-number first ----
-  cards.sort(function (a, b) {
+  function revisedDateOf(card) { return card.getAttribute('data-revised-date') || '0000-00-00'; }
+  function isUpdated(card) { return revisedDateOf(card) !== '0000-00-00'; }
+  function compareEdition(a, b) {
     var da = dateOf(a), db = dateOf(b);
     if (da !== db) return da < db ? 1 : -1;
     return idxNumOf(b) - idxNumOf(a);
-  });
+  }
+  function compareRevision(a, b) {
+    var ra = revisedDateOf(a), rb = revisedDateOf(b);
+    if (ra !== rb) return ra < rb ? 1 : -1;
+    return compareEdition(a, b);
+  }
+
+  // ---- sort: newest date first, tiebreak higher B-number first ----
+  cards.sort(compareEdition);
   cards.forEach(function (c) { list.appendChild(c); });
 
   // ---- inject favorite star into each card ----
@@ -808,6 +828,8 @@ footer a:hover { color: var(--text); }
 
   function apply() {
     var shown = 0, featCount = 0;
+    var ordered = cards.slice().sort(currentView === 'updated' ? compareRevision : compareEdition);
+    ordered.forEach(function (card) { list.appendChild(card); });
     cards.forEach(function (card) {
       var feat = isFeatured(card);
       if (feat) featCount++;
@@ -817,13 +839,16 @@ footer a:hover { color: var(--text); }
         star.textContent = feat ? '★' : '☆';
       }
       var domainOK = (currentDomain === 'all') || (card.getAttribute('data-domain') === currentDomain);
-      var viewOK = (currentView === 'all') || feat;
+      var viewOK = (currentView === 'all')
+        || (currentView === 'featured' && feat)
+        || (currentView === 'updated' && isUpdated(card));
       var ok = domainOK && viewOK;
       card.hidden = !ok;
       if (ok) shown++;
     });
     if (visibleCount) visibleCount.textContent = shown;
     if (vcAll) vcAll.textContent = cards.length;
+    if (vcUpdated) vcUpdated.textContent = cards.filter(isUpdated).length;
     if (vcFeatured) vcFeatured.textContent = featCount;
     chips.forEach(function (c) {
       c.classList.toggle('active', c.getAttribute('data-domain') === currentDomain);
@@ -834,7 +859,15 @@ footer a:hover { color: var(--text); }
       });
     }
     if (emptyState) {
-      emptyState.style.display = (currentView === 'featured' && shown === 0) ? 'block' : 'none';
+      if (shown === 0 && currentView === 'featured') {
+        emptyState.textContent = '还没有精选。点右上角【编辑精选】挑几篇。';
+        emptyState.style.display = 'block';
+      } else if (shown === 0 && currentView === 'updated') {
+        emptyState.textContent = '这个方向还没有修订文章。';
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+      }
     }
   }
 
