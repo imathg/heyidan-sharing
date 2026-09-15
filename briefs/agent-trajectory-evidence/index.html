@@ -471,27 +471,27 @@ footer.brief-foot a:hover { color: var(--text); }
   <div class="machine-bar">
     <span class="dot"></span>auto-generated brief
     <span class="sep">·</span> pipeline reduce
-    <span class="sep">·</span> 9 sources
+    <span class="sep">·</span> 12 sources
     <span class="sep">·</span> edition 2026-08-02
   </div>
 
   <h1 class="brief-title">Agent RL 的轨迹证据：环境如何把执行过程变成训练信号</h1>
   <div class="brief-meta">
     <span class="item"><span class="k">date</span> <span class="v">2026-08-02</span></span>
-    <span class="item"><span class="k">sources</span> <span class="v">9</span></span>
+    <span class="item"><span class="k">sources</span> <span class="v">12</span></span>
     <span class="item"><span class="k">domain</span> <span class="v"><a href="../#agentic-rl" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--accent-deep);">agentic-rl</a></span></span>
     <span class="item"><span class="k">slug</span> <span class="v">agent-trajectory-evidence</span></span>
   </div>
 
-
+<p class="brief-revision">修订 <time datetime="2026-09-13">2026-09-13</time>：<span class="revision-note">补入任务、轨迹、片段与训练效果四层资格，说明一次 pass 不能自动下放为下一层训练资格。</span></p>
   <article class="body" id="brief-body">
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-08-02 -->
-<p><span class="claim claim-self">本文归纳</span> 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何。</p>
+<p><span class="claim claim-self">本文归纳</span> 一个漏洞检测 Agent 猜对了 vulnerable / safe，却没有调查相关代码；另一个 Agent 完成了任务，却走了大量无用步骤。如果训练数据只留下最终答案和成功标签，这些轨迹很难与真正可靠的执行区分。要从过程中学习，环境必须额外记录动作改变了什么、结论引用了哪个对象，以及过程质量如何；记录了证据也不等于整条轨迹、每个片段和对应数据策略都已经获得训练资格。</p>
 <p>下文对照任务合成、游戏求解、漏洞检测、环境交互和过程评测中的证据设计，说明这些记录怎样进入任务入池、SFT、RL、辅助训练与轨迹筛选。失败恢复轨迹和场景覆盖也在讨论范围内，但不与证据质量混成一个指标。</p>
 <p>其中一个基础区别是：SFT 可以使用固定示范，on-policy RL 则需要能由当前策略重新执行的任务环境。两者需要保存的训练对象不同。</p>
 <blockquote>
-<p><strong>核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体。</strong></p>
+<p><strong>核心论点：终局奖励只保留整条轨迹的成败。Agent 要从执行过程学习，环境还需为每次动作留下可核验、可寻址、能与具体 turn 绑定的证据。tests、solver value、稳定对象 ID、next observation、process rubric 与 execution log 都是这类证据的不同载体；task、trajectory、segment 与 training-policy effect 则需要分别验收。</strong></p>
 </blockquote>
 <blockquote>
 <p>正文每条 claim 都带 <code>[论文]</code> / <code>[tech report]</code> / <code>[个人实验]</code> / <code>[本文归纳]</code> 四档 tag 之一。tag 体系见 <a href="../../meta/#claim-tags">本站约定</a>。</p>
@@ -630,6 +630,43 @@ footer.brief-foot a:hover { color: var(--text); }
 </table>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-li2026graph">Graph Is the Verifier</a> 中，policy 从不调用工具时，group-relative RL 就没有“调查得好”和“调查得差”的 rollout 可以比较。论文先用 teacher investigation 做 SFT warm start，再用带证据 grounding 的 GRPO。环境证据因此还承担启动探索的职责：先让可核验行为进入 policy 的支持集，RL 才能优化它。</p>
 <p><span class="claim claim-self">本文归纳</span> 失败样本也应按证据位置分流。task admission 失败适合修任务或拒绝入池；动作后果证据为负可以直接进入 credit；过程分低但 outcome 成功的轨迹适合保留作诊断，通常不宜直接当优质示范；执行环境异常则应隔离为基础设施失败，避免给 policy 错误惩罚。统一写成一个 success / failure 标量，会将四类处置压缩为一种处置方式。</p>
+<h2 id="一次-pass-不能下放为整条数据链的资格">一次 pass 不能下放为整条数据链的资格</h2>
+<p><span class="claim claim-self">本文归纳</span> 数据管线里至少有四种不同资格。它们沿训练链相邻，却回答不同问题：任务能不能执行，某条轨迹能不能作为示范，轨迹里的哪些片段应该贡献梯度，以及一套数据策略是否真的改善了 policy。前一层 pass 只允许进入下一次验收，不替代下一层验收。</p>
+<table>
+<thead>
+<tr>
+<th>资格门</th>
+<th>需要回答的问题</th>
+<th>代表证据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>task gate</td>
+<td>任务、环境与 verifier 是否闭合</td>
+<td>SearchArt、TermiGen、OpenThoughts-Agent-RL-5K</td>
+</tr>
+<tr>
+<td>trajectory gate</td>
+<td>原轨迹是否合格；失败场景是否值得重采样</td>
+<td>ClawTrack、PROOF-Gen</td>
+</tr>
+<tr>
+<td>segment gate</td>
+<td>哪些局部步骤应参与 loss，哪些只保留为上下文</td>
+<td>SWE-Prime</td>
+</tr>
+<tr>
+<td>training-policy effect gate</td>
+<td>数据策略的收益是否跨 seed、跨汇总口径成立</td>
+<td>DataFlex-RL</td>
+</tr>
+</tbody>
+</table>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-ta2026proof">PROOF-Gen</a> 把“失败 scenario”与“失败 trajectory”拆开。在 τ2-bench 的 teacher 采样中，57% 的 trials 失败，其中三分之二是只被一个决定性错误破坏的 near-miss。系统根据失败 trace 与评测反馈生成任务专属纠偏指引，再让 teacher 重采样一条通过的 golden trajectory，最终救回 93% 的失败 scenario；训练学生前，任务专属指引会被移除。这里被回收的是场景，进入示范集的是重新通过验收的新轨迹，不是原失败轨迹。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-zheng2026sweprime">SWE-Prime</a> 继续把成功轨迹拆到 semantic segment。它先按过程质量、结果质量和代表性筛 trajectory，再选择对任务有贡献、可学习且风险可控的片段参与 loss；未选片段仍留在序列里提供上下文。论文报告，在其软件工程 SFT 设置中，选出的 10% 轨迹子集相对全量 resolved 数据，在 SWE-Bench Pro 与 Verified 上分别取得最高 12.2% 与 24.2% 的相对提升。这些比例和增益绑定该论文的数据、模型与筛选器，不是通用配方。</p>
+<p><span class="claim claim-paper">论文</span> <a href="#ref-liang2026dataflex">DataFlex-RL</a> 给最后一层提供反证。论文在统一 GRPO recipe 下比较 13 种配置、12 个 matched seed；uniform GRPO 相对 base 的 domain-balanced average accuracy 提升 7.76 个百分点，但八种 selection / reweighting 方法相对 uniform 的 paired 95% confidence interval 都没有排除 0，adaptive mixture 也未胜过 equal mixture。把汇总从 12 个均衡 benchmark 改成偏数学的 6 个后，方法排序相关系数为 -0.33。这个结果只覆盖数学、逻辑和科学 RLVR，不能推出长程 Agent 一律应该 uniform；它说明“策略改变了采样”与“策略产生稳定收益”必须分开验收。</p>
+<p><span class="claim claim-self">本文归纳</span> 四层资格是一组验收问题，不是一套固定筛选算法。安全、授权、分布覆盖等场景还会增加新的 gate。关键是不让上游的 pass 沿链路自动升级：可执行任务可以继续采样，失败场景可以重采样，成功轨迹可以局部屏蔽 loss，复杂数据策略则要用重复实验和稳定汇总单独证明价值。</p>
 <h2 id="环境与-verifier-是同一份合同的前后两面">环境与 verifier 是同一份合同的前后两面</h2>
 <p><span class="claim claim-self">本文归纳</span> 环境设计决定 agent 能做哪些动作、每次动作改变哪些状态、哪些对象拥有稳定地址；verifier 只能检查环境已经显式记录的对象。任务生成时写下 tests 和 evidence graph，执行时保留 state transition 与对象 ID，评测时才能把 claim、action 和 outcome 接回同一条证据链。环境 schema 的表达能力限定 verifier 的上限。</p>
 <p><span class="claim claim-paper">论文</span> <a href="#ref-li2026graph">Graph Is the Verifier</a> 将这条关系置于同一个数据结构中：CPG 在推理时是 tool，在训练时是 verifier。<span class="claim claim-tech">tech report</span> <a href="#ref-mei2026">SearchArt</a> 和 <a href="#ref-yang2026">Frontis-MA1</a> 则将同一原则扩展到系统层，任务构造、执行、训练和评测共享环境合同。<span class="claim claim-paper">论文</span> <a href="#ref-wu2026">ClawTrack</a> 表明，环境合同之外仍有一部分问题：效率、目标对齐和信息利用仍需要过程 rubric，确定性状态无法覆盖全部软质量。</p>
@@ -696,6 +733,12 @@ footer.brief-foot a:hover { color: var(--text); }
 <li><a id="ref-raoof2026"></a> <strong>[OpenThoughts-Agent: Data Recipes for Agentic Models]</strong> Negin Raoof, Richard Zhuang, Marianna Nezhurina, Etash Guha, Atula Tejaswi, Ryan Marten, Charlie F. Ruan, Tyler Griggs, Alexander Glenn Shaw, Hritik Bansal, E. Kelly Buchanan, Artem Gazizov, Reinhard Heckel, Chinmay Hegde, Sankalp Jajee, Daanish Khazi, Emmanouil Koukoumidis, Xiangyi Li, Hange Liu, Shlok Natarajan, Harsh Raj, Nicholas Roberts, Ethan Shen, Nishad Singhi, Michael Siu, Ashima Suvarna, Hanwen Xing, Patrick Yubeaton, Robert Zhang, Leon Liangyu Chen, Xiaokun Chen, Steven Dillmann, Saadia Gabriel, Xunyi Jiang, Anurag Kashyap, Boxuan Li, Yein Park, Minh Pham, Sujay Sanghavi, Lin Shi, Ke Sun, Yixin Wang, Zhiwei Xu, Erica Zhang, Siyan Zhao, Wanjia Zhao, Jenia Jitsev, Alex Dimakis, Benjamin Feuer, Ludwig Schmidt，UC Berkeley、Stanford University、JSC、LAION、Open-Ψ、UT Austin、Bespoke Labs 等，2026. <a href="https://arxiv.org/abs/2606.24855">arXiv:2606.24855</a>；<a href="https://huggingface.co/datasets/open-thoughts/OpenThoughts-Agent-RL-5K/blob/main/README.md">OpenThoughts-Agent-RL-5K 官方数据卡</a>。用于区分 SFT 的固定 <code>(task, trajectory)</code> pair 与 on-policy RL 的可执行任务包。<span class="claim claim-paper">arxiv 论文 / 官方数据卡</span></li>
 
 <li><a id="ref-fan2026skillsynth"></a> <strong>[Toward Scalable Terminal Task Synthesis via Skill Graphs]</strong> Zhiyuan Fan, Tinghao Yu, Yuanjun Cai, Jiangtao Guan, Yun Yang, Dingxin Hu, Jiang Zhou, Xing Wu, Zhuo Han, Feng Zhang, Lilin Wang，Hunyuan Team, Tencent，2026. <a href="https://arxiv.org/abs/2604.25727">arXiv:2604.25727</a>。用于 scenario-mediated skill graph、workflow path 采样，以及 scenario / skill coverage 这一独立设计轴。<span class="claim claim-paper">arxiv 论文</span></li>
+
+<li><a id="ref-ta2026proof"></a> <strong>[PROOF-Gen: From Optimized Data to Better Distillation]</strong> Anh Ta, Junjie Zhu, Shahin Shayandeh，2026. <a href="https://arxiv.org/abs/2608.23911">arXiv:2608.23911</a>。用于区分失败 scenario、原失败 trajectory 与经纠偏重采样的新示范。<span class="claim claim-paper">arxiv 论文</span></li>
+
+<li><a id="ref-zheng2026sweprime"></a> <strong>[SWE-Prime: Fewer Trajectories, Better Performance]</strong> Dewu Zheng, Ruizhe Ye, Yanlin Wang, Yang Ye, Hongyu Zhang, Ensheng Shi, Xilin Liu, Yuchi Ma, Jianxing Yu, Zibin Zheng，2026. <a href="https://arxiv.org/abs/2608.27449">arXiv:2608.27449</a>。用于 trajectory / semantic segment 两级选择与 selective loss。<span class="claim claim-paper">arxiv 论文</span></li>
+
+<li><a id="ref-liang2026dataflex"></a> <strong>[DataFlex-RL: An Evaluation Platform for RLVR Data Policies]</strong> Hao Liang, Mingrui Chen, Hengyi Feng, Meiyi Qiang, Wentao Zhang，2026. <a href="https://arxiv.org/abs/2609.06107">arXiv:2609.06107</a>。用于 selection / reweighting 的跨 seed 反证，以及评测汇总口径对方法排序的影响。<span class="claim claim-paper">arxiv 论文</span></li>
 
 </ol>
 
