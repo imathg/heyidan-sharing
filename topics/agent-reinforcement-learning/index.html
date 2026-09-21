@@ -67,8 +67,9 @@ footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1p
 <ul>
 <li>需要判断线上 / Agent 轨迹能否进入训练，读 <a href="../../briefs/agent-trajectory-evidence/">《Agent RL 的轨迹证据：环境如何把执行过程变成训练信号》</a>。它对照动作后果、稳定对象地址、测试与过程评分等记录，并把资格拆成 task、trajectory、segment 与 training-policy effect 四层。</li>
 <li>已有轨迹与反馈，需要区分成功轨迹中的坏步、失败轨迹中的好步，读 <a href="../../briefs/long-horizon-credit-assignment/">《长程 Agent RL：如何给中间步骤分配信用》</a>。它比较局部信用的参照信号、额外监督成本与 critic 的使用条件。</li>
+<li>已经有合格数据，但工具行为仍不稳定，读 <a href="../../briefs/tool-agent-training-signals/">《工具调用错误的归因顺序：先定位监督缺口，再选择 SFT 或 RL》</a>。它把问题拆到示范分布、SFT prediction target、工具必要性、调用内部的层级 credit 与结构稳定性，再决定使用哪类训练信号。</li>
 </ul>
-<p>前者关注环境留下什么、这些记录是否已经获得训练资格；后者关注已有反馈怎样分配给步骤。可以按当前是在构造 / 清洗训练数据，还是调整学习信号，选择对应文章。</p>
+<p>三篇分别回答训练材料是否有资格、已有反馈怎样分给中间步骤，以及工具失败真正缺的是哪一种监督。可以按当前是在构造 / 清洗训练数据、调整长程 credit，还是定位工具行为的训练信号，选择对应文章。</p>
 
   </article>
 </main>
