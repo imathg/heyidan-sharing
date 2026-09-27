@@ -436,16 +436,16 @@ footer a:hover { color: var(--text); }
 
 <div class="brief-list" id="brief-list">
 
-  <a class="brief-card" href="on-policy-distillation/" data-domain="agentic-rl" data-revised-date="2026-09-06">
+  <a class="brief-card" href="on-policy-distillation/" data-domain="agentic-rl" data-revised-date="2026-09-27">
     <div class="row1">
       <span class="idx mono">B001 / 2026-05-27</span>
     </div>
-    <h2>OPD 抗遗忘的证据边界：学生采样与师生分布匹配</h2>
-    <p class="desc">学生自己生成训练轨迹，为什么可能减轻遗忘？从代码实验与师生 token 匹配研究看已有证据，也区分尚未成立的因果解释：策略 KL 不等于 token 交集，97–99% 概率质量不是通用收敛阈值。</p>
+    <h2>OPD 与 OPSD：学生采样、特权信息与抗遗忘边界</h2>
+    <p class="desc">OPSD 不是训练中始终共享权重的“自己教自己”：student 生成并更新，固定 teacher 带参考答案评估同一 prefix。文章从原论文出发，拆开特权信息、密集监督、师生匹配与抗遗忘证据。</p>
     <div class="badges mono">
       <span class="badge date">2026-05-27</span>
-      <span class="badge revised">修订 2026-09-06</span>
-      <span class="badge sources">12 sources</span>
+      <span class="badge revised">修订 2026-09-27</span>
+      <span class="badge sources">13 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>
@@ -463,15 +463,16 @@ footer a:hover { color: var(--text); }
     </div>
   </a>
 
-  <a class="brief-card" href="opd-training-pathologies/" data-domain="agentic-rl">
+  <a class="brief-card" href="opd-training-pathologies/" data-domain="agentic-rl" data-revised-date="2026-09-27">
     <div class="row1">
       <span class="idx mono">B011 / 2026-07-19</span>
     </div>
-    <h2>OPD 失效诊断：长生成、师生失配与异步旧轨迹</h2>
-    <p class="desc">OPD 的 loss 下降，任务表现却不升，可能发生了什么？分别检查长生成中的信号退化、师生分布失配和异步旧轨迹，再对照限制训练区域、重加权与重算监督的修法。</p>
+    <h2>OPD 失效诊断：学生离域、教师偏差与旧轨迹</h2>
+    <p class="desc">OPD 的 loss 下降，任务表现却不升，可能发生了什么？从 OPSD 原论文的 style-token 偏斜出发，区分 student state 离域、teacher 差分偏移与实验控制问题。</p>
     <div class="badges mono">
       <span class="badge date">2026-07-19</span>
-      <span class="badge sources">13 sources</span>
+      <span class="badge revised">修订 2026-09-27</span>
+      <span class="badge sources">18 sources</span>
       <span class="badge domain">agentic-rl</span>
     </div>
   </a>
