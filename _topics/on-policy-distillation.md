@@ -1,6 +1,6 @@
 # 在线蒸馏 OPD：抗遗忘、能力合并与训练失效
 
-理解 OPD 的学生采样、OPSD 的特权信息和师生匹配，可以先读 [《OPD 与 OPSD：学生采样、特权信息与抗遗忘边界》](../../briefs/on-policy-distillation/)。它从 OPSD 原论文的双条件策略出发，再比较抗遗忘观察、高概率 token 匹配和 loss 下降却没有效果的情形，说明现有证据能支持哪些机制解释。
+理解 OPD 的学生采样、OPSD 的特权信息和师生匹配，可以先读 [《OPD 与 OPSD：学生采样、特权信息与抗遗忘边界》](../../briefs/on-policy-distillation/)。它从 OPSD 原论文的双条件策略出发，再比较 current-student refresh 与 initial-student cache、抗遗忘观察、高概率 token 匹配和 loss 下降却没有效果的情形，说明 on-policy rollout 何时是优势、何时会把低匹配 pair 推得更离 teacher。
 
 ## 为领域模型继续叠加能力
 
@@ -8,6 +8,6 @@
 
 ## 区分学生离域、教师偏差与训练控制问题
 
-[《OPD 失效诊断：学生离域、教师偏差与旧轨迹》](../../briefs/opd-training-pathologies/) 适合训练已经运行、但曲线与任务效果脱节时阅读。它先用 OPSD 原论文中的 style-token divergence、teacher 固定方式和 clipping 建立基线，再区分 student state 离域和 teacher 差分偏移，并给出 rollout freshness、selector × learning rate 等实验控制边界。
+[《OPD 失效诊断：学生离域、教师偏差与旧轨迹》](../../briefs/opd-training-pathologies/) 适合训练已经运行、但曲线与任务效果脱节时阅读。它先检查 rollout 是否该持续刷新，再区分 student state 离域、learning signal 提前衰减和 teacher 差分偏移，并给出 rollout freshness、selector × learning rate 等实验控制边界。
 
 三篇分别用于理解机制、选择能力合并方案和排查训练故障；第一篇回答 OPSD 到底是什么，第三篇则继续追问 privileged teacher 的差分何时会偏，可按当前问题直接进入。

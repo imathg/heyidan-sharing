@@ -2,12 +2,12 @@
 
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-05-27 -->
-<!-- revised_date: 2026-09-27 -->
-<!-- revision_note: 补入 OPSD 原论文，纠正 teacher/student 关系，并区分特权信息、密集监督与抗遗忘证据。 -->
+<!-- revised_date: 2026-10-11 -->
+<!-- revision_note: 补入 Semi-OPD 对照，说明在线刷新是否有利取决于 student 与 teacher 的初始匹配。 -->
 
 `[论文]` [OPSD 原论文](#ref-opsd2026)（Zhao et al. 2026）提供了一个比“自己教自己”更精确的起点：student 只看问题并生成轨迹，teacher 在同一条 student prefix 上多看一份已验证参考答案，再把全词表分布作为密集监督。两者从同一模型出发，但论文实验中的 teacher 固定在初始策略，只有 student 更新；因此，它不是训练过程中始终共享参数的单模型自训练。
 
-`[tech report]` [DeepSeek-V4](#ref-deepseek-v4) 与 [MiMo-V2-Flash](#ref-mimo) 又把 OPD 用于多个 specialist 的能力合并；`[论文]` [SDAR](#ref-sdar) 则把带 privileged skill 的 OPSD 接到 agent RL 上。`[本文归纳]` 这些材料共同说明 on-policy student state、teacher 额外信息和 token 级监督是不同设计变量。本文把它们拆开，并单独审视抗遗忘证据：现有结果支持重视学生采样与师生兼容性，却不能证明 on-policy 数据是抗遗忘的唯一原因，也不能把 privileged teacher 的全部差分直接当作能力差。
+`[tech report]` [DeepSeek-V4](#ref-deepseek-v4) 与 [MiMo-V2-Flash](#ref-mimo) 又把 OPD 用于多个 specialist 的能力合并；`[论文]` [SDAR](#ref-sdar) 则把带 privileged skill 的 OPSD 接到 agent RL 上。`[本文归纳]` 这些材料共同说明 rollout 从哪一版 student 来、teacher 多看什么信息、每个 state 监督多少 token，是不同设计变量。本文把它们拆开，并单独审视抗遗忘证据：现有结果支持重视学生采样与师生兼容性，却不能证明持续刷新 student rollout 必然优于固定缓存，也不能把 privileged teacher 的全部差分直接当作能力差。
 
 > 正文每条 claim 都带 `[论文]` / `[tech report]` / `[个人实验]` / `[本文归纳]` 四档 tag 之一。tag 体系见 [本站约定](../../meta/#claim-tags)。
 
@@ -64,6 +64,14 @@
 
 `[本文归纳]` OPD 在 student 自己访问的 prefix 上接受 teacher 监督，这与离线拟合 teacher 固定轨迹不同。它是否具有相同的抗遗忘机制，还需要直接测量 OPD 的策略变化与旧任务表现；RL 的结论不能替代这项验证。
 
+## 学生自己采样，不等于每一步都要刷新 rollout
+
+`[论文]` [Semi-OPD](#ref-semiopd2026) 保留 student-generated data，但把 rollout 固定为训练开始前由 initial student 生成的一次缓存；优化过程中，current student 的 log-prob 和 per-token advantage 仍会重算。它不是把 teacher 轨迹拿来做离线 SFT，而是在“轨迹是否随 student 更新”这一处与标准 OPD 做对照。
+
+论文比较了 **17 个** teacher–student pair，覆盖 Qwen3、DeepSeek-R1-Distill 与 Nemotron-Cascade-2。在其数学推理设置里，Semi-OPD 有 **14 个** pair 超过持续刷新 rollout 的 OPD，最高报告 **+13.6%** accuracy 与 **11.4×** training speedup；剩余 3 个 pair 的差距为 0.1%–2.6%。Semi-OPD 相对 OPD 的收益与 initial top-64 output-token overlap 呈负相关（Pearson `r=-0.73`）：初始 overlap 低时，持续从 evolving student 采样会让轨迹更贴近 current student，却可能更偏离 teacher；初始 overlap 高时，标准 OPD 才更可能保留优势。
+
+`[本文归纳]` 这把“on-policy”拆成两层：训练轨迹要覆盖 student 会访问的 state，也要处在 teacher 能给出有效监督的区域。固定 initial-student rollout 是一项用 teacher compatibility 换 student freshness 的设计选择，不是普适替代。上述结果主要来自 DAPO-Math 上的 reasoning pair，不能直接外推到 agent、多域或其它 distillation objective，也没有给出跨设置通用的 overlap 阈值。
+
 <a id="token-视角-高概率交集承担学习"></a>
 
 ## 师生高概率 token 的交集提供了哪些学习信号
@@ -113,7 +121,7 @@
 
 | 维度 | 含义 | 主要取值 |
 |------|------|---------|
-| K1   | student 访问什么训练状态 | 默认 student rollout / Uni-OPD data balancing |
+| K1   | student 访问什么训练状态、何时刷新 | current-student rollout / initial-student cache（Semi-OPD）/ Uni-OPD data balancing |
 | K2   | 每个 state 上给多少 token 的监督 | sampled-token / top-k / full-vocab |
 | K3   | teacher 信号与额外信息 | teacher logits / OPSD reference-conditioned teacher / SDAR privileged context / ROPD rubric |
 | K4   | 什么时候相信 teacher | 直接接受 / OPSD clipping / Uni-OPD margin calibration / SDAR sigmoid gate |
@@ -121,7 +129,7 @@
 
 这五个维度的取值分别对应外部源中的具体设计。
 
-**K1（state coverage）**。默认 student rollout 是 OPD 的标准设定。`[论文]` [Uni-OPD](#ref-hou2026)（浙大 + 腾讯 LLM Department，Hou et al. 2026）给出 data balancing，让 student 持续访问"既不全对也不全错"的 informative state，防止 dense token signal 浪费在饱和或全错的 state 上。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）走到另一端，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己无法到达的区域，再蒸馏回 student 权重。
+**K1（state coverage）**。标准 OPD 用 current student 持续刷新 rollout；[Semi-OPD](#ref-semiopd2026) 复用 initial-student cache，要求先测量 student 与 teacher 的初始匹配，而不是把 freshness 当作无条件收益。`[论文]` [Uni-OPD](#ref-hou2026)（浙大 + 腾讯 LLM Department，Hou et al. 2026）进一步做 data balancing，让 student 持续访问“既不全对也不全错”的 informative state，防止 dense token signal 浪费在饱和或全错的 state 上。`[论文]` [SDAR](#ref-sdar)（美团 + 浙大，Lu et al. 2026）走到另一端，给 teacher 端挂载 privileged retrieved skills，把 teacher 的高概率分布拉到 student 单凭自己无法到达的区域，再蒸馏回 student 权重。
 
 **K2（signal density）**。三种粒度描述的是每个 prefix 上监督覆盖多少 token；它与采用 forward KL 还是 reverse KL 是两条不同选择：
 
@@ -150,7 +158,7 @@
 
 `[本文归纳]` 本文证据留下三个可直接验证的问题：
 
-1. **什么训练状态值得多采样？** [Uni-OPD](#ref-hou2026) 用难度筛选既非全对也非全错的状态。这类状态是否也提供更有效的 teacher 信号，需要结合监督量与最终收益比较，不能由组内奖励有方差直接推出。
+1. **rollout 该不该持续刷新？** 先在目标 prompt 上测 initial teacher–student overlap，再把 current-student refresh 与 initial-student cache 放进同预算对照；进入 refresh 路径后，才继续问 [Uni-OPD](#ref-hou2026) 所筛的 informative state 是否提供更有效的 teacher 信号。
 2. **策略变化能否预测遗忘？** 在同一组 OPD 对照里，同时测新任务收益、旧任务表现与策略 KL，再检验 token 匹配带来的增益是否伴随不同的遗忘代价。当前跨论文材料不能代替这项实验。
 3. **privileged teacher 的差分有多少是能力？** OPSD 证明参考答案可以产生有用的密集信号，也直接暴露了 style-token divergence。需要用正负干预或行为对照，把正确性差分与长度、置信度、thinking mode 等 teacher-side shift 分开测量。
 
@@ -181,6 +189,9 @@
 
 <a id="ref-li2026"></a>
 **[Rethinking On-Policy Distillation of Large Language Models: Phenomenology, Mechanism, and Recipe]** Yaxuan Li et al.（Ning Ding lab），清华大学 THUNLP，2026. [arXiv:2604.13016](https://arxiv.org/abs/2604.13016)。共享 token 集合承载 97–99% 概率质量；overlap / non-overlap 消融；thinking pattern 选型机制；伪收敛 failure mode 分析。`[arxiv 论文]`
+
+<a id="ref-semiopd2026"></a>
+**[When Do We Need On-Policy Distillation? Distilling on Offline Student Rollouts Is Often Better]** Siyan Zhao, Yonggan Fu, Jindong Jiang, Shih-Yang Liu, Song Bian, Byung-Kwan Lee, Sharath Turuvekere Sreenivas, Wenliang Dai, Hanrong Ye, Aditya Grover, Pavlo Molchanov，2026. [arXiv:2610.11291v1](https://arxiv.org/abs/2610.11291)。用于支撑：17 个 teacher–student pair 的 OPD / Semi-OPD 对照、initial top-64 overlap 的选择信号，以及 student on-policyness 与 teacher compatibility 的区分。主要结果限于论文的 DAPO-Math 与 reasoning benchmark 设置。`[arxiv 论文]`
 
 <a id="ref-hou2026"></a>
 **[Uni-OPD: Unifying On-Policy Distillation with a Dual-Perspective Recipe]** Wenjin Hou, Hehe Fan et al.，浙江大学 + 腾讯 LLM Department，2026. [arXiv:2605.03677](https://arxiv.org/abs/2605.03677)。Data balancing（K1）+ outcome-guided margin calibration（K4）。`[arxiv 论文]`
