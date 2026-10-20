@@ -60,9 +60,12 @@ footer { max-width: 850px; margin: auto; padding: 20px 28px 32px; border-top: 1p
   <div class="eyebrow">方向专题</div>
   <article>
 <h1 id="agent-harness-状态管理-长期记忆与-skill-复用">Agent Harness：状态管理、长期记忆与 Skill 复用</h1>
-<p>这里整理模型外的状态管理、长期记忆和执行经验复用。了解 Harness 的改进方式，可以先读 <a href="../../briefs/learnable-agent-harness/">《Agent Harness 如何学习：状态读写策略与运行代码演化》</a>：它比较训练模型使用既有接口与修改运行程序两类方法，说明各自改变什么、需要什么反馈。</p>
+<p>这里整理模型外的状态管理、长期记忆、跨 Agent 接续和执行经验复用。了解 Harness 的改进方式，可以先读 <a href="../../briefs/learnable-agent-harness/">《Agent Harness 如何学习：状态读写策略与运行代码演化》</a>：它比较训练模型使用既有接口与修改运行程序两类方法，说明各自改变什么、需要什么反馈。</p>
 <h2 id="长期记忆中的事实更新与证据追溯">长期记忆中的事实更新与证据追溯</h2>
 <p><a href="../../briefs/agent-context-memory-governance/">《Agent 长期记忆：更新过时事实，保留可追溯证据》</a> 适合排查沿用旧计划、检索被噪声干扰、摘要丢失来源等问题。文章分别讨论事实版本、检索选择和可恢复压缩，帮助判断需要调整哪一部分记忆管理。</p>
+<h2 id="跨-session-与-agent-的工作接续">跨 session 与 Agent 的工作接续</h2>
+<p>任务需要换模型、开新会话或交给另一个 Agent 时，读 <a href="../../briefs/agent-handoff-state-contract/">《换一个 Agent，任务怎样接着做》</a>。它讨论该留下哪些成果、依据和操作边界，以及怎样验证接收方能继续；完整历史和完整规格都不保证交接成功。</p>
+<p>长期记忆文章讨论事实怎样更新和追溯；交接文章讨论换一个 Agent 后，任务怎样继续。</p>
 <h2 id="skill-的可靠性与经验的复用粒度">Skill 的可靠性与经验的复用粒度</h2>
 <ul>
 <li>已有 Skill，却出现无效调用、跳步、越权或有害经验回写，读 <a href="../../briefs/agent-skill-reliability/">《Agent Skill 为何失效：无效调用、执行偏离与错误经验回写》</a>。它按具体风险比较启用、执行和更新时的诊断与验证方法。</li>
