@@ -2,12 +2,12 @@
 
 <!-- domain: agentic-rl -->
 <!-- edition_date: 2026-07-19 -->
-<!-- revised_date: 2026-10-11 -->
-<!-- revision_note: 补入 Semi-OPD 与学习信号衰减证据，把 rollout 刷新从默认修复改为需先验证的采样选择。 -->
+<!-- revised_date: 2026-11-08 -->
+<!-- revision_note: 补入 conversion/broadcast、coupled rollout 与算力对照，把 loss 下降拆成参数响应、rollout 反馈和总成本三层验收。 -->
 
-`[本文归纳]` OPD（on-policy distillation）的 loss 来自 teacher 和 student 的 token 分布差。这个差并不天然等于“student 缺少的能力”。训练前先要判断 rollout 是否值得随 current student 持续刷新：它会让轨迹更贴近 student，也可能让低匹配 pair 更偏离 teacher。进入 OPD 后，一类失效来自 student 状态，另一类来自 teacher；即使两边仍有差异，可学习信号也可能在 loss 尚高时提前衰减。
+`[本文归纳]` OPD（on-policy distillation）的 loss 来自 teacher 和 student 的 token 分布差。这个差并不天然等于“student 缺少的能力”，下降也不等于训练闭环在变好：teacher signal 要先转成有效参数更新，再经由新的预测改变下一批 rollout。训练前还要判断 rollout 是否值得随 current student 持续刷新；它会让轨迹更贴近 student，也可能让低匹配 pair 更偏离 teacher。进入 OPD 后，student state、teacher 差分和反馈传播都可能失效；即使 loss 尚高，可学习信号也可能已经衰减。
 
-> `[本文归纳]` 判断 OPD 信号要依次问四件事：这批 rollout 是否同时靠近 student 与 teacher；teacher 在当前 student state 上还能不能可靠判别；训练还有没有可学习信号；teacher 相对 student 的差分，是能力差还是自身行为变化。KL 下降无法替代这些诊断。
+> `[本文归纳]` 判断 OPD 信号要依次问五件事：这批 rollout 是否同时靠近 student 与 teacher；teacher 在当前 student state 上还能不能可靠判别；差分有没有转成有效参数更新；更新有没有把下一批 rollout 推向更好的 state；teacher 相对 student 的差分，是能力差还是自身行为变化。KL 下降无法替代这些诊断。
 
 下文仍用“稳定域”概括 teacher 能可靠判别的 student 状态，但把它收窄为进入 OPD 后的一层诊断，而不是所有病理的统一解释。它只是本文组织材料的比喻，不是已有统一指标或证明的数学区域。[OPD 机制篇](../on-policy-distillation/) 讨论 rollout source、高概率 token 交集和伪收敛；本文继续对照采样选择、状态离域、信号衰减、teacher 偏差与实验控制。
 
@@ -15,11 +15,11 @@
 
 <figure class="diagram">
 <svg width="100%" viewBox="0 0 820 650" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opd-diagram-title opd-diagram-desc" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
-<title id="opd-diagram-title">OPD 监督可靠性的两层诊断</title><desc id="opd-diagram-desc">完成 rollout source 预检后，上层展示生成、模型与时间三条 student 状态离域路径；下层展示 teacher 行为偏移、context 内化、置信度校准与参数几何等稳定域无法解释的问题。</desc>
+<title id="opd-diagram-title">OPD 监督可靠性的状态与信号诊断</title><desc id="opd-diagram-desc">完成 rollout source 与 feedback loop 预检后，上层展示生成、模型与时间三条 student 状态离域路径；下层展示 teacher 行为偏移、context 内化、置信度校准与参数几何等稳定域无法解释的问题。</desc>
 <defs><linearGradient id="panelGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#131922"/><stop offset="100%" stop-color="#1a2230"/></linearGradient><linearGradient id="nodeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#131922"/><stop offset="100%" stop-color="#1a2230"/></linearGradient><linearGradient id="pseudoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10151d"/><stop offset="100%" stop-color="#151b25"/></linearGradient><marker id="arrowMuted" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#2a3441"/></marker><marker id="arrowCyan" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#5fd0c8"/></marker></defs>
 <rect width="820" height="650" fill="#0d1117"/>
-<text x="410" y="36" text-anchor="middle" fill="#e6edf3" font-size="24" font-weight="650">OPD 监督可靠性的两层诊断</text>
-<text x="410" y="58" text-anchor="middle" fill="#8b97a4" font-size="13">进入 refresh 路径后：先查 state，再查 teacher 差分</text>
+<text x="410" y="36" text-anchor="middle" fill="#e6edf3" font-size="24" font-weight="650">OPD 监督可靠性的状态与信号诊断</text>
+<text x="410" y="58" text-anchor="middle" fill="#8b97a4" font-size="13">先查 conversion / broadcast，再查 state 与 teacher 差分</text>
 <rect x="60" y="80" width="210" height="85" rx="12" fill="url(#nodeGrad)" stroke="#2a3441"/>
 <text x="78" y="108" fill="#e6edf3" font-size="14" font-weight="600">沿生成轴</text><text x="78" y="130" fill="#8b97a4" font-size="12.5">prefix 变长 → teacher 分布趋平</text><rect x="78" y="140" width="35" height="16" rx="8" fill="#202b37"/><text x="95.5" y="152" text-anchor="middle" fill="#8b97a4" font-size="11.5">SFD</text>
 <rect x="305" y="80" width="210" height="85" rx="12" fill="url(#nodeGrad)" stroke="#2a3441"/>
@@ -31,11 +31,12 @@
 <path d="M440 195 L440 181 L655 181 L655 165" fill="none" stroke="#2a3441" stroke-width="1.05" marker-end="url(#arrowMuted)"/><text x="584" y="176" fill="#8b97a4" font-size="11.5">离域</text>
 <rect x="60" y="195" width="380" height="135" rx="18" fill="url(#panelGrad)" stroke="#2a3441"/>
 <text x="84" y="228" fill="#e6edf3" font-size="14" font-weight="650">稳定域</text><text x="84" y="258" fill="#8b97a4" font-size="12.5">token 级监督可靠</text><text x="84" y="282" fill="#8b97a4" font-size="12.5">有效梯度集中在 student/teacher 高概率交集</text>
-<rect x="500" y="195" width="260" height="135" rx="18" fill="url(#panelGrad)" stroke="#2a3441"/>
-<text x="522" y="220" fill="#e6edf3" font-size="14" font-weight="650">修复：三类信号调控</text>
-<rect x="520" y="231" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="248" fill="#e6edf3" font-size="12.5">限域 · trust region/warmup</text>
-<rect x="520" y="265" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="282" fill="#e6edf3" font-size="12.5">重加权 · drift gating</text>
+<rect x="500" y="195" width="260" height="175" rx="18" fill="url(#panelGrad)" stroke="#2a3441"/>
+<text x="522" y="220" fill="#e6edf3" font-size="14" font-weight="650">修复：四类信号调控</text>
+<rect x="520" y="231" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="248" fill="#e6edf3" font-size="12.5">限域 / 补覆盖 · trust / coupled</text>
+<rect x="520" y="265" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="282" fill="#e6edf3" font-size="12.5">重加权 · drift / overlap gate</text>
 <rect x="520" y="299" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="316" fill="#e6edf3" font-size="12.5">信号替换 · 重算 / delta / 对消</text>
+<rect x="520" y="333" width="220" height="24" rx="10" fill="url(#nodeGrad)" stroke="#2a3441"/><text x="532" y="350" fill="#e6edf3" font-size="12.5">目标几何 · direction / distance</text>
 <path d="M500 282 L440 282" fill="none" stroke="#5fd0c8" stroke-width="1.5" stroke-dasharray="7 5" marker-end="url(#arrowCyan)"/><text x="470" y="270" text-anchor="middle" fill="#5fd0c8" font-size="11.5">回归域内</text>
 <path d="M250 330 L250 385" fill="none" stroke="#2a3441" stroke-width="1.05" marker-end="url(#arrowMuted)"/><text x="263" y="362" fill="#8b97a4" font-size="11.5">离域后的表现</text>
 <rect x="60" y="385" width="700" height="60" rx="12" fill="url(#panelGrad)" stroke="#2a3441"/>
@@ -57,15 +58,22 @@
 
 `[本文归纳]` 这不是“旧 rollout 总比新 rollout 好”，而是把 on-policyness 拆成两侧：标准 OPD 让轨迹贴近 current student，但低 overlap pair 的 evolving rollout 可能同时离 teacher 越来越远；固定 initial-student cache 则牺牲一部分 freshness，换取 teacher compatibility。训练前应在目标 prompt 上量 initial overlap，并把 refresh 与 fixed cache 设为同预算 baseline，而不是先默认 refresh、失败后才调 learning rate 或 clip。论文主结果来自 DAPO-Math 和 reasoning benchmark，不能直接给 agent 或其它 domain 设通用 overlap 阈值。
 
+## 把 feedback loop 拆成 conversion 与 broadcast
+
+`[论文]` [Learning Dynamics of OPD](#ref-hong2026) 将 on-policy 闭环拆成两个阶段：**conversion** 是 teacher-student discrepancy 能否转成有效参数更新；**broadcast** 是这些更新如何跨 prefix 改变预测，再重塑下一批 rollout 分布。这个拆分解释了两种看起来矛盾的失败：一边是师生差异仍大，student 参数却响应有限；另一边是局部 teacher agreement 变好，却提高了失败 continuation 的概率，让后续 rollout 接触到更不可靠的监督。
+
+`[本文归纳]` 因此，诊断不能只画一条 loss 曲线。conversion 至少要同时看梯度或参数响应、局部 teacher agreement 与 held-out 任务效果；broadcast 则要看更新后新采样的 continuation 成功率、状态覆盖和长度分布。论文还观察到，offline distillation 可以在 held-out accuracy 尚未立即上升时为后续 OPD 做准备；这说明“没有即时涨点”不等于 conversion 没发生，但是否值得进入 on-policy 阶段仍需新 rollout 的效果验证。该结论目前来自论文的语言模型实验，不是通用 warmup 配方。
+
 ## 先查 student 是否离开 teacher 的有效区域
 
-`[本文归纳]` student-state 失稳可以按离开稳定域的方式分成三条路径。它们仍是有效诊断，但只回答 teacher 在当前状态上能否提供可靠信号：
+`[本文归纳]` student-state 失稳可以按离开稳定域的方式分成四条路径。它们仍是有效诊断，但只回答 teacher 在当前状态上能否提供可靠信号：
 
 | 失真路径 | 触发条件 | 机制 | 代表论文 |
 |---|---|---|---|
 | 沿生成轴 | prefix 变长 | teacher next-token 分布趋平，纠偏项衰减 | SFD（中科院软件所 + 小红书） |
 | 沿模型轴 | teacher-student 分布差大 | reverse-KL 估计器给出不可靠梯度 | TrOPD（三星北京研究院） |
 | 沿时间轴 | rollout 变旧（异步训练） | reverse-KL 信号基于过期的 student 分布计算 | AsyncOPD（FuriosaAI） |
+| 覆盖盲区 | student 从未访问 teacher 可达 state | teacher 没有机会在这些 state 上提供监督 | CoRD |
 
 `[论文]` [SFD 论文](#ref-liu2026)（中科院软件所 + 小红书，Liu et al. 2026）将沿生成轴的失真命名为 Supervision Fidelity Decay：student 自生成的 prefix 越长，teacher 的 next-token 分布置信度越低、判别力越弱，reverse-KL 里依赖 teacher 的纠偏信号随之衰减，student 的漂移会沿推理链逐步累积。这解释了为什么长生成任务上失真最重：他们的修复（用下一步的 teacher 置信度评估 top-K 候选 token，按组归一化后作为奖励）在 39k token 的 AIME-26 上取得 **+4.92** 的最大增益，六个数学与代码 benchmark 平均 +2.57。
 
@@ -74,6 +82,10 @@
 `[论文]` 沿时间轴的失真来自异步训练系统：rollout 生成和 learner 更新解耦后，训练数据来自过期的 student 分布。[AsyncOPD](#ref-kang2026)（FuriosaAI，Kang et al. 2026）的系统性结论是 KL 方向决定脆弱性：teacher 加权的 forward KL 对 stale rollout 稳健，student 加权的 reverse KL 对 stale rollout 脆弱。将异步 RL 的稳定化手段用于 OPD，收效有限；更有效的是 OPD 专用的替代方案：在 learner 更新时，用当前 student 重算 reverse-KL 信号。配合多样本 Monte Carlo 压低方差，异步管线将吞吐提高 **1.6 到 3.8 倍**，精度与同步训练相当。
 
 `[论文]` [Prompt Breadth and Rollout Refresh Interact](#ref-hu2026) 把“数据更广”和“状态更新”放进同一个 3×3 对照：固定 14,080 条 trajectory 与 110 次 optimizer update，只改变 prompt 数量和生成响应所用的 policy snapshot。冻结初始 policy 的响应时，扩大 prompt breadth 让平均准确率从 21.16% 降到 19.05%；每次 update 都刷新响应时，则从 23.61% 升到 25.57%。论文报告的交互为 **4.07 个点**，95% paired interval 为 [2.00, 6.28]。因此，prompt 多样性不能脱离 rollout freshness 单独解释；“数据更广”不等于 student 实际访问了更多新的 on-policy state。
+
+`[论文]` [CoRD](#ref-chen2026) 处理的是另一类覆盖问题：student-only rollout 很少经过 teacher 能到达、student 尚未访问的 state。它保留 on-policy loss，只用 maximal coupling 把训练 state distribution 向 teacher 侧平移；师生分布同意时保留 student token，不同意时才替换 student 低估的 token。论文在六个 Qwen3 / Qwen3.5 base student、五个数学 benchmark 上，以相同步数和数据报告相对标准 OPD 的 pass@1 **+0.9 到 +2.0**、pass@8 **+1.2 到 +3.4**；一个 4B 的 frozen teacher-reached-state 对照中，CoRD 16 步达到的 gap closure，标准 OPD 80 步仍未达到。这些结果在论文设置中支持 student-only state coverage 存在盲区，不证明 teacher trajectory 应整体替代 student rollout。
+
+`[论文]` [O2PD](#ref-zu2026) 又把可靠性收窄到同一条 rollout 内部：teacher 在 student-generated context 上本来就是 off-policy，序列前后位置的 guidance 可靠性不必相同。论文的方法只在每条 rollout 的前 **20%** token 上应用对齐，并用 overlap gate 调节 support 与 divergence。20% 是该方法的实验设置，不是跨模型通用阈值；它带来的诊断意义是，不能只给整条轨迹算一个 teacher confidence 或 overlap，就假设每个位置都同样可学。
 
 ## 再查 teacher 差分是否就是要学的能力
 
@@ -108,19 +120,22 @@ student 没有离域，也不代表 teacher-student discrepancy 可以原样学�
 
 <a id="修复方案收敛为三类信号调控"></a>
 
-## 修复方法：限制训练区域、重加权或重算监督
+## 修复方法：调 state、权重、监督量与目标几何
 
-`[本文归纳]` rollout source 是训练前的选择，不宜硬塞进失败后的修复目录。进入 refresh 路径后，2026 年各篇提出的修复动作可以按调控对象索引为三类：在哪里训练（限域）、给各位置的信号多大权重（重加权）、用什么量做监督（信号替换）。这是定位工程动作的目录，不是三个互相独立的因果轴。
+`[本文归纳]` rollout source 是训练前的选择，不宜硬塞进失败后的修复目录。进入 refresh 路径后，2026 年各篇提出的修复动作可以按调控对象索引为四类：在哪里训练（限域）、给各位置的信号多大权重（重加权）、用什么量做监督（信号替换），以及 target 往哪里走、走多远（目标几何）。这是定位工程动作的目录，不是四个互相独立的因果轴。
 
 | 类别 | 做法 | 代表方案 |
 |---|---|---|
-| 限域 | 只在信号可靠的区域训练 | TrOPD 信赖域、TRB warmup、异常值掩码（outlier masking） |
+| 限域与补覆盖 | 只在可靠区域训练，或补足 student-only rollout 漏掉的 state | TrOPD 信赖域、TRB warmup、CoRD coupled rollout、O2PD reliable prefix |
 | 重加权 | 按可靠性缩放各位置的损失 | OPSD pointwise clipping、按块漂移门控（blockwise drift gating）、优势裁剪（advantage clipping）、对数压缩（log-scale compression） |
 | 信号替换或重算 | 换一个更可靠的监督量 | learner 时重算（AsyncOPD）、delta signal（OPD²）、contrastive / calibrated teacher discrepancy |
+| 目标几何 | 分开控制更新方向与目标距离 | D2-OPD 的 per-prefix hard KL 与自适应方向 |
 
 `[论文]` 重加权类里有一个直接来自 student 自身漂移的控制信号。[Blockwise Policy-Drift Gating](#ref-zheng2026)（独立研究者 Zheng & Jiang 2026）在 rollout 复用场景下，用行为 student 与当前 student 在采样 token 路径上的 log-prob 偏移（按 64-token 块聚合、去梯度、均值归一）重加权各位置损失，不改动 teacher 目标，也不改动 rollout 策略，四个数学 benchmark 的 mean pass@8 从 0.4978 提到 **0.5160**。信号完全来自 student 侧，说明是否离开稳定域可仅用 student 自己的信息检测。
 
 `[论文]` 信号替换类的代表方案之一是 [OPD²](#ref-heo2026)（NAVER AI Lab，Heo et al. 2026）：不再直接模仿 teacher 输出分布，改用 delta signal，即 teacher 与其推理调优前的 base model 之间的分布差。这个信号只保留推理调优带来的分布变化，剔除了 teacher 分布里与推理能力无关的部分，在数学、科学、代码 benchmark 上稳定超过常规 OPD。
+
+`[论文]` [D2-OPD](#ref-fangd2opd2026) 说明“信号往哪里推”和“推多远”也不该混成一个旋钮。既有 extrapolative OPD 会让 teacher shift 的幅度同时决定 target 距离；D2-OPD 用 per-prefix hard KL 单独约束距离，再用 teacher post-training shift 与 initial student-teacher gap 组合方向，并通过 forward KL 优化。论文在三类数学推理设置中都超过比较基线，最高报告 **+9.45** points。这个结果支持解耦诊断，但只覆盖 extrapolative OPD，不能直接把 hard-KL target 当成标准 OPD 的默认修复。
 
 方法比较本身也可能制造假结论。`[论文]` [A Shared Learning Rate Is Not a Neutral Control](#ref-zhu2026) 在 GSM8K、Qwen2.5-1.5B student / 7B teacher、LoRA 的八档学习率上发现：dense supervision 只摆动 1.8 个点，而 selective arms 摆动 5.4–17.7 个点；相邻学习率就能翻转部分 selector 的显著性判断。这个 rate dependence 没在 MATH-500 的 LoRA 设置复现，所以它不是“选择性监督一定无效”的结论。更稳妥的验收是报告 arm × learning-rate matrix，而不是给所有 selector 共用一个 rate 后比较单列结果。
 
@@ -138,9 +153,15 @@ student 没有离域，也不代表 teacher-student discrepancy 可以原样学�
 
 `[论文]` [几何分析](#ref-shen2026)（HKUST，Shen et al. 2026）从参数空间为稳定域图景补充了一个视角：OPD 涉及的权重更新少于 SFT，更能避开主方向，受到的优化约束也弱于 RLVR（reinforcement learning with verifiable rewards）；累计更新会迅速进入一个低维窄通道（子空间锁定，subspace locking）。将训练约束在早期形成的子空间内，能够保住 OPD 性能，却不能保持 SFT 性能。稀疏化更新 token、将 rollout 偏向 off-policy 都不改变这种秩的演化（rank dynamics），混入 RLVR 目标才会改变。结论是 OPD 在参数空间里有独立的更新几何，与 SFT 和 RLVR 都不同。原文尚未建立这组诊断与行为层病理之间的因果联系，这仍是一个开放问题。
 
+## 把学习效率与端到端算力账分开
+
+`[论文]` [Unpacking the Compute Efficiency of Strong-to-Weak OPD against GRPO](#ref-liucompute2026) 直接比较 held-out accuracy 与 training FLOPs。论文报告，在 matched external post-trained teacher 设置下，vanilla reverse-KL OPD 通常不如 GRPO 的 accuracy / training FLOP，并且经常出现 response-length inflation。dense token supervision 因此不是天然的算力优势。
+
+teacher 与使用目的改变后，账也会改变。用 student 自己的 GRPO checkpoint 当 teacher 时，论文在数学任务上用约 **1/50** 的 distillation FLOPs 恢复到该 checkpoint 的准确率；但得到这个 checkpoint 的 GRPO 成本已经发生，单领域里再蒸馏只会增加总成本。跨域 consolidation 才是另一种用途：两域和四域的 distillation stage 分别只占 specialist training FLOPs 的 **5.2%** 与 **8.0%**，两域完整 pipeline 相对 joint GRPO 报告少 **42.0%** 总 FLOPs。`[本文归纳]` 因此，验收必须说明算的是 distillation stage、specialist training 还是整个多域 pipeline；不能拿阶段性的 distillation 省算力证明端到端训练更便宜。
+
 ## 边界与未决问题
 
-`[本文归纳]` 三点边界。其一，稳定域目前没有统一可测指标：teacher confidence、initial overlap、KL 信赖域、staleness 与 drift gate 只是不同 proxy；OPSD 的 style-token divergence、teacher-side deviation 与 signal exhaustion 也说明单个 state-distance 指标不可能覆盖全部失效。其二，采样和修复旋钮不能假设正交：prompt breadth 与 rollout refresh 已出现受控交互，selector 与 learning rate 也会耦合；Semi-OPD 的 overlap 关系仍来自特定 reasoning setup，尚不能给出统一的选择阈值。其三，量化数字来自不同模型、benchmark 与训练预算，横向只能比较机制方向，不能把单篇增益直接排成方法榜单。
+`[本文归纳]` 三点边界。其一，稳定域目前没有统一可测指标：teacher confidence、initial overlap、KL 信赖域、staleness 与 drift gate 只是不同 proxy；OPSD 的 style-token divergence、teacher-side deviation、conversion / broadcast 与 signal exhaustion 也说明单个 state-distance 指标不可能覆盖全部失效。其二，采样和修复旋钮不能假设正交：prompt breadth 与 rollout refresh 已出现受控交互，selector 与 learning rate 也会耦合；Semi-OPD、CoRD 与 O2PD 来自特定 reasoning setup，尚不能给出统一的 state source 或 reliable-prefix 阈值。其三，量化数字来自不同模型、benchmark、teacher 来源与训练预算，横向只能比较机制方向；必须分开 distillation-stage 与 total-pipeline FLOPs，不能把单篇增益直接排成方法榜单。
 
 ## Reference
 
@@ -203,3 +224,18 @@ student 没有离域，也不代表 teacher-student discrepancy 可以原样学�
 
 <a id="ref-vanish2026"></a>
 **[Why On-Policy Distillation Sometimes Fails: Vanishing Learning Signals]** Lei Zhao, Qichao Zhao, Bowen Zuo, Qishi Zhan，2026. [arXiv:2610.11247v1](https://arxiv.org/abs/2610.11247)。用于支撑：code / math run 中的 early loss plateau、learning-signal proxy、gap recovery 与参数/表示变化诊断。limited adaptation 是待验证假设，不是已证明原因。`[arxiv 论文]`
+
+<a id="ref-hong2026"></a>
+**[Learning Dynamics of On-Policy Distillation]** Guan Zhe Hong, Sumeet Ramesh Motwani, Liang Chen, Yangchen Pan, Junchi Yu, Jialin Yu, Philip Torr, Yi Ren，2026. [arXiv:2611.08016v1](https://arxiv.org/abs/2611.08016)。用于支撑：conversion / broadcast 两阶段、局部 teacher agreement 与后续 rollout 退化可以分离，以及 offline preparation 的作用边界。`[arxiv 论文]`
+
+<a id="ref-chen2026"></a>
+**[CoRD: Coupled Rollouts Fill the Blind Spot of On-Policy Distillation]** Guhan Chen et al.，2026. [arXiv:2611.07959v1](https://arxiv.org/abs/2611.07959)。用于支撑：student-only state coverage 盲区、maximal coupling 设计与等步数等数据对照。结果限于论文的 Qwen3 / Qwen3.5 数学推理设置。`[arxiv 论文]`
+
+<a id="ref-zu2026"></a>
+**[O2PD: Overlap-Gated On-Policy Distillation on Reliable Prefix]** Shuaishuai Zu, Jihao Zhao, Pengfei Li, Guanghuan Fang, Ben Feng, Yuhan Liu, Biao Qin, Baochuan Yang，2026. [arXiv:2611.07731v1](https://arxiv.org/abs/2611.07731)。用于支撑：rollout 内位置可靠性、top-k support 缺口与 overlap gate；20% prefix 是论文设置，不是通用阈值。`[arxiv 论文]`
+
+<a id="ref-fangd2opd2026"></a>
+**[D2-OPD: Separating Direction and Distance in Extrapolative On-Policy Distillation]** Bowen Fang, Dingmin Wang, Hengzhi Pei，2026. [arXiv:2611.07241v1](https://arxiv.org/abs/2611.07241)。用于支撑：extrapolative OPD 的方向/距离解耦、per-prefix hard KL 与数学推理对照。`[arxiv 论文]`
+
+<a id="ref-liucompute2026"></a>
+**[Unpacking the Compute Efficiency of Strong-to-Weak OPD against GRPO]** Zeyu Leo Liu et al.，2026. [arXiv:2611.08453v1](https://arxiv.org/abs/2611.08453)。用于支撑：external teacher 下的 OPD / GRPO accuracy-per-FLOP 对照、self-checkpoint distillation 与 multi-teacher consolidation 的分层算力账。`[arxiv 论文]`

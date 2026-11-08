@@ -8,6 +8,6 @@
 
 ## 区分学生离域、教师偏差与训练控制问题
 
-[《OPD 失效诊断：学生离域、教师偏差与旧轨迹》](../../briefs/opd-training-pathologies/) 适合训练已经运行、但曲线与任务效果脱节时阅读。它先检查 rollout 是否该持续刷新，再区分 student state 离域、learning signal 提前衰减和 teacher 差分偏移，并给出 rollout freshness、selector × learning rate 等实验控制边界。
+[《OPD 失效诊断：学生离域、教师偏差与旧轨迹》](../../briefs/opd-training-pathologies/) 适合训练已经运行、但曲线与任务效果脱节时阅读。它先检查 rollout 是否该持续刷新，再把 feedback loop 拆成 signal-to-update 的 conversion 与 update-to-rollout 的 broadcast，区分 student state 覆盖、teacher 差分、learning signal 衰减和算力口径。训练曲线能下降，不代表下一轮 rollout 或端到端 compute 已经变好。
 
 三篇分别用于理解机制、选择能力合并方案和排查训练故障；第一篇回答 OPSD 到底是什么，第三篇则继续追问 privileged teacher 的差分何时会偏，可按当前问题直接进入。
